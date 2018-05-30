@@ -33,6 +33,10 @@ func TestNdauQty_Add(t *testing.T) {
 				return
 			}
 			if err != nil {
+				s := err.Error()
+				if s != "overflow error" {
+					t.Errorf("Error type was wrong, got %s, wanted overflow error", s)
+				}
 				return
 			}
 			if got != tt.want {
@@ -53,7 +57,7 @@ func TestNdauQty_Sub(t *testing.T) {
 		{"a", 1, -1, 2, false},
 		{"b", 1, 1, 0, false},
 		{"c", 1, 100, -99, false},
-		{"d", 654321, 123456, 531111, false},
+		{"d", 654321, 123456, 530865, false},
 		{"e", NdauQty(int64(math.MaxInt64)), 1, NdauQty(int64(math.MaxInt64 - 1)), false},
 		{"f", NdauQty(int64(math.MaxInt64)), -1, 0, true},
 		{"g", NdauQty(int64(math.MaxInt64 / 2)), -NdauQty(int64(math.MaxInt64 / 2)), NdauQty(int64(math.MaxInt64) - 1), false},
@@ -98,6 +102,60 @@ func TestNdauQty_Abs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.n.Abs(); got != tt.want {
 				t.Errorf("NdauQty.Abs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNdauQty_Compare(t *testing.T) {
+	tests := []struct {
+		name string
+		n    NdauQty
+		rhs  NdauQty
+		want int
+	}{
+		{"a", 1, 2, -1},
+		{"b", 2, 1, 1},
+		{"c", 2, 2, 0},
+		{"d", -1, 0, -1},
+		{"e", 0, -1, 1},
+		{"f", 0, 0, 0},
+		{"g", 1, math.MaxInt64, -1},
+		{"h", math.MaxInt64, 1, 1},
+		{"i", math.MaxInt64, math.MaxInt64, 0},
+		{"j", 1, math.MinInt64, 1},
+		{"k", math.MinInt64, 1, -1},
+		{"l", math.MinInt64, math.MinInt64, 0},
+		{"m", math.MaxInt64, math.MinInt64, 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.n.Compare(tt.rhs); got != tt.want {
+				t.Errorf("NdauQty.Compare() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNdauQty_String(t *testing.T) {
+	tests := []struct {
+		name string
+		n    NdauQty
+		want string
+	}{
+		{"a", QuantaPerUnit, "1"},
+		{"b", QuantaPerUnit * 1.5, "1.5"},
+		{"c", QuantaPerUnit / 5, "0.2"},
+		{"d", 1, "0.00000001"},
+		{"e", 17*QuantaPerUnit + 1234, "17.00001234"},
+		{"f", -17 * QuantaPerUnit, "-17"},
+		{"g", -17*QuantaPerUnit - 1234, "-17.00001234"},
+		{"h", 100, "0.000001"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.n.String(); got != tt.want {
+				t.Errorf("NdauQty.String() = %v, want %v", got, tt.want)
 			}
 		})
 	}
