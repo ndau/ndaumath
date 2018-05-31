@@ -53,7 +53,7 @@ func TestNdauQty_Sub(t *testing.T) {
 		{"a", 1, -1, 2, false},
 		{"b", 1, 1, 0, false},
 		{"c", 1, 100, -99, false},
-		{"d", 654321, 123456, 531111, false},
+		{"d", 654321, 123456, 530865, false},
 		{"e", NdauQty(int64(math.MaxInt64)), 1, NdauQty(int64(math.MaxInt64 - 1)), false},
 		{"f", NdauQty(int64(math.MaxInt64)), -1, 0, true},
 		{"g", NdauQty(int64(math.MaxInt64 / 2)), -NdauQty(int64(math.MaxInt64 / 2)), NdauQty(int64(math.MaxInt64) - 1), false},
