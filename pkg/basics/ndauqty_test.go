@@ -8,22 +8,22 @@ import (
 func TestNdauQty_Add(t *testing.T) {
 	tests := []struct {
 		name    string
-		n       NdauQty
-		other   NdauQty
-		want    NdauQty
+		n       Ndau
+		other   Ndau
+		want    Ndau
 		wantErr bool
 	}{
 		{"a", 1, 1, 2, false},
 		{"b", 1, -1, 0, false},
 		{"c", 1, 100, 101, false},
 		{"d", 123456, 654321, 777777, false},
-		{"e", NdauQty(int64(math.MaxInt64)), -1, NdauQty(int64(math.MaxInt64 - 1)), false},
-		{"f", NdauQty(int64(math.MaxInt64)), 1, 0, true},
-		{"g", NdauQty(int64(math.MaxInt64 / 2)), NdauQty(int64(math.MaxInt64 / 2)), NdauQty(int64(math.MaxInt64) - 1), false},
-		{"h", NdauQty(int64(math.MinInt64)), 1, NdauQty(int64(math.MinInt64 + 1)), false},
-		{"i", NdauQty(int64(math.MaxInt64)), NdauQty(int64(math.MinInt64)), -1, false},
-		{"j", NdauQty(int64(math.MinInt64 / 2)), NdauQty(int64(math.MinInt64 / 2)), NdauQty(int64(math.MinInt64)), false},
-		{"k", NdauQty(int64(math.MinInt64)), -1, 0, true},
+		{"e", Ndau(int64(math.MaxInt64)), -1, Ndau(int64(math.MaxInt64 - 1)), false},
+		{"f", Ndau(int64(math.MaxInt64)), 1, 0, true},
+		{"g", Ndau(int64(math.MaxInt64 / 2)), Ndau(int64(math.MaxInt64 / 2)), Ndau(int64(math.MaxInt64) - 1), false},
+		{"h", Ndau(int64(math.MinInt64)), 1, Ndau(int64(math.MinInt64 + 1)), false},
+		{"i", Ndau(int64(math.MaxInt64)), Ndau(int64(math.MinInt64)), -1, false},
+		{"j", Ndau(int64(math.MinInt64 / 2)), Ndau(int64(math.MinInt64 / 2)), Ndau(int64(math.MinInt64)), false},
+		{"k", Ndau(int64(math.MinInt64)), -1, 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -45,22 +45,22 @@ func TestNdauQty_Add(t *testing.T) {
 func TestNdauQty_Sub(t *testing.T) {
 	tests := []struct {
 		name    string
-		n       NdauQty
-		other   NdauQty
-		want    NdauQty
+		n       Ndau
+		other   Ndau
+		want    Ndau
 		wantErr bool
 	}{
 		{"a", 1, -1, 2, false},
 		{"b", 1, 1, 0, false},
 		{"c", 1, 100, -99, false},
 		{"d", 654321, 123456, 530865, false},
-		{"e", NdauQty(int64(math.MaxInt64)), 1, NdauQty(int64(math.MaxInt64 - 1)), false},
-		{"f", NdauQty(int64(math.MaxInt64)), -1, 0, true},
-		{"g", NdauQty(int64(math.MaxInt64 / 2)), -NdauQty(int64(math.MaxInt64 / 2)), NdauQty(int64(math.MaxInt64) - 1), false},
-		{"h", NdauQty(int64(math.MinInt64)), -1, NdauQty(int64(math.MinInt64 + 1)), false},
-		{"i", NdauQty(int64(math.MaxInt64)), NdauQty(int64(math.MaxInt64)), 0, false},
-		{"j", NdauQty(int64(math.MinInt64 / 2)), -NdauQty(int64(math.MinInt64 / 2)), NdauQty(int64(math.MinInt64)), false},
-		{"k", NdauQty(int64(math.MinInt64)), 1, 0, true},
+		{"e", Ndau(int64(math.MaxInt64)), 1, Ndau(int64(math.MaxInt64 - 1)), false},
+		{"f", Ndau(int64(math.MaxInt64)), -1, 0, true},
+		{"g", Ndau(int64(math.MaxInt64 / 2)), -Ndau(int64(math.MaxInt64 / 2)), Ndau(int64(math.MaxInt64) - 1), false},
+		{"h", Ndau(int64(math.MinInt64)), -1, Ndau(int64(math.MinInt64 + 1)), false},
+		{"i", Ndau(int64(math.MaxInt64)), Ndau(int64(math.MaxInt64)), 0, false},
+		{"j", Ndau(int64(math.MinInt64 / 2)), -Ndau(int64(math.MinInt64 / 2)), Ndau(int64(math.MinInt64)), false},
+		{"k", Ndau(int64(math.MinInt64)), 1, 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -82,15 +82,15 @@ func TestNdauQty_Sub(t *testing.T) {
 func TestNdauQty_Abs(t *testing.T) {
 	tests := []struct {
 		name string
-		n    NdauQty
-		want NdauQty
+		n    Ndau
+		want Ndau
 	}{
 		{"a", 1, 1},
 		{"b", 100, 100},
 		{"c", -101, 101},
-		{"d", NdauQty(int64(math.MaxInt64)), NdauQty(int64(math.MaxInt64))},
+		{"d", Ndau(int64(math.MaxInt64)), Ndau(int64(math.MaxInt64))},
 		// explicitly test for the abs(MinInt) case which returns MinInt again
-		{"e", NdauQty(int64(math.MinInt64)), NdauQty(int64(math.MinInt64))},
+		{"e", Ndau(int64(math.MinInt64)), Ndau(int64(math.MinInt64))},
 		{"f", -1, 1},
 		{"g", 0, 0},
 	}
