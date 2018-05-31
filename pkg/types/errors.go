@@ -1,4 +1,4 @@
-package basics
+package types
 
 // OverflowError is returned when the code is invalid and cannot be loaded or run
 type OverflowError struct{}

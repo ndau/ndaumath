@@ -1,4 +1,4 @@
-package basics
+package types
 
 // Ndau is a value that holds a single amount
 // of ndau. It is prevented from overflow
