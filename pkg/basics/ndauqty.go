@@ -57,6 +57,9 @@ func (n NdauQty) Compare(rhs NdauQty) int {
 	return 0
 }
 
+// String returns the value of n formatted in a standard format, as if it is a
+// decimal value of ndau. The full napu value is displayed, but trailing zeros
+// are suppressed.
 func (n NdauQty) String() string {
 	var sign int64 = 1
 	if n < 0 {
