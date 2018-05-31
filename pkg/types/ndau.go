@@ -1,17 +1,19 @@
-package basics
+package types
 
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/oneiro-ndev/ndaumath/pkg/constants"
 )
 
-// NdauQty is a value that holds a single amount
+// Ndau is a value that holds a single amount
 // of ndau. Unlike an int64, it is prevented from overflowing.
-type NdauQty int64
+type Ndau int64
 
-// Add adds a value to an NdauQty
+// Add adds a value to an Ndau
 // It may return an overflow error
-func (n NdauQty) Add(other NdauQty) (NdauQty, error) {
+func (n Ndau) Add(other Ndau) (Ndau, error) {
 	t := n + other
 	// if the signs are opposite there's no way it can overflow
 	if (n > 0) == (other < 0) {
@@ -26,7 +28,7 @@ func (n NdauQty) Add(other NdauQty) (NdauQty, error) {
 }
 
 // Sub subtracts, and may overflow
-func (n NdauQty) Sub(other NdauQty) (NdauQty, error) {
+func (n Ndau) Sub(other Ndau) (Ndau, error) {
 	return n.Add(-other)
 }
 
@@ -41,14 +43,14 @@ func (n NdauQty) Sub(other NdauQty) (NdauQty, error) {
 //
 // In particular, this function a) can be inlined, and b) has no
 // conditionals.
-func (n NdauQty) Abs() NdauQty {
+func (n Ndau) Abs() Ndau {
 	y := n >> 63       // sign extended, so this is either -1 (0xFFF...) or 0
 	return (n ^ y) - y // twos complement if it was negative
 }
 
 // Compare is the sorting operator; it returns -1 if n < rhs, 1 if n > rhs,
 // and 0 if they are equal.
-func (n NdauQty) Compare(rhs NdauQty) int {
+func (n Ndau) Compare(rhs Ndau) int {
 	if n < rhs {
 		return -1
 	} else if n > rhs {
@@ -60,14 +62,14 @@ func (n NdauQty) Compare(rhs NdauQty) int {
 // String returns the value of n formatted in a standard format, as if it is a
 // decimal value of ndau. The full napu value is displayed, but trailing zeros
 // are suppressed.
-func (n NdauQty) String() string {
+func (n Ndau) String() string {
 	var sign int64 = 1
 	if n < 0 {
 		sign = -1
 	}
 	na := n.Abs()
-	ndau := na / QuantaPerUnit
-	napu := na % QuantaPerUnit
+	ndau := na / constants.QuantaPerUnit
+	napu := na % constants.QuantaPerUnit
 	if napu == 0 {
 		return strconv.FormatInt(int64(sign*int64(ndau)), 10)
 	}
