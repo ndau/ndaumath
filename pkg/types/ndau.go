@@ -1,12 +1,12 @@
-package basics
+package types
 
-// NdauQty is a value that holds a single amount
+// Ndau is a value that holds a single amount
 // of ndau. It is prevented from overflow
-type NdauQty int64
+type Ndau int64
 
 // Add adds a value to an NdauQty
 // It may return an overflow error
-func (n NdauQty) Add(other NdauQty) (NdauQty, error) {
+func (n Ndau) Add(other Ndau) (Ndau, error) {
 	t := n + other
 	// if the signs are opposite there's no way it can overflow
 	if (n > 0) == (other < 0) {
@@ -21,7 +21,7 @@ func (n NdauQty) Add(other NdauQty) (NdauQty, error) {
 }
 
 // Sub subtracts, and may overflow
-func (n NdauQty) Sub(other NdauQty) (NdauQty, error) {
+func (n Ndau) Sub(other Ndau) (Ndau, error) {
 	return n.Add(-other)
 }
 
@@ -33,7 +33,7 @@ func (n NdauQty) Sub(other NdauQty) (NdauQty, error) {
 // As this is the only error case, and quantities on the
 // blockchain can't be negative, we are going to ignore this
 // case.
-func (n NdauQty) Abs() NdauQty {
+func (n Ndau) Abs() Ndau {
 	y := n >> 63       // y ← x ⟫ 63
 	return (n ^ y) - y // (x ⨁ y) - y
 }
