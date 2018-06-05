@@ -20,6 +20,7 @@ type args struct {
 	Hex      bool     `arg:"-x" help:"interpret input data as hex bytes"`
 	Verbose  bool     `arg:"-v" help:"Be verbose"`
 	Input    string   `arg:"-i" help:"Input filename"`
+	Kind     string   `arg:"-k" help:"Kind of address to create -- a, n, e, or x"`
 	Data     []string `arg:"positional"`
 }
 
@@ -93,7 +94,13 @@ func readAsHex(in io.Reader) ([]byte, error) {
 
 func main() {
 	var args args
+	args.Kind = "a"
 	arg.MustParse(&args)
+
+	if !address.IsValidKind(address.Kind(args.Kind)) {
+		fmt.Fprintf(os.Stderr, "%s is not a valid Kind\n", args.Kind)
+		os.Exit(1)
+	}
 
 	// figure out where we get our input stream from
 	var in io.Reader
@@ -158,7 +165,7 @@ func main() {
 	if args.Verbose {
 		fmt.Printf("input data:\n%s\n", hex.Dump(data))
 	}
-	a, err := address.Generate(address.KindUser, data)
+	a, err := address.Generate(address.Kind(args.Kind), data)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)

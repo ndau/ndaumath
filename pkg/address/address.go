@@ -42,7 +42,7 @@ func newError(msg string) error {
 }
 
 // we want the first letters of the address to be "nd?" where ? is the kind of
-// address. Valid address types are as follows
+// address. Valid address types are as follows:
 const (
 	KindUser      Kind = "a"
 	KindNdau      Kind = "n"
@@ -50,7 +50,7 @@ const (
 	KindExchange  Kind = "x"
 )
 
-func isValidKind(a Kind) bool {
+func IsValidKind(a Kind) bool {
 	switch a {
 	case KindUser,
 		KindNdau,
@@ -81,7 +81,7 @@ const MinDataLength = 12
 // would normally be a public key). It is an error if len(data) < MinDataLength
 // or if kind is not a valid kind.
 func Generate(kind Kind, data []byte) (string, error) {
-	if !isValidKind(kind) {
+	if !IsValidKind(kind) {
 		return "", newError("invalid kind")
 	}
 	if len(data) < MinDataLength {
@@ -108,7 +108,7 @@ func Validate(addr string) error {
 	if !strings.HasPrefix(addr, "nd") {
 		return newError("not an ndau key")
 	}
-	if !isValidKind(Kind(addr[2:3])) {
+	if !IsValidKind(Kind(addr[2:3])) {
 		return newError("unknown address kind " + addr[2:3])
 	}
 	enc := base32.NewEncoding(NdauAlphabet)
