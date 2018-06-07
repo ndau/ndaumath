@@ -29,7 +29,7 @@ func (args) Description() string {
 	Generates or validates ndau keys.
 
 	Examples:
-		addrtool ndapd3tpktk6gx6m6udr7wrkuyz6ac5j97z8vucp5vkheeby
+		addrtool ndaq38uvj6euuip3cepg8m5vbcm9s3vetxv5pzis
 		# valid, no output, errcode 0
 
 		addrtool ndbad
@@ -48,7 +48,7 @@ func (args) Description() string {
 		# 00000000  54 65 78 74 4f 66 4d 79  50 75 62 6c 69 63 4b 65  |TextOfMyPublicKe|
 		# 00000010  79                                                |y|
 		#
-		# ndan5g3prz6zefjm5jfm5jddv5sguse5qp8gsicmaq5jadcp
+		# ndah58mucwx7wux7wtt372djicpzg9diebfshivh
 
 		head -c 100 /dev/urandom |addrtool --generate --input -
 		# Reads 100 random bytes from /dev/urandom and pipes them to addrtool to generate a new key.

@@ -3,8 +3,9 @@ package address
 import (
 	"crypto/sha256"
 	"encoding/base32"
-	"hash/adler32"
 	"strings"
+
+	"github.com/howeyc/crc16"
 )
 
 // An ndau address is the result of a mathematical process over a public key. It
@@ -50,6 +51,7 @@ const (
 	KindExchange  Kind = "x"
 )
 
+// IsValidKind returns true if a is one of the currently-valid Kinds
 func IsValidKind(a Kind) bool {
 	switch a {
 	case KindUser,
@@ -70,7 +72,7 @@ func IsValidKind(a Kind) bool {
 // The possibility of collision is low: As of June 2018, the BTC hashpower is 42
 // exahashes per second. If that much hashpower is applied to this problem, the
 // likelihood of generating a collision in one year is about 1 in 10^19.
-const keyLength = 24
+const keyLength = 21
 
 // MinDataLength is the minimum acceptable length for the data to be used
 // as input to generate. This will prevent simple errors like trying to
@@ -80,6 +82,10 @@ const MinDataLength = 12
 // Generate creates an address of a given kind from an array of bytes (which
 // would normally be a public key). It is an error if len(data) < MinDataLength
 // or if kind is not a valid kind.
+// Since length changes are explicitly disallowed, we can use a relatively simple
+// crc model to have a short (16-bit) checksum and still be quite safe against
+// transposition and typos. CCITT has the nice property that after appending it,
+// the checksum of the result is zero.
 func Generate(kind Kind, data []byte) (string, error) {
 	if !IsValidKind(kind) {
 		return "", newError("invalid kind")
@@ -92,9 +98,8 @@ func Generate(kind Kind, data []byte) (string, error) {
 	hdr := []byte{byte((prefix >> 8) & 0xFF), byte(prefix & 0xFF)}
 	h1 := sha256.Sum256(data)
 	h2 := append(hdr, h1[len(h1)-keyLength:]...)
-	ck := adler32.New()
-	ck.Write(h2)
-	h2 = append(h2, ck.Sum(nil)...)
+	ck := crc16.ChecksumCCITT(h2)
+	h2 = append(h2, byte((ck>>8)&0xFF), byte(ck&0xFF))
 
 	enc := base32.NewEncoding(NdauAlphabet)
 	r := enc.EncodeToString(h2)
@@ -116,11 +121,9 @@ func Validate(addr string) error {
 	if err != nil {
 		return err
 	}
-	k := h[:len(h)-4]
-	ck := adler32.New()
-	ck.Write(k)
-	ckb := ck.Sum(nil)
-	if string(ckb) != string(h[len(h)-4:]) {
+	// now check the two bytes of the checksum
+	ck := crc16.ChecksumCCITT(h[:len(h)-2])
+	if byte((ck>>8)&0xFF) != h[len(h)-2] || byte(ck&0xFF) != h[len(h)-1] {
 		return newError("checksum failure")
 	}
 	return nil
