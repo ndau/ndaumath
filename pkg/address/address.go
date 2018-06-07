@@ -77,7 +77,7 @@ const keyLength = 24
 // create an address from an empty key.
 const MinDataLength = 12
 
-// Generate creates an address of a given type from an array of bytes (which
+// Generate creates an address of a given kind from an array of bytes (which
 // would normally be a public key). It is an error if len(data) < MinDataLength
 // or if kind is not a valid kind.
 func Generate(kind Kind, data []byte) (string, error) {
