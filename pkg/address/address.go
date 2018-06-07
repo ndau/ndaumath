@@ -3,6 +3,7 @@ package address
 import (
 	"crypto/sha256"
 	"encoding/base32"
+	"fmt"
 	"strings"
 
 	"github.com/howeyc/crc16"
@@ -63,6 +64,8 @@ func IsValidKind(a Kind) bool {
 	return false
 }
 
+// KeyLength is the number of bytes that we trim the input hash to.
+//
 // We don't want any dead characters, so since we trim the generated
 // SHA hash anyway, we trim it to a length that plays well with the above.
 // (Pads the result out to a multiple of 5 bytes so that a byte32 encoding has
@@ -72,7 +75,10 @@ func IsValidKind(a Kind) bool {
 // The possibility of collision is low: As of June 2018, the BTC hashpower is 42
 // exahashes per second. If that much hashpower is applied to this problem, the
 // likelihood of generating a collision in one year is about 1 in 10^19.
-const keyLength = 21
+const KeyLength = 26
+
+// AddrLength is the length of the generated address, in characters
+const AddrLength = 48
 
 // MinDataLength is the minimum acceptable length for the data to be used
 // as input to generate. This will prevent simple errors like trying to
@@ -97,7 +103,7 @@ func Generate(kind Kind, data []byte) (string, error) {
 	prefix := ndx("n")<<11 + ndx("d")<<6 + ndx(string(kind))<<1
 	hdr := []byte{byte((prefix >> 8) & 0xFF), byte(prefix & 0xFF)}
 	h1 := sha256.Sum256(data)
-	h2 := append(hdr, h1[len(h1)-keyLength:]...)
+	h2 := append(hdr, h1[len(h1)-KeyLength:]...)
 	ck := crc16.ChecksumCCITT(h2)
 	h2 = append(h2, byte((ck>>8)&0xFF), byte(ck&0xFF))
 
@@ -113,6 +119,9 @@ func Validate(addr string) error {
 	if !strings.HasPrefix(addr, "nd") {
 		return newError("not an ndau key")
 	}
+	if len(addr) != AddrLength {
+		return fmt.Errorf("Expected %d characters, found %d", AddrLength, len(addr))
+	}
 	if !IsValidKind(Kind(addr[2:3])) {
 		return newError("unknown address kind " + addr[2:3])
 	}
@@ -124,6 +133,14 @@ func Validate(addr string) error {
 	// now check the two bytes of the checksum
 	ck := crc16.ChecksumCCITT(h[:len(h)-2])
 	if byte((ck>>8)&0xFF) != h[len(h)-2] || byte(ck&0xFF) != h[len(h)-1] {
+		// uncomment these lines if you want to regenerate a key
+		// that matches the main body of the key you gave, but with a proper checksum
+		// -------
+		// h[len(h)-2] = byte((ck >> 8) & 0xFF)
+		// h[len(h)-1] = byte(ck & 0xFF)
+		// s := base32.NewEncoding(NdauAlphabet).EncodeToString(h)
+		// fmt.Println(s)
+		// -------
 		return newError("checksum failure")
 	}
 	return nil
