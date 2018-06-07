@@ -165,3 +165,21 @@ func TestTimestamp_Sub(t *testing.T) {
 		})
 	}
 }
+
+func TestTimestamp_String(t *testing.T) {
+	tests := []struct {
+		name string
+		t    Timestamp
+		want string
+	}{
+		{"a", 0, constants.EpochStart},
+		{"b", 1000000 * (24*60*60*17 + 14*60*60 + 21*60), "2018-01-18T14:21:00Z"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.t.String(); got != tt.want {
+				t.Errorf("Timestamp.String() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

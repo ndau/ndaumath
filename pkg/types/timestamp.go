@@ -86,6 +86,11 @@ func (t Timestamp) Sub(d Duration) Timestamp {
 	return ts
 }
 
+func (t Timestamp) String() string {
+	tt := constants.Epoch.Add(time.Duration(t) * time.Microsecond)
+	return tt.Format(constants.TimestampFormat)
+}
+
 const (
 	// Millisecond is a thousandth of a second
 	Millisecond = 1
