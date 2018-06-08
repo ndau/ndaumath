@@ -7,6 +7,8 @@ import (
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
 )
 
+//go:generate msgp -tests=0
+
 // A Timestamp is a single moment in time.
 //
 // It is monotonically increasing with the passage of time, and represents

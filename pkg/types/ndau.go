@@ -7,6 +7,8 @@ import (
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
 )
 
+//go:generate msgp -tests=0
+
 // Ndau is a value that holds a single amount
 // of ndau. Unlike an int64, it is prevented from overflowing.
 type Ndau int64
