@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/howeyc/crc16"
+	"github.com/sigurn/crc16"
 )
 
 // An ndau address is the result of a mathematical process over a public key. It
@@ -18,7 +18,11 @@ import (
 // NdauAlphabet is the encoding alphabet we use for byte32 encoding
 // It consists of the lowercase alphabet and digits, without l, 1, 0, and o.
 // When decoding, we will accept either upper or lower case.
+//
+// The CRC16 polynomial used is AUG_CCITT: `0x1021`
 const NdauAlphabet = "abcdefghijkmnpqrstuvwxyz23456789"
+
+var ndauTable = crc16.MakeTable(crc16.CRC16_AUG_CCITT)
 
 // ndx looks up the value of a letter in the alphabet.
 func ndx(c string) int {
@@ -90,8 +94,7 @@ const MinDataLength = 12
 // or if kind is not a valid kind.
 // Since length changes are explicitly disallowed, we can use a relatively simple
 // crc model to have a short (16-bit) checksum and still be quite safe against
-// transposition and typos. CCITT has the nice property that after appending it,
-// the checksum of the result is zero.
+// transposition and typos.
 func Generate(kind Kind, data []byte) (string, error) {
 	if !IsValidKind(kind) {
 		return "", newError("invalid kind")
@@ -104,7 +107,7 @@ func Generate(kind Kind, data []byte) (string, error) {
 	hdr := []byte{byte((prefix >> 8) & 0xFF), byte(prefix & 0xFF)}
 	h1 := sha256.Sum256(data)
 	h2 := append(hdr, h1[len(h1)-KeyLength:]...)
-	ck := crc16.ChecksumCCITT(h2)
+	ck := crc16.Checksum(h2, ndauTable)
 	h2 = append(h2, byte((ck>>8)&0xFF), byte(ck&0xFF))
 
 	enc := base32.NewEncoding(NdauAlphabet)
@@ -131,7 +134,7 @@ func Validate(addr string) error {
 		return err
 	}
 	// now check the two bytes of the checksum
-	ck := crc16.ChecksumCCITT(h[:len(h)-2])
+	ck := crc16.Checksum(h[:len(h)-2], ndauTable)
 	if byte((ck>>8)&0xFF) != h[len(h)-2] || byte(ck&0xFF) != h[len(h)-1] {
 		// uncomment these lines if you want to regenerate a key
 		// that matches the main body of the key you gave, but with a proper checksum
