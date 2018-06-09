@@ -34,6 +34,17 @@ func TestArbitraryAddressesAreValid(t *testing.T) {
 	}
 }
 
+func TestKnownKeyGeneratesKnownValue(t *testing.T) {
+	key := make([]byte, 16)
+	for i := byte(0); i < 16; i++ {
+		key[i] = i
+	}
+
+	address, err := Generate(KindUser, key)
+	require.NoError(t, err)
+	require.Equal(t, "ndadprx764ciigti8d8whtw2kct733r85qvjukhqhke3d3ec", address)
+}
+
 func BenchmarkGeneration(b *testing.B) {
 	key := make([]byte, 32)
 	kinds := getKinds()
