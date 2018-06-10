@@ -1,3 +1,5 @@
+```vb
+
 '
 '   ndau Price Calculation Functions 1.0
 '
@@ -136,3 +138,5 @@ End Function
 Function ndau_sold_at_target_price(target_price)
     ndau_sold_at_target_price = Int(Log(target_price) / Log(Phase1BlockPriceRatio)) * 1000
 End Function
+
+```
