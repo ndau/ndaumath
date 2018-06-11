@@ -194,13 +194,13 @@ func TestDuration_UpdateWeightedAverageAge(t *testing.T) {
 		balance  int
 		waa      int
 	}{
-		{0, 100, 100, 0},
-		{30, 0, 100, 30},
-		{30, 50, 150, 20},
-		{40, -50, 100, 30},
-		{60, 100, 200, 25},
-		{80, -200, 0, 45},
-		{100, 100, 100, 0},
+		{0, 100, 100, 0},   // create an account
+		{30, 0, 100, 30},   // eai calculations; no transfer
+		{30, 50, 150, 20},  // transfer in
+		{40, -50, 100, 30}, // withdraw
+		{60, 100, 200, 25}, // transfer in
+		{80, -200, 0, 45},  // withdraw everything
+		{100, 100, 100, 0}, // start again from 0
 	}
 
 	for index := range data {
