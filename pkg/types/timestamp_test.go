@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -181,5 +182,41 @@ func TestTimestamp_String(t *testing.T) {
 				t.Errorf("Timestamp.String() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestDuration_UpdateWeightedAverageAge(t *testing.T) {
+	// we derive the tests from some canonical data
+	// computed in excel and validated by hand
+	data := []struct {
+		day      int
+		transfer int
+		balance  int
+		waa      int
+	}{
+		{0, 100, 100, 0},
+		{30, 0, 100, 30},
+		{30, 50, 150, 20},
+		{40, -50, 100, 30},
+		{60, 100, 200, 25},
+		{80, -200, 0, 45},
+		{100, 100, 100, 0},
+	}
+
+	for index := range data {
+		if index > 0 {
+			sinceLastUpdate := Duration((data[index].day - data[index-1].day) * Day)
+			transferQty := Ndau(data[index].transfer * constants.QuantaPerUnit)
+			previousBalance := Ndau(data[index-1].balance * constants.QuantaPerUnit)
+			waa := Duration(data[index-1].waa * Day)
+			expectedWAA := Duration(data[index].waa * Day)
+
+			t.Run(fmt.Sprintf("row %d", index), func(t *testing.T) {
+				(&waa).UpdateWeightedAverageAge(sinceLastUpdate, transferQty, previousBalance)
+				if waa != expectedWAA {
+					t.Errorf("WAA: %d; expected %d", waa, expectedWAA)
+				}
+			})
+		}
 	}
 }

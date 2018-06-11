@@ -2,6 +2,7 @@ package types
 
 import (
 	"errors"
+	"math/big"
 	"time"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
@@ -94,8 +95,10 @@ func (t Timestamp) String() string {
 }
 
 const (
+	// Microsecond is a thousandth of a millisecond
+	Microsecond = 1
 	// Millisecond is a thousandth of a second
-	Millisecond = 1
+	Millisecond = Microsecond * 1000
 	// Second is the duration of 9 192 631 770 periods of the
 	// radiation corresponding to the transition between the two
 	// hyperfine levels of the ground state of the cesium 133 atom,
@@ -106,3 +109,30 @@ const (
 	// Year is exactly 365 days
 	Year = Day * 365
 )
+
+// UpdateWeightedAverageAge computes the weighted average age
+func (d *Duration) UpdateWeightedAverageAge(
+	sinceLastUpdate Duration,
+	transferQty Ndau,
+	previousBalance Ndau,
+) error {
+	waa := new(big.Int)
+	if int64(transferQty) < 0 {
+		waa.Add(big.NewInt(int64(*d)), big.NewInt(int64(sinceLastUpdate)))
+	} else {
+		newBalance, err := previousBalance.Add(transferQty)
+		if err != nil {
+			return err
+		}
+		// we have to use bigints to prevent the multiplication from overflow
+		nb := big.NewInt(int64(newBalance))
+		pb := big.NewInt(int64(previousBalance))
+		dur := big.NewInt(int64(*d + sinceLastUpdate))
+		waa.Div(waa.Mul(dur, pb), nb)
+	}
+	if !waa.IsInt64() {
+		return errors.New("Duration overflow in UpdateWeightedAverageAge")
+	}
+	*d = Duration(waa.Int64())
+	return nil
+}
