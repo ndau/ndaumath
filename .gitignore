@@ -1,2 +1,5 @@
 cmd/addrtool/addrtool
+cmd/sigtool/sigtool
+cmd/sigtool/key
+cmd/sigtool/key.pub
 debug.test
