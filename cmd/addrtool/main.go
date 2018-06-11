@@ -26,7 +26,7 @@ type args struct {
 
 func (args) Description() string {
 	return `
-	Generates or validates ndau keys.
+	Generates or validates ndau account addresses.
 
 	Examples:
 		addrtool ndaei7fgutsm97h8hxfhkvbcdruqxu9p7narzerrh88gihhq
