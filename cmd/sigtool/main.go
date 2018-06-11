@@ -20,14 +20,15 @@ import (
 type args struct {
 	Generate   bool     `help:"generate a keypair from the input data"`
 	Sign       bool     `help:"sign a block of data"`
-	Validate   bool     `help:"validate a signature"`
+	Verify     bool     `help:"verify a signature"`
 	Hex        bool     `arg:"-x" help:"interpret input data as hex bytes"`
 	Verbose    bool     `arg:"-v" help:"Be verbose"`
 	OutputFile string   `arg:"-o" help:"Output filename"`
 	Input      string   `arg:"-i" help:"Input filename"`
 	Data       []string `arg:"positional"`
 	Comment    string   `arg:"-c" help:"Comment for key files"`
-	Keyfile    string   `arg:"-k" help:"Key filename prefix"`
+	Keyfile    string   `arg:"-k" help:"Key filename"`
+	Sigfile    string   `arg:"-s" help:"Signature filename"`
 }
 
 func (args) Description() string {
@@ -40,12 +41,15 @@ func (args) Description() string {
 	# default keyfile is "key"
 	# if there is no input data at all, reads from the system entropy source
 
-	signtool --sign -k keyfile -i inputstream
-	# reads data from inputstream, hashes it, and signs it with the private key from keyfile;
+	signtool --sign -k keyfile bytestream
+	# reads data from bytestream, hashes it, and signs it with the private key from keyfile;
 	# sends the signature to outputfile
 
-	signtool --validate -k keyfile -s sigfile -i inputfile
-	# reads data from inputstream and validates the signature (using keyfile.pub)
+	signtool --verify -k keyfile -s sigfile bytestream
+	# reads data from bytestream and verifies the signature (using keyfile.pub)
+
+	bytestream can be command line arguments (strings or hex with -x), or you can use
+	-i to read data from a named file; "-i -" reads from stdin.
 	`
 }
 
@@ -168,6 +172,21 @@ func readPrivateKey(filename string) (signature.PrivateKey, error) {
 	return sig, err
 }
 
+func readSignature(filename string) (signature.Signature, error) {
+	sig := signature.Signature{}
+	f, err := os.Open(filename)
+	if err != nil {
+		return sig, err
+	}
+	defer f.Close()
+	b, err := readAsHex(f)
+	if err != nil {
+		return sig, err
+	}
+	err = sig.Unmarshal(b)
+	return sig, err
+}
+
 func main() {
 	var args args
 	args.Keyfile = "key"
@@ -230,7 +249,7 @@ func main() {
 	case args.Sign:
 		// we're generating a signature so we need the private key
 		if len(data) == 0 {
-			fmt.Fprintf(os.Stderr, "we need data to sign", err)
+			fmt.Fprintln(os.Stderr, "we need data to sign")
 			os.Exit(1)
 		}
 
@@ -257,7 +276,34 @@ func main() {
 		f.WriteString(wrapHex(b, 80))
 		f.Close()
 
-	case args.Validate:
+		pub, _ := readPublicKey(args.Keyfile + ".pub")
+		fmt.Println(sig.Verify(data, pub))
+
+	case args.Verify:
+		if len(data) == 0 {
+			fmt.Fprintln(os.Stderr, "we need data to verify a signature of it")
+			os.Exit(1)
+		}
+		pub, err := readPublicKey(args.Keyfile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s reading public key '%s'\n", err, args.Keyfile)
+			os.Exit(1)
+		}
+
+		sig, err := readSignature(args.Sigfile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s reading signature file '%s'\n", err, args.Keyfile)
+			os.Exit(1)
+		}
+		if !sig.Verify(data, pub) {
+			if args.Verbose {
+				fmt.Println("Signature not verified!")
+			}
+			os.Exit(1)
+		}
+		if args.Verbose {
+			fmt.Println("OK")
+		}
 	}
 	os.Exit(0)
 
