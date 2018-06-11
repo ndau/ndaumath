@@ -212,7 +212,10 @@ func TestDuration_UpdateWeightedAverageAge(t *testing.T) {
 			expectedWAA := Duration(data[index].waa * Day)
 
 			t.Run(fmt.Sprintf("row %d", index), func(t *testing.T) {
-				(&waa).UpdateWeightedAverageAge(sinceLastUpdate, transferQty, previousBalance)
+				err := (&waa).UpdateWeightedAverageAge(sinceLastUpdate, transferQty, previousBalance)
+				if err != nil {
+					t.Errorf("Update weighted average age returned err: %s", err.Error())
+				}
 				if waa != expectedWAA {
 					t.Errorf("WAA: %d; expected %d", waa, expectedWAA)
 				}
