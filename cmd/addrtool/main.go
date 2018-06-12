@@ -132,8 +132,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		for _, a := range addrs {
-			v := address.Validate(a)
+		for _, addr := range addrs {
+			a, v := address.Validate(addr)
 			if v == nil {
 				if args.Verbose {
 					fmt.Printf("%s: valid\n", a)

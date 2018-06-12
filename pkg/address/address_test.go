@@ -44,7 +44,7 @@ func TestKnownKeyGeneratesKnownValue(t *testing.T) {
 
 	address, err := Generate(KindUser, key)
 	require.NoError(t, err)
-	require.Equal(t, Address{"ndadprx764ciigti8d8whtw2kct733r85qvjukhqhke3dka4"}, address)
+	require.Equal(t, "ndadprx764ciigti8d8whtw2kct733r85qvjukhqhke3dka4", address.String())
 }
 
 func BenchmarkGeneration(b *testing.B) {

@@ -152,3 +152,8 @@ func Validate(addr string) (Address, error) {
 	}
 	return Address{addr: addr}, nil
 }
+
+// String gives us a human-readable form of an address, because sometimes we just need that.
+func (z Address) String() string {
+	return z.addr
+}
