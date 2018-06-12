@@ -29,7 +29,9 @@ func TestArbitraryAddressesAreValid(t *testing.T) {
 			address, err := Generate(kinds[i&3], key)
 			require.NoError(t, err)
 			t.Log("address", address)
-			require.NoError(t, Validate(address))
+			address, err = Validate(address.addr)
+			t.Log("address", address)
+			require.NoError(t, err)
 		})
 	}
 }
@@ -42,7 +44,7 @@ func TestKnownKeyGeneratesKnownValue(t *testing.T) {
 
 	address, err := Generate(KindUser, key)
 	require.NoError(t, err)
-	require.Equal(t, "ndadprx764ciigti8d8whtw2kct733r85qvjukhqhke3dka4", address)
+	require.Equal(t, Address{"ndadprx764ciigti8d8whtw2kct733r85qvjukhqhke3dka4"}, address)
 }
 
 func BenchmarkGeneration(b *testing.B) {

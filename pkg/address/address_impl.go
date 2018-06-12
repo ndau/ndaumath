@@ -34,6 +34,10 @@ func ndx(c string) int {
 // enforced by the blockchain.
 type Kind string
 
+func emptyA() Address {
+	return Address{}
+}
+
 // Error is the type of all the errors this package returns
 type Error struct {
 	msg string
@@ -95,12 +99,12 @@ const MinDataLength = 12
 // Since length changes are explicitly disallowed, we can use a relatively simple
 // crc model to have a short (16-bit) checksum and still be quite safe against
 // transposition and typos.
-func Generate(kind Kind, data []byte) (string, error) {
+func Generate(kind Kind, data []byte) (Address, error) {
 	if !IsValidKind(kind) {
-		return "", newError("invalid kind")
+		return emptyA(), newError("invalid kind")
 	}
 	if len(data) < MinDataLength {
-		return "", newError("insufficient quantity of data")
+		return emptyA(), newError("insufficient quantity of data")
 	}
 
 	prefix := ndx("n")<<11 + ndx("d")<<6 + ndx(string(kind))<<1
@@ -112,26 +116,26 @@ func Generate(kind Kind, data []byte) (string, error) {
 
 	enc := base32.NewEncoding(NdauAlphabet)
 	r := enc.EncodeToString(h2)
-	return r, nil
+	return Address{addr: r}, nil
 }
 
 // Validate tests if an address is valid on its face.
 // It checks the the nd prefix, the address kind, and the checksum.
-func Validate(addr string) error {
+func Validate(addr string) (Address, error) {
 	addr = strings.ToLower(addr)
 	if !strings.HasPrefix(addr, "nd") {
-		return newError("not an ndau key")
+		return emptyA(), newError("not an ndau key")
 	}
 	if len(addr) != AddrLength {
-		return fmt.Errorf("Expected %d characters, found %d", AddrLength, len(addr))
+		return emptyA(), fmt.Errorf("Expected %d characters, found %d", AddrLength, len(addr))
 	}
 	if !IsValidKind(Kind(addr[2:3])) {
-		return newError("unknown address kind " + addr[2:3])
+		return emptyA(), newError("unknown address kind " + addr[2:3])
 	}
 	enc := base32.NewEncoding(NdauAlphabet)
 	h, err := enc.DecodeString(addr)
 	if err != nil {
-		return err
+		return emptyA(), err
 	}
 	// now check the two bytes of the checksum
 	ck := crc16.Checksum(h[:len(h)-2], ndauTable)
@@ -144,7 +148,7 @@ func Validate(addr string) error {
 		// s := base32.NewEncoding(NdauAlphabet).EncodeToString(h)
 		// fmt.Println(s)
 		// -------
-		return newError("checksum failure")
+		return emptyA(), newError("checksum failure")
 	}
-	return nil
+	return Address{addr: addr}, nil
 }
