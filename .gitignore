@@ -3,3 +3,6 @@ cmd/sigtool/sigtool
 cmd/sigtool/key
 cmd/sigtool/key.pub
 debug.test
+**/*.js
+**/*.js.map
+.DS_Store
