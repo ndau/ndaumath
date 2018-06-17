@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -49,6 +50,9 @@ func (args) Description() string {
 		# 00000010  79                                                |y|
 		#
 		# ndaar2qpvnyz58mucwx7wux7wtt372djicpzg9diebfsgmwf
+
+		addrtool --generate -i key.pub
+		# if key.pub is an ndau public key, this uses it to generate a proper ndau public address from it
 
 		head -c 100 /dev/urandom |addrtool --generate --input -
 		# Reads 100 random bytes from /dev/urandom and pipes them to addrtool to generate a new key.
@@ -156,7 +160,18 @@ func main() {
 	if args.Hex {
 		data, err = readAsHex(in)
 	} else {
+		// read data from the file
 		data, err = ioutil.ReadAll(in)
+		// but take a look to see if the data looks like a public key
+		// if so, treat the key as the data stream
+		sp := bytes.Split(data, []byte{' '})
+		if len(sp) == 3 && string(sp[0]) == "ed25519ndau" {
+			// it was a key file, so treat it as a stream of hex
+			h, err := readAsHex(bytes.NewReader(sp[1]))
+			if err == nil {
+				data = h
+			}
+		}
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)

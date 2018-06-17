@@ -2,10 +2,9 @@ package address
 
 import (
 	"crypto/sha256"
-	"encoding/base32"
-	"fmt"
 	"strings"
 
+	"github.com/oneiro-ndev/ndaumath/pkg/b32"
 	"github.com/sigurn/crc16"
 )
 
@@ -15,19 +14,8 @@ import (
 // information. The result is a key that always starts with the letters 'nd' and
 // one more character that specifies the type of address.
 
-// NdauAlphabet is the encoding alphabet we use for byte32 encoding
-// It consists of the lowercase alphabet and digits, without l, 1, 0, and o.
-// When decoding, we will accept either upper or lower case.
-//
 // The CRC16 polynomial used is AUG_CCITT: `0x1021`
-const NdauAlphabet = "abcdefghijkmnpqrstuvwxyz23456789"
-
 var ndauTable = crc16.MakeTable(crc16.CRC16_AUG_CCITT)
-
-// ndx looks up the value of a letter in the alphabet.
-func ndx(c string) int {
-	return strings.Index(NdauAlphabet, c)
-}
 
 // Kind indicates the type of address in use; this is an external indication
 // designed to help users evaluate their own actions; it may or may not be
@@ -72,18 +60,18 @@ func IsValidKind(a Kind) bool {
 	return false
 }
 
-// KeyLength is the number of bytes that we trim the input hash to.
+// HashTrim is the number of bytes that we trim the input hash to.
 //
 // We don't want any dead characters, so since we trim the generated
-// SHA hash anyway, we trim it to a length that plays well with the above.
-// (Pads the result out to a multiple of 5 bytes so that a byte32 encoding has
-// no filler).
+// SHA hash anyway, we trim it to a length that plays well with the above,
+// meaning that we want it to pad the result out to a multiple of 5 bytes
+// so that a byte32 encoding has no filler).
 //
-// Note that ETH does this too, and uses a 20-byte subset of a 32-byte hash.
+// Note that ETH does something similar, and uses a 20-byte subset of a 32-byte hash.
 // The possibility of collision is low: As of June 2018, the BTC hashpower is 42
 // exahashes per second. If that much hashpower is applied to this problem, the
 // likelihood of generating a collision in one year is about 1 in 10^19.
-const KeyLength = 26
+const HashTrim = 26
 
 // AddrLength is the length of the generated address, in characters
 const AddrLength = 48
@@ -106,16 +94,21 @@ func Generate(kind Kind, data []byte) (Address, error) {
 	if len(data) < MinDataLength {
 		return emptyA(), newError("insufficient quantity of data")
 	}
+	// the hash contains the last HashTrim bytes of the sha256 of the data
+	h := sha256.Sum256(data)
+	h1 := h[len(h)-HashTrim:]
 
-	prefix := ndx("n")<<11 + ndx("d")<<6 + ndx(string(kind))<<1
+	// an ndau address always starts with nd and a "kind" character
+	// so we figure out what characters we want and build that into a header
+	prefix := b32.Index("n")<<11 + b32.Index("d")<<6 + b32.Index(string(kind))<<1
 	hdr := []byte{byte((prefix >> 8) & 0xFF), byte(prefix & 0xFF)}
-	h1 := sha256.Sum256(data)
-	h2 := append(hdr, h1[len(h1)-KeyLength:]...)
+	h2 := append(hdr, h1...)
+	// then we checksum that result
 	ck := crc16.Checksum(h2, ndauTable)
+	// and append it to the address
 	h2 = append(h2, byte((ck>>8)&0xFF), byte(ck&0xFF))
 
-	enc := base32.NewEncoding(NdauAlphabet)
-	r := enc.EncodeToString(h2)
+	r := b32.Encode(h2)
 	return Address{addr: r}, nil
 }
 
@@ -127,13 +120,12 @@ func Validate(addr string) (Address, error) {
 		return emptyA(), newError("not an ndau key")
 	}
 	if len(addr) != AddrLength {
-		return emptyA(), fmt.Errorf("Expected %d characters, found %d", AddrLength, len(addr))
+		return emptyA(), newError("not a valid address length")
 	}
 	if !IsValidKind(Kind(addr[2:3])) {
 		return emptyA(), newError("unknown address kind " + addr[2:3])
 	}
-	enc := base32.NewEncoding(NdauAlphabet)
-	h, err := enc.DecodeString(addr)
+	h, err := b32.Decode(addr)
 	if err != nil {
 		return emptyA(), err
 	}
