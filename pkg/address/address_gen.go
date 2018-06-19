@@ -15,8 +15,12 @@ func (z *Address) DecodeMsg(dc *msgp.Reader) (err error) {
 	if err != nil {
 		return
 	}
-	if zb0001 != 0 {
-		err = msgp.ArrayError{Wanted: 0, Got: zb0001}
+	if zb0001 != 1 {
+		err = msgp.ArrayError{Wanted: 1, Got: zb0001}
+		return
+	}
+	z.addr, err = dc.ReadString()
+	if err != nil {
 		return
 	}
 	return
@@ -24,8 +28,12 @@ func (z *Address) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z Address) EncodeMsg(en *msgp.Writer) (err error) {
-	// array header, size 0
-	err = en.Append(0x90)
+	// array header, size 1
+	err = en.Append(0x91)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.addr)
 	if err != nil {
 		return
 	}
@@ -35,8 +43,9 @@ func (z Address) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z Address) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// array header, size 0
-	o = append(o, 0x90)
+	// array header, size 1
+	o = append(o, 0x91)
+	o = msgp.AppendString(o, z.addr)
 	return
 }
 
@@ -47,8 +56,12 @@ func (z *Address) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	if err != nil {
 		return
 	}
-	if zb0001 != 0 {
-		err = msgp.ArrayError{Wanted: 0, Got: zb0001}
+	if zb0001 != 1 {
+		err = msgp.ArrayError{Wanted: 1, Got: zb0001}
+		return
+	}
+	z.addr, bts, err = msgp.ReadStringBytes(bts)
+	if err != nil {
 		return
 	}
 	o = bts
@@ -57,6 +70,6 @@ func (z *Address) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z Address) Msgsize() (s int) {
-	s = 1
+	s = 1 + msgp.StringPrefixSize + len(z.addr)
 	return
 }
