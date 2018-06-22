@@ -47,6 +47,14 @@ func TestKnownKeyGeneratesKnownValue(t *testing.T) {
 	require.Equal(t, "ndadprx764ciigti8d8whtw2kct733r85qvjukhqhke3dka4", address.String())
 }
 
+func TestKnownKeyValidates(t *testing.T) {
+	_, err := Validate("ndadprx764ciigti8d8whtw2kct733r85qvjukhqhke3dka4")
+	require.NoError(t, err)
+	// fail with a minor change
+	_, err = Validate("ndxdprx764ciigti8d8whtw2kct733r85qvjukhqhke3dka4")
+	require.Error(t, err)
+}
+
 func BenchmarkGeneration(b *testing.B) {
 	key := make([]byte, 32)
 	kinds := getKinds()

@@ -22,8 +22,8 @@ func Encode(b []byte) string {
 	return r
 }
 
-// Decode converts a string back to a byte stream
+// Decode converts a string back to a byte stream; case is insignificant.
 func Decode(s string) ([]byte, error) {
 	enc := base32.NewEncoding(NdauAlphabet)
-	return enc.DecodeString(s)
+	return enc.DecodeString(strings.ToLower(s))
 }

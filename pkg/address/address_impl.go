@@ -2,10 +2,10 @@ package address
 
 import (
 	"crypto/sha256"
+	"errors"
 	"strings"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/b32"
-	"github.com/sigurn/crc16"
 )
 
 // An ndau address is the result of a mathematical process over a public key. It
@@ -13,9 +13,6 @@ import (
 // hash of the key, concatenated with some additional marker and checksum
 // information. The result is a key that always starts with the letters 'nd' and
 // one more character that specifies the type of address.
-
-// The CRC16 polynomial used is AUG_CCITT: `0x1021`
-var ndauTable = crc16.MakeTable(crc16.CRC16_AUG_CCITT)
 
 // Kind indicates the type of address in use; this is an external indication
 // designed to help users evaluate their own actions; it may or may not be
@@ -58,6 +55,22 @@ func IsValidKind(a Kind) bool {
 		return true
 	}
 	return false
+}
+
+// NewKind constructs an address.Kind, given a string corresponding to the kind value (one of anex)
+func NewKind(kind string) (Kind, error) {
+	kinds := map[string]Kind{
+		string(KindUser):      KindUser,
+		string(KindNdau):      KindNdau,
+		string(KindExchange):  KindExchange,
+		string(KindEndowment): KindEndowment,
+	}
+
+	k, ok := kinds[kind]
+	if ok {
+		return k, nil
+	}
+	return k, errors.New("invalid kind character")
 }
 
 // HashTrim is the number of bytes that we trim the input hash to.
@@ -103,10 +116,8 @@ func Generate(kind Kind, data []byte) (Address, error) {
 	prefix := b32.Index("n")<<11 + b32.Index("d")<<6 + b32.Index(string(kind))<<1
 	hdr := []byte{byte((prefix >> 8) & 0xFF), byte(prefix & 0xFF)}
 	h2 := append(hdr, h1...)
-	// then we checksum that result
-	ck := crc16.Checksum(h2, ndauTable)
-	// and append it to the address
-	h2 = append(h2, byte((ck>>8)&0xFF), byte(ck&0xFF))
+	// then we checksum that result and append the checksum
+	h2 = append(h2, b32.Checksum16(h2)...)
 
 	r := b32.Encode(h2)
 	return Address{addr: r}, nil
@@ -130,8 +141,7 @@ func Validate(addr string) (Address, error) {
 		return emptyA(), err
 	}
 	// now check the two bytes of the checksum
-	ck := crc16.Checksum(h[:len(h)-2], ndauTable)
-	if byte((ck>>8)&0xFF) != h[len(h)-2] || byte(ck&0xFF) != h[len(h)-1] {
+	if !b32.Check(h[:len(h)-2], h[len(h)-2:]) {
 		// uncomment these lines if you want to regenerate a key
 		// that matches the main body of the key you gave, but with a proper checksum
 		// -------
