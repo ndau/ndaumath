@@ -1,8 +1,8 @@
 package address
 
-//go:generate msgp
+///go:generate msgp
 
-//msgp:tuple Address
+///msgp:tuple Address
 
 // An Address is a 48-character string uniquely identifying an Ndau account
 //
