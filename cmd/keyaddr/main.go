@@ -18,6 +18,13 @@ package main
 //  key.Address() : address -- generates an address from a public key
 
 import (
+	"encoding/hex"
+	"errors"
+
+	"github.com/btcsuite/btcd/btcec"
+
+	"github.com/oneiro-ndev/ndaumath/pkg/b32"
+
 	"github.com/gopherjs/gopherjs/js"
 	"github.com/miratronix/jopher"
 	"github.com/oneiro-ndev/ndaumath/pkg/address"
@@ -37,6 +44,16 @@ type Key struct {
 	Address       func(...interface{}) *js.Object `js:"Address"`
 }
 
+func (k *Key) build(s string) *js.Object {
+	k.Key = s
+	k.Neuter = jopher.Promisify(k.neuter)
+	k.Child = jopher.Promisify(k.child)
+	k.HardenedChild = jopher.Promisify(k.hardenedChild)
+	k.Sign = jopher.Promisify(k.sign)
+	// k.Address = jopher.Promisify(k.address)
+	return k.Object
+}
+
 // Address is the JS object associated with an address.
 type Address struct {
 	*js.Object
@@ -49,6 +66,12 @@ type Signature struct {
 	*js.Object
 	Signature string                          `js:"signature"`
 	Verify    func(...interface{}) *js.Object `js:"Verify"`
+}
+
+func (s *Signature) build(sig string) *js.Object {
+	s.Signature = sig
+	s.Verify = jopher.Promisify(s.verify)
+	return s.Object
 }
 
 func main() {
@@ -65,16 +88,6 @@ func main() {
 	// Promise that resolves with the new key, or rejects with an error.
 	// function generate(kind: string, data: string) : Promise
 	js.Module.Get("exports").Set("generate", jopher.Promisify(generateWrapper))
-}
-
-func (k *Key) build(s string) *js.Object {
-	k.Key = s
-	k.Neuter = jopher.Promisify(k.neuter)
-	k.Child = jopher.Promisify(k.child)
-	k.HardenedChild = jopher.Promisify(k.hardenedChild)
-	// k.Sign = jopher.Promisify(k.sign)
-	// k.Address = jopher.Promisify(k.address)
-	return k.Object
 }
 
 func newPrivateMaster(seed string) (*js.Object, error) {
@@ -126,6 +139,59 @@ func (k *Key) hardenedChild(n float64) (*js.Object, error) {
 	}
 	r := Key{Object: js.Global.Get("Object").New()}
 	return r.build(nk.String()), nil
+}
+
+func (k *Key) sign(msg string) (*js.Object, error) {
+	ekey, err := key.NewKeyFromString(k.Key)
+	if err != nil {
+		return nil, err
+	}
+	pk, err := ekey.ECPrivKey()
+	if err != nil {
+		return nil, err
+	}
+	b, err := hex.DecodeString(msg)
+	if err != nil {
+		return nil, err
+	}
+	sig, err := pk.Sign(b)
+	if err != nil {
+		return nil, err
+	}
+	r := Signature{Object: js.Global.Get("Object").New()}
+	return r.build(b32.Encode(sig.Serialize())), nil
+}
+
+func (s *Signature) verify(msg, k string) (bool, error) {
+	ekey, err := key.NewKeyFromString(k)
+	if err != nil {
+		return false, err
+	}
+	pk, err := ekey.ECPubKey()
+	if err != nil {
+		return false, err
+	}
+
+	dsig, err := b32.Decode(s.Signature)
+	if err != nil {
+		return false, err
+	}
+
+	sig, err := btcec.ParseDERSignature(dsig, btcec.S256())
+	if err != nil {
+		return false, err
+	}
+
+	b, err := hex.DecodeString(msg)
+	if err != nil {
+		return false, err
+	}
+
+	if !sig.Verify(b, pk) {
+		return false, errors.New("signature not verified")
+	}
+
+	return true, nil
 }
 
 func validateWrapper(addr string) (bool, error) {

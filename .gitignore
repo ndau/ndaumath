@@ -6,3 +6,4 @@ debug.test
 **/*.js
 **/*.js.map
 .DS_Store
+!**/*_test.js
