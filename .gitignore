@@ -7,3 +7,4 @@ debug.test
 **/*.js.map
 .DS_Store
 !**/*_test.js
+!cmd/keyaddr/*

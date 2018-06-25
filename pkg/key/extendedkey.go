@@ -199,7 +199,7 @@ func NewExtendedKey(version, key, chainCode, parentFP []byte, depth uint8,
 	}
 }
 
-// pubKeyBytes returns bytes for the serialized compressed public key associated
+// PubKeyBytes returns bytes for the serialized compressed public key associated
 // with this extended key in an efficient manner including memoization as
 // necessary.
 //
@@ -207,7 +207,7 @@ func NewExtendedKey(version, key, chainCode, parentFP []byte, depth uint8,
 // is since it's already in the correct form.  However, when the extended key is
 // a private key, the public key will be calculated and memoized so future
 // accesses can simply return the cached result.
-func (k *ExtendedKey) pubKeyBytes() []byte {
+func (k *ExtendedKey) PubKeyBytes() []byte {
 	// Just return the key if it's already an extended public key.
 	if !k.isPrivate {
 		return k.key
@@ -312,7 +312,7 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 		// This is either a public or private extended key, but in
 		// either case, the data which is used to derive the child key
 		// starts with the secp256k1 compressed public key bytes.
-		copy(data, k.pubKeyBytes())
+		copy(data, k.PubKeyBytes())
 	}
 	binary.BigEndian.PutUint32(data[keyLen:], i)
 
@@ -389,7 +389,7 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 
 	// The fingerprint of the parent for the derived child is the checksum24
 	// of the SHA256(parentPubKey).
-	parentFP := fingerprint(k.pubKeyBytes())
+	parentFP := fingerprint(k.PubKeyBytes())
 	return NewExtendedKey(k.version, childKey, childChainCode, parentFP,
 		k.depth+1, i, isPrivate), nil
 }
@@ -418,13 +418,13 @@ func (k *ExtendedKey) Neuter() (*ExtendedKey, error) {
 	// key will simply be the pubkey of the current extended private key.
 	//
 	// This is the function N((k,c)) -> (K, c) from [BIP32].
-	return NewExtendedKey(version, k.pubKeyBytes(), k.chainCode, k.parentFP,
+	return NewExtendedKey(version, k.PubKeyBytes(), k.chainCode, k.parentFP,
 		k.depth, k.childNum, false), nil
 }
 
 // ECPubKey converts the extended key to a btcec public key and returns it.
 func (k *ExtendedKey) ECPubKey() (*btcec.PublicKey, error) {
-	return btcec.ParsePubKey(k.pubKeyBytes(), btcec.S256())
+	return btcec.ParsePubKey(k.PubKeyBytes(), btcec.S256())
 }
 
 // ECPrivKey converts the extended key to a btcec private key and returns it.
@@ -472,7 +472,7 @@ func (k *ExtendedKey) String() string {
 		serializedBytes = append(serializedBytes, 0x00)
 		serializedBytes = paddedAppend(32, serializedBytes, k.key)
 	} else {
-		serializedBytes = append(serializedBytes, k.pubKeyBytes()...)
+		serializedBytes = append(serializedBytes, k.PubKeyBytes()...)
 	}
 
 	checkSum := doubleHashB(serializedBytes)[:4]

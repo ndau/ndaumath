@@ -1,6 +1,6 @@
 address = require("./keyaddr.js");
 
-mk = address.newPrivateMaster('asdfwdsdfdewidkdkffjfjfuggujfjug');
+mk = address.NewPrivateMaster('asdfwdsdfdewidkdkffjfjfuggujfjug');
 console.log(mk);
 mk.then((k) => {
     console.log(k)
