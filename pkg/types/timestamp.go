@@ -110,6 +110,21 @@ const (
 	Year = Day * 365
 )
 
+// DurationFrom creates a Duration given a time.Duration object
+func DurationFrom(d time.Duration) Duration {
+	return Duration(d / time.Millisecond * Millisecond)
+}
+
+// TimeDuration converts a Duration into a time.Duration
+func (d Duration) TimeDuration() time.Duration {
+	return time.Duration(int64(d) / Millisecond * int64(time.Millisecond))
+}
+
+// String represents a Duration as a human-readable string
+func (d Duration) String() string {
+	return d.TimeDuration().String()
+}
+
 // UpdateWeightedAverageAge computes the weighted average age
 func (d *Duration) UpdateWeightedAverageAge(
 	sinceLastUpdate Duration,
