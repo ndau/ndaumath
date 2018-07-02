@@ -8,3 +8,4 @@ debug.test
 .DS_Store
 !**/*_test.js
 !cmd/keyaddr/*
+**/.vscode

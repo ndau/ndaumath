@@ -14,7 +14,7 @@ import (
 //
 // Rates are expressed in terms of effective annual increase.
 // EAI for 100 ndau at one percent rate after one year is 1.
-// EAI for 400 ndau at one percent rate after 3 months is 1.
+// EAI for 400 ndau at one percent rate after a quarter year is 1.
 //
 // EAI accrues per the simple interest formula:
 //   EAI = Prt

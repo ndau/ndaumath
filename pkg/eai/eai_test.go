@@ -27,8 +27,8 @@ func Test100Ndau1Percent1Year(t *testing.T) {
 	)
 	require.Equal(t, math.Ndau(1*constants.QuantaPerUnit), eai)
 }
-func Test400Ndau1Percent3Months(t *testing.T) {
-	// EAI for 400 ndau at one percent rate after 3 months is 1.
+func Test400Ndau1PercentQuarterYear(t *testing.T) {
+	// EAI for 400 ndau at one percent rate after a quarter year is 1.
 	eai := Calculate(
 		math.Ndau(400*constants.QuantaPerUnit),
 		math.Year/4,
