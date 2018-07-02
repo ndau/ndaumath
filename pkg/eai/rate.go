@@ -34,6 +34,18 @@ type Rate struct {
 
 //msgp:shim Rate as:string using:(Rate).toString/parseRateString
 
+// shim to assist rate deserialization
+func parseRateString(s string) Rate {
+	r := Rate{Big: decimal.Big{}}
+	r.SetString(s)
+	return r
+}
+
+// shim to assist rate serialization
+func (r Rate) toString() string {
+	return r.String()
+}
+
 // RateFromPercent returns a Rate whose value is that of the input, as percent.
 //
 // i.e. to express 1%, `nPercent` should equal `1.0`
