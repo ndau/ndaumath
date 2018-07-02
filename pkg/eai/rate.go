@@ -1,14 +1,11 @@
 package eai
 
 import (
-	"github.com/oneiro-ndev/ndaumath/pkg/constants"
+	"github.com/ericlagergren/decimal"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 )
 
 //go:generate msgp
-
-// OnePercent is the Rate of one percent annual interest
-const OnePercent = constants.QuantaPerUnit
 
 // A Rate defines a rate of increase over time.
 //
@@ -16,23 +13,37 @@ const OnePercent = constants.QuantaPerUnit
 // for ease of explanation, we will borrow some terminology
 // from interest rate calculations.
 //
-// Rates are expressed in terms of effective annual increase.
-// EAI for 100 ndau at one percent rate after one year is 1.
-// EAI for 400 ndau at one percent rate after a quarter year is 1.
+// EAI is continuously compounded according to the formula
 //
-// EAI accrues per the simple interest formula:
-//   EAI = Prt
-// Where:
-//   P is the principal
-//   r is the rate
-//   t is the time
+//   eai = balance * (e ^ (rate * time) - 1)
 //
-// The use of simple interest math instead of compound interest
-// is an intentional incentive for users to choose nodes with a
-// high voting power: these nodes will compute EAI more often,
-// resulting in effective rates which more closely approximate
-// continuous compounding.
-type Rate uint64
+// Rates are expressed in percent per year.
+//
+// Thus, 100 ndau at 1 percent rate over 1 year yields 1.00501670 ndau EAI.
+//
+// The use of continuously compounded interest instead of simple interest
+// aids in EAI predictability: using simple interest, an account which
+// simply accumulates its EAI, whose node won frequently, would see a higher
+// rate of actual return than an identical account whose node won infrequently.
+// Continuously compounded interest avoids that issue: both accounts will
+// see the same rate of return; the benefit of the one registered to the
+// frequent node is that it sees the increase more often.
+type Rate struct {
+	decimal.Big
+}
+
+//msgp:shim Rate as:string using:(Rate).toString/parseRateString
+
+// RateFromPercent returns a Rate whose value is that of the input, as percent.
+//
+// i.e. to express 1%, `nPercent` should equal `1.0`
+func RateFromPercent(nPercent float64) Rate {
+	r := Rate{Big: decimal.Big{}}
+	r.SetFloat64(nPercent)
+	// we set the rate in percentage points, so let's get the actual rate now
+	r.Quo(&r.Big, decimal.New(100, 0))
+	return r
+}
 
 //msgp:tuple RTRow
 
@@ -51,7 +62,7 @@ type RateTable []RTRow
 
 // RateAt returns the rate in a RateTable for a given point
 func (rt RateTable) RateAt(point math.Duration) Rate {
-	rate := Rate(0)
+	rate := Rate{} // 0
 	// the nature of rate tables is that we want the smallest rate
 	// for which point >= row.From. The obvious way would be to iterate
 	// in reverse, and return the first time that the point >= the row's
@@ -70,6 +81,8 @@ func (rt RateTable) RateAt(point math.Duration) Rate {
 	}
 	return rate
 }
+
+//msgp:tuple RSRow
 
 // RSRow is a single row of a rate slice.
 type RSRow struct {
@@ -125,7 +138,7 @@ func (rt RateTable) Slice(from, to math.Duration) RateSlice {
 
 	rateFor := func(idx int) Rate {
 		if idx == -1 {
-			return Rate(0)
+			return Rate{} // 0
 		}
 		return rt[idx].Rate
 	}
@@ -181,7 +194,7 @@ var (
 func init() {
 	for i := 2; i < 10; i++ {
 		DefaultUnlockedEAI = append(DefaultUnlockedEAI, RTRow{
-			Rate: Rate((i + 1) * OnePercent),
+			Rate: RateFromPercent(float64(i + 1)),
 			From: math.Duration(i * 30 * math.Day),
 		})
 	}
@@ -189,23 +202,23 @@ func init() {
 	DefaultLockBonusEAI = RateTable{
 		RTRow{
 			From: math.Duration(3 * 30 * math.Day),
-			Rate: Rate(1 * OnePercent),
+			Rate: RateFromPercent(float64(1)),
 		},
 		RTRow{
 			From: math.Duration(6 * 30 * math.Day),
-			Rate: Rate(2 * OnePercent),
+			Rate: RateFromPercent(float64(2)),
 		},
 		RTRow{
 			From: math.Duration(1 * math.Year),
-			Rate: Rate(3 * OnePercent),
+			Rate: RateFromPercent(float64(3)),
 		},
 		RTRow{
 			From: math.Duration(2 * math.Year),
-			Rate: Rate(4 * OnePercent),
+			Rate: RateFromPercent(float64(4)),
 		},
 		RTRow{
 			From: math.Duration(3 * math.Year),
-			Rate: Rate(5 * OnePercent),
+			Rate: RateFromPercent(float64(5)),
 		},
 	}
 }

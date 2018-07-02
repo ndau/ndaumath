@@ -1,8 +1,6 @@
 package eai
 
 import (
-	"math/big"
-
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 )
 
@@ -28,37 +26,37 @@ import (
 // high voting power: these nodes will compute EAI more often,
 // resulting in effective rates which more closely approximate
 // continuous compounding.
-func Calculate(
-	balance math.Ndau,
-	weightedAverageAge math.Duration,
-	lock *math.Lock,
-	ageTable, lockTable RateTable,
-) math.Ndau {
-	age := EffectiveAge(weightedAverageAge, lock)
-	rate := EffectiveRate(age, lock, ageTable, lockTable)
+// func Calculate(
+// 	balance math.Ndau,
+// 	weightedAverageAge math.Duration,
+// 	lock *math.Lock,
+// 	ageTable, lockTable RateTable,
+// ) math.Ndau {
+// 	age := EffectiveAge(weightedAverageAge, lock)
+// 	rate := EffectiveRate(age, lock, ageTable, lockTable)
 
-	eai := new(big.Int)
-	eai.SetUint64(uint64(balance)) // P : ndau
-	operand := new(big.Int)
-	operand.SetUint64(uint64(rate)) // R : annualized rate in percent
-	eai.Mul(eai, operand)
-	operand.SetUint64(uint64(age)) // T : time
-	eai.Mul(eai, operand)
+// 	eai := new(big.Int)
+// 	eai.SetUint64(uint64(balance)) // P : ndau
+// 	operand := new(big.Int)
+// 	operand.SetUint64(uint64(rate)) // R : annualized rate in percent
+// 	eai.Mul(eai, operand)
+// 	operand.SetUint64(uint64(age)) // T : time
+// 	eai.Mul(eai, operand)
 
-	// because the rate is annualized, we must now divide by 1 year
-	operand.SetInt64(math.Year)
-	eai.Div(eai, operand)
-	// because the rate is expressed in percent, we must now divide
-	// by 100%
-	operand.SetUint64(100 * OnePercent)
-	eai.Div(eai, operand)
+// 	// because the rate is annualized, we must now divide by 1 year
+// 	operand.SetInt64(math.Year)
+// 	eai.Div(eai, operand)
+// 	// because the rate is expressed in percent, we must now divide
+// 	// by 100%
+// 	operand.SetUint64(100 * OnePercent)
+// 	eai.Div(eai, operand)
 
-	if !eai.IsUint64() {
-		panic("eai calculation overflowed uint64")
-	}
+// 	if !eai.IsUint64() {
+// 		panic("eai calculation overflowed uint64")
+// 	}
 
-	return math.Ndau(eai.Uint64())
-}
+// 	return math.Ndau(eai.Uint64())
+// }
 
 // EffectiveAge calculates the effective age for an account
 func EffectiveAge(
@@ -82,7 +80,8 @@ func EffectiveRate(
 ) Rate {
 	rate := ageTable.RateAt(effectiveAge)
 	if lock != nil {
-		rate += lockTable.RateAt(lock.NoticePeriod)
+		lr := lockTable.RateAt(lock.NoticePeriod)
+		rate.Add(&rate.Big, &lr.Big)
 	}
 	return rate
 }
