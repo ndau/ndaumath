@@ -15,8 +15,6 @@ type Lock struct {
 	NoticePeriod Duration `msg:"notice"`
 	// if a lock has not been notified, this is nil
 	UnlocksOn *Timestamp `msg:"unlock"`
-	// if a lock has not been notified, this is nil
-	EffectiveWeightedAverageAge *Duration `msg:"ewaa"`
 }
 
 var _ marshal.Marshaler = (*Lock)(nil)
@@ -42,7 +40,6 @@ type nomsLock struct {
 	Duration   util.Int
 	IsNotified bool
 	UnlocksOn  util.Int
-	EWAA       util.Int
 }
 
 func (l Lock) toNomsLock() nomsLock {
@@ -53,9 +50,6 @@ func (l Lock) toNomsLock() nomsLock {
 	if l.UnlocksOn != nil {
 		nl.UnlocksOn = util.Int(*l.UnlocksOn)
 	}
-	if l.EffectiveWeightedAverageAge != nil {
-		nl.EWAA = util.Int(*l.EffectiveWeightedAverageAge)
-	}
 	return nl
 }
 
@@ -64,8 +58,6 @@ func (l *Lock) fromNomsLock(nl nomsLock) {
 	if nl.IsNotified {
 		ts := Timestamp(nl.UnlocksOn)
 		l.UnlocksOn = &ts
-		ewaa := Duration(nl.EWAA)
-		l.EffectiveWeightedAverageAge = &ewaa
 	} else {
 		l.UnlocksOn = nil
 	}
@@ -73,10 +65,9 @@ func (l *Lock) fromNomsLock(nl nomsLock) {
 
 // Notify updates this lock with notification of intent to unlock
 func (l *Lock) Notify(blockTime Timestamp, weightedAverageAge Duration) error {
-	if l.EffectiveWeightedAverageAge != nil || l.UnlocksOn != nil {
-		return errors.New("already locked")
+	if l.UnlocksOn != nil {
+		return errors.New("already notified")
 	}
-	l.EffectiveWeightedAverageAge = &weightedAverageAge
 	uo := blockTime.Add(l.NoticePeriod)
 	l.UnlocksOn = &uo
 	return nil

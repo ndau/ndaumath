@@ -36,7 +36,8 @@ type Rate struct {
 
 // shim to assist rate deserialization
 func parseRateString(s string) Rate {
-	r := Rate{Big: decimal.Big{}}
+	d := decimal.WithContext(decimal.Context128)
+	r := Rate{Big: *d}
 	r.SetString(s)
 	return r
 }

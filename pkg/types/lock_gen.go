@@ -45,22 +45,6 @@ func (z *Lock) DecodeMsg(dc *msgp.Reader) (err error) {
 					return
 				}
 			}
-		case "ewaa":
-			if dc.IsNil() {
-				err = dc.ReadNil()
-				if err != nil {
-					return
-				}
-				z.EffectiveWeightedAverageAge = nil
-			} else {
-				if z.EffectiveWeightedAverageAge == nil {
-					z.EffectiveWeightedAverageAge = new(Duration)
-				}
-				err = z.EffectiveWeightedAverageAge.DecodeMsg(dc)
-				if err != nil {
-					return
-				}
-			}
 		default:
 			err = dc.Skip()
 			if err != nil {
@@ -73,9 +57,9 @@ func (z *Lock) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *Lock) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 3
+	// map header, size 2
 	// write "notice"
-	err = en.Append(0x83, 0xa6, 0x6e, 0x6f, 0x74, 0x69, 0x63, 0x65)
+	err = en.Append(0x82, 0xa6, 0x6e, 0x6f, 0x74, 0x69, 0x63, 0x65)
 	if err != nil {
 		return
 	}
@@ -99,31 +83,15 @@ func (z *Lock) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
-	// write "ewaa"
-	err = en.Append(0xa4, 0x65, 0x77, 0x61, 0x61)
-	if err != nil {
-		return
-	}
-	if z.EffectiveWeightedAverageAge == nil {
-		err = en.WriteNil()
-		if err != nil {
-			return
-		}
-	} else {
-		err = z.EffectiveWeightedAverageAge.EncodeMsg(en)
-		if err != nil {
-			return
-		}
-	}
 	return
 }
 
 // MarshalMsg implements msgp.Marshaler
 func (z *Lock) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 3
+	// map header, size 2
 	// string "notice"
-	o = append(o, 0x83, 0xa6, 0x6e, 0x6f, 0x74, 0x69, 0x63, 0x65)
+	o = append(o, 0x82, 0xa6, 0x6e, 0x6f, 0x74, 0x69, 0x63, 0x65)
 	o, err = z.NoticePeriod.MarshalMsg(o)
 	if err != nil {
 		return
@@ -134,16 +102,6 @@ func (z *Lock) MarshalMsg(b []byte) (o []byte, err error) {
 		o = msgp.AppendNil(o)
 	} else {
 		o, err = z.UnlocksOn.MarshalMsg(o)
-		if err != nil {
-			return
-		}
-	}
-	// string "ewaa"
-	o = append(o, 0xa4, 0x65, 0x77, 0x61, 0x61)
-	if z.EffectiveWeightedAverageAge == nil {
-		o = msgp.AppendNil(o)
-	} else {
-		o, err = z.EffectiveWeightedAverageAge.MarshalMsg(o)
 		if err != nil {
 			return
 		}
@@ -188,22 +146,6 @@ func (z *Lock) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					return
 				}
 			}
-		case "ewaa":
-			if msgp.IsNil(bts) {
-				bts, err = msgp.ReadNilBytes(bts)
-				if err != nil {
-					return
-				}
-				z.EffectiveWeightedAverageAge = nil
-			} else {
-				if z.EffectiveWeightedAverageAge == nil {
-					z.EffectiveWeightedAverageAge = new(Duration)
-				}
-				bts, err = z.EffectiveWeightedAverageAge.UnmarshalMsg(bts)
-				if err != nil {
-					return
-				}
-			}
 		default:
 			bts, err = msgp.Skip(bts)
 			if err != nil {
@@ -222,12 +164,6 @@ func (z *Lock) Msgsize() (s int) {
 		s += msgp.NilSize
 	} else {
 		s += z.UnlocksOn.Msgsize()
-	}
-	s += 5
-	if z.EffectiveWeightedAverageAge == nil {
-		s += msgp.NilSize
-	} else {
-		s += z.EffectiveWeightedAverageAge.Msgsize()
 	}
 	return
 }

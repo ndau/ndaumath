@@ -29,26 +29,16 @@ import (
 // frequent node is that it sees the increase more often.
 func Calculate(
 	balance math.Ndau,
-	lastEAICalcAge, weightedAverageAge math.Duration,
+	blockTime, lastEAICalc math.Timestamp,
+	weightedAverageAge math.Duration,
 	lock *math.Lock,
 	ageTable, lockTable RateTable,
 ) math.Ndau {
-	factor := CalculateEAIFactor(
-		lastEAICalcAge, weightedAverageAge,
-		lock, ageTable,
+	factor := calculateEAIFactor(
+		blockTime,
+		lastEAICalc, weightedAverageAge, lock,
+		ageTable, lockTable,
 	)
-
-	if lock != nil {
-		lockFactor := CalculateEAIFactor(
-			lastEAICalcAge, weightedAverageAge,
-			// lock is nil here because we don't want to offset the lock table
-			nil, lockTable,
-		)
-		// e^a * e^b == e^(a+b)
-		// we can calculate the locked and unlocked rates separately, and
-		// multiply them together to get the composite rate.
-		factor.Mul(factor, lockFactor)
-	}
 
 	// subtract 1 from the factor: we want just the EAI, not the new balance
 	qty := decimal.WithContext(decimal.Context128)
@@ -72,46 +62,60 @@ func Calculate(
 	return math.Ndau(eai)
 }
 
-// CalculateEAIFactor calculates the EAI factor for a given table
+// calculateEAIFactor calculates the EAI factor for a given table
 //
 // Factor = e ^ (rate * time)
 //
 // This calculates unconditionally without worrying about what kind of table
 // was used.
-func CalculateEAIFactor(
-	lastEAICalcAge, weightedAverageAge math.Duration,
+func calculateEAIFactor(
+	blockTime, lastEAICalc math.Timestamp,
+	weightedAverageAge math.Duration,
 	lock *math.Lock,
-	table RateTable,
+	unlockedTable, lockBonusTable RateTable,
 ) *decimal.Big {
-	bal := decimal.WithContext(decimal.Context128)
-	bal.SetUint64(1)
+	factor := decimal.WithContext(decimal.Context128)
+	factor.SetUint64(1)
 
+	lastEAICalcAge := blockTime.Since(lastEAICalc)
+	offset := ageOffset(lock, blockTime)
 	qty := decimal.WithContext(decimal.Context128)
-	offset := AgeOffset(lock)
-	for _, row := range table.Slice(lastEAICalcAge+offset, weightedAverageAge+offset) {
+	rate := decimal.WithContext(decimal.Context128)
+	for _, row := range unlockedTable.Slice(lastEAICalcAge+offset, weightedAverageAge+offset) {
 		// new balance = balance * e ^ (rate * time)
 		// first: what's the time? It's the fraction of a year used
 		qty.SetUint64(uint64(row.Duration))
 		qty.Quo(qty, decimal.New(math.Year, 0))
 
+		// next: what's the actual rate? It's the slice rate plus
+		// the lock bonus
+		rate.Copy(&row.Rate.Big)
+		if lock != nil {
+			bonus := lockBonusTable.RateAt(lock.NoticePeriod)
+			rate.Add(rate, &bonus.Big)
+		}
+
 		// multiply by rate and exponentiate
-		qty.Mul(qty, &row.Rate.Big)
+		qty.Mul(qty, rate)
 		dmath.Exp(qty, qty)
 
-		// multiply by balance
-		bal.Mul(bal, qty)
+		// multiply into the current factor
+		factor.Mul(factor, qty)
 	}
 
-	return bal
+	return factor
 }
 
-// AgeOffset calculates the age offset for an account based on its lock
-func AgeOffset(lock *math.Lock) math.Duration {
+// ageOffset calculates the age offset for an account based on its lock
+func ageOffset(lock *math.Lock, blockTime math.Timestamp) math.Duration {
 	if lock == nil {
 		return math.Duration(0)
 	}
-	if lock.EffectiveWeightedAverageAge != nil {
-		return *lock.EffectiveWeightedAverageAge
+	if lock.UnlocksOn != nil {
+		// a notified lock has a offset computed such that the actual
+		// weighted average age plus the offset is equal to the value
+		// of that calculation at the moment of notification
+		return lock.UnlocksOn.Since(blockTime)
 	}
 	return lock.NoticePeriod
 }
