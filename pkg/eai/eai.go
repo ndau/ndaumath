@@ -1,6 +1,8 @@
 package eai
 
 import (
+	"fmt"
+
 	"github.com/ericlagergren/decimal"
 	dmath "github.com/ericlagergren/decimal/math"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
@@ -66,8 +68,22 @@ func Calculate(
 //
 // Factor = e ^ (rate * time)
 //
-// This calculates unconditionally without worrying about what kind of table
-// was used.
+// Let's diagram the variables in play in here:
+//
+//  Timestamps
+//       │ (unnamed) effective account open
+//       │   │         lastEAICalc
+//       │   │           │   notify                blockTime    lock.UnlocksOn
+// TIME ─┼───┼───────────┼─────┼─────────────────────┼────────────┼──>
+//       │   │           │     ├────── freeze ───────┤            │
+//       │   │           │     ├──────── lock.NoticePeriod ───────┤
+//       │   │           │     └───────────── offset ─────────────┘
+//       │   ├── from ───┴───── lastEAICalcAge ──────┤
+//       │   └────── weightedAverageAge (to) ────────┘
+//   Durations
+//
+// It is a logic error if lock.UnlocksOn < blockTime;
+// in that case, this function will return nil.
 func calculateEAIFactor(
 	blockTime, lastEAICalc math.Timestamp,
 	weightedAverageAge math.Duration,
@@ -79,9 +95,25 @@ func calculateEAIFactor(
 
 	lastEAICalcAge := blockTime.Since(lastEAICalc)
 	offset := ageOffset(lock, blockTime)
+	from := weightedAverageAge - lastEAICalcAge
 	qty := decimal.WithContext(decimal.Context128)
 	rate := decimal.WithContext(decimal.Context128)
-	for _, row := range unlockedTable.Slice(lastEAICalcAge+offset, weightedAverageAge+offset) {
+	var rateSlice RateSlice
+	if lock != nil && lock.UnlocksOn != nil {
+		if *lock.UnlocksOn < blockTime {
+			return nil
+		}
+		notify := lock.UnlocksOn.Sub(lock.NoticePeriod)
+		freeze := blockTime.Since(notify)
+		rateSlice = unlockedTable.SliceF(from, weightedAverageAge, offset, freeze)
+	} else {
+		rateSlice = unlockedTable.Slice(from, weightedAverageAge, offset)
+	}
+	fmt.Println("rate slice:")
+	for idx, row := range rateSlice {
+		fmt.Printf(" %2d: %s %s\n", idx, row.Duration, row.Rate.Big.String())
+	}
+	for _, row := range rateSlice {
 		// new balance = balance * e ^ (rate * time)
 		// first: what's the time? It's the fraction of a year used
 		qty.SetUint64(uint64(row.Duration))

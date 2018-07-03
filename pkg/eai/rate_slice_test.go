@@ -37,7 +37,7 @@ func TestRateSliceWithinRatePeriodReturnsSingleElement(t *testing.T) {
 		tD := duTo(i)
 		name := fmt.Sprintf("from %s to %s", fD, tD)
 		t.Run(name, func(t *testing.T) {
-			rs := DefaultUnlockedEAI.Slice(fD, tD)
+			rs := DefaultUnlockedEAI.Slice(fD, tD, 0)
 			require.Equal(t, 1, len(rs))
 			require.Equal(t, DefaultUnlockedEAI.RateAt(fD), DefaultUnlockedEAI.RateAt(tD))
 			require.Equal(t, DefaultUnlockedEAI.RateAt(fD), rs[0].Rate)
@@ -52,7 +52,7 @@ func TestRateSliceSpanningTwoPeriodsReturnsTwoElements(t *testing.T) {
 		tD := duTo(i + 1)
 		name := fmt.Sprintf("from %s to %s", fD, tD)
 		t.Run(name, func(t *testing.T) {
-			rs := DefaultUnlockedEAI.Slice(fD, tD)
+			rs := DefaultUnlockedEAI.Slice(fD, tD, 0)
 			require.Equal(t, 2, len(rs))
 			require.NotEqual(t, DefaultUnlockedEAI.RateAt(fD), DefaultUnlockedEAI.RateAt(tD))
 			require.Equal(t, DefaultUnlockedEAI.RateAt(fD), rs[0].Rate)
@@ -69,7 +69,7 @@ func TestRateSliceSpanningThreePeriodsReturnsThreeElements(t *testing.T) {
 		tD := duTo(i + 2)
 		name := fmt.Sprintf("from %s to %s", fD, tD)
 		t.Run(name, func(t *testing.T) {
-			rs := DefaultUnlockedEAI.Slice(fD, tD)
+			rs := DefaultUnlockedEAI.Slice(fD, tD, 0)
 			require.Equal(t, 3, len(rs))
 			require.NotEqual(t, DefaultUnlockedEAI.RateAt(fD), DefaultUnlockedEAI.RateAt(tD))
 			require.Equal(t, DefaultUnlockedEAI.RateAt(fD), rs[0].Rate)
