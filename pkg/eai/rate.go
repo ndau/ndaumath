@@ -217,7 +217,7 @@ func (rt RateTable) SliceF(from, to, offset, freeze math.Duration) RateSlice {
 	}
 
 	// if we froze before the from point, we have one period at the frozen rate
-	if freeze != 0 && notify < from {
+	if freeze != 0 && notify < fromEffective {
 		return RateSlice{RSRow{Rate: rateFor(notifyI), Duration: to - from}}
 	}
 

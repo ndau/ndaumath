@@ -270,3 +270,81 @@ func TestEAIFactorSoundness3(t *testing.T) {
 	require.Equal(t, expected.Context, actual.Context)
 	require.Equal(t, expected, actual)
 }
+
+func TestEAIFactorSoundness4(t *testing.T) {
+	//  What happens if an account is:
+	//
+	// - locked for 90 days
+	// - notified to unlock 34 days from now
+	// - 4 days since last EAI update
+	// - current actual weighted average age is 123 days
+	//
+	// The difference from case 2 is that the we've calculated recently,
+	// so the rate freeze happens before the last update.
+	//
+	// Dashed lines in the following graph indicate points in the future,
+	// assuming no further transactions are issued.
+	//
+	//  6%              ┌─────|───────────x────x-------
+	//  5%      ────────┘     |
+	//         _________________________________________
+	//  actual    39    60    67         119  123   157
+	//  effect.  129   150   157.........157..157...157
+	//  month    (4)   (5)                          (5)
+	//
+	// Because the account was locked for 90 days, and 90 days has a bonus
+	// rate of 1%, the actual rate used during the lock and notification
+	// periods should increase by a constant rate of 1%.
+	// We thus get the following calculation to compute the EAI multiplier:
+	//
+	//    e^(7% * 4 days)
+
+	// calculate the expected value
+	expected := decimal.WithContext(decimal.Context128)
+	percent := decimal.WithContext(decimal.Context128)
+	time := decimal.WithContext(decimal.Context128)
+
+	expected.SetUint64(1)
+
+	var period int
+	calc := func(rate float64, days uint64) {
+		t.Logf("Period %d:", period)
+		period++
+		time.SetUint64(days * math.Day)
+		time.Quo(time, decimal.New(1*math.Year, 0))
+		t.Logf(" Duration: %s (%d days)", time, days)
+		rfp := RateFromPercent(rate)
+		percent.Copy(&rfp.Big)
+		t.Logf(" Rate: %s", percent)
+		percent.Mul(percent, time)
+		dmath.Exp(percent, percent)
+		expected.Mul(expected, percent)
+		t.Logf(" Factor: %s", percent)
+	}
+
+	calc(7, 4)
+
+	// calculate the actual value
+	blockTime := math.Timestamp(1 * math.Year)
+	unlocksOn := blockTime.Add(34 * math.Day)
+	lastEAICalc := blockTime.Sub(4 * math.Day)
+	weightedAverageAge := math.Duration(123 * math.Day)
+	actual := calculateEAIFactor(
+		blockTime,
+		lastEAICalc, weightedAverageAge,
+		&math.Lock{
+			NoticePeriod: 90 * math.Day,
+			UnlocksOn:    &unlocksOn,
+		},
+		DefaultUnlockedEAI, DefaultLockBonusEAI,
+	)
+
+	// simplify
+	expected.Reduce()
+	actual.Reduce()
+
+	// we require equal contexts here so that if the test fails in the
+	// subsequent line, we know that it's not a context mismatch, but a value
+	require.Equal(t, expected.Context, actual.Context)
+	require.Equal(t, expected, actual)
+}
