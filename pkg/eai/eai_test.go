@@ -348,3 +348,79 @@ func TestEAIFactorSoundness4(t *testing.T) {
 	require.Equal(t, expected.Context, actual.Context)
 	require.Equal(t, expected, actual)
 }
+
+func TestEAIFactorSoundness5(t *testing.T) {
+	//  What happens if an account is:
+	//
+	// - unlocked
+	// - 84 days since last EAI update
+	// - current actual weighted average age is 123 days
+	//
+	// This differs from case 1 in that the account is not locked.
+	//
+	// The span of effective average age we care about for the unlocked
+	// portion runs from day 39 to day 123. Using the example table:
+	//
+	//  5%                             ┌────x...
+	//  4%                     ┌───────┘
+	//  3%             ┌───────┘
+	//  2%      ──x────┘
+	//          _______________________________
+	//  actual    39   60      90     120  123
+	//  month    (1)  (2)     (3)     (4)
+	//
+	// Because the account is unlocked, there is no bonus EAI. Our calculation:
+	//
+	//    e^(2% * 21 days)
+	//  * e^(3% * 30 days)
+	//  * e^(4% * 30 days)
+	//  * e^(5% *  3 days)
+
+	// calculate the expected value
+	expected := decimal.WithContext(decimal.Context128)
+	percent := decimal.WithContext(decimal.Context128)
+	time := decimal.WithContext(decimal.Context128)
+
+	expected.SetUint64(1)
+
+	var period int
+	calc := func(rate float64, days uint64) {
+		t.Logf("Period %d:", period)
+		period++
+		time.SetUint64(days * math.Day)
+		time.Quo(time, decimal.New(1*math.Year, 0))
+		t.Logf(" Duration: %s (%d days)", time, days)
+		rfp := RateFromPercent(rate)
+		percent.Copy(&rfp.Big)
+		t.Logf(" Rate: %s", percent)
+		percent.Mul(percent, time)
+		dmath.Exp(percent, percent)
+		expected.Mul(expected, percent)
+		t.Logf(" Factor: %s", percent)
+	}
+
+	calc(2, 21)
+	calc(3, 30)
+	calc(4, 30)
+	calc(5, 3)
+
+	// calculate the actual value
+	blockTime := math.Timestamp(1 * math.Year)
+	lastEAICalc := blockTime.Sub(84 * math.Day)
+	weightedAverageAge := math.Duration(123 * math.Day)
+	actual := calculateEAIFactor(
+		blockTime,
+		lastEAICalc, weightedAverageAge,
+		nil,
+		DefaultUnlockedEAI, DefaultLockBonusEAI,
+	)
+
+	// simplify
+	expected.Reduce()
+	actual.Reduce()
+
+	// we require equal contexts here so that if the test fails in the
+	// subsequent line, we know that it's not a context mismatch, but a value
+	require.Equal(t, expected.Context, actual.Context)
+	require.Equal(t, expected, actual)
+}

@@ -292,7 +292,7 @@ var (
 )
 
 func init() {
-	for i := 2; i < 10; i++ {
+	for i := 1; i < 10; i++ {
 		DefaultUnlockedEAI = append(DefaultUnlockedEAI, RTRow{
 			Rate: RateFromPercent(float64(i + 1)),
 			From: math.Duration(i * 30 * math.Day),
