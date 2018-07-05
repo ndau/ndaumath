@@ -1,8 +1,6 @@
 package eai
 
 import (
-	"fmt"
-
 	"github.com/ericlagergren/decimal"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 )
@@ -155,6 +153,8 @@ func (rt RateTable) Slice(from, to, offset math.Duration) RateSlice {
 // Where freeze != 0, this function returns the rate slice from (from+offset)
 // to (to+offset), but with the actual rate frozen at the freeze point.
 //
+// (This diagram is not to the same scale as the timeline overview above.)
+//
 //   R3                                         ┌────|────────...
 //   R2                            ┌─────────|───────|──
 //   R1              ┌────|────────┘ / / / / | / / / |
@@ -176,20 +176,12 @@ func (rt RateTable) SliceF(from, to, offset, freeze math.Duration) RateSlice {
 	toEffective := to + offset
 	notify := toEffective - freeze
 
-	fmt.Println("from:         ", from)
-	fmt.Println("to:           ", to)
-	fmt.Println("offset:       ", offset)
-	fmt.Println("freeze:       ", freeze)
-	fmt.Println("fromEffective:", fromEffective)
-	fmt.Println("toEffective:  ", toEffective)
-	fmt.Println("notify:       ", notify)
-
 	// the computation can't result in -2, so if after the loop
 	// this remains, we know we never touched this var
 	const uninitialized = -2
 	fromI := uninitialized
 	toI := uninitialized
-	freezeI := uninitialized
+	notifyI := uninitialized
 
 	for index, row := range rt {
 		if fromI == uninitialized && fromEffective < row.From {
@@ -198,10 +190,10 @@ func (rt RateTable) SliceF(from, to, offset, freeze math.Duration) RateSlice {
 		if toI == uninitialized && toEffective < row.From {
 			toI = index - 1
 		}
-		if freezeI == uninitialized && notify < row.From {
-			freezeI = index - 1
+		if notifyI == uninitialized && notify < row.From {
+			notifyI = index - 1
 		}
-		if fromI != uninitialized && toI != uninitialized && freezeI != uninitialized {
+		if fromI != uninitialized && toI != uninitialized && notifyI != uninitialized {
 			break
 		}
 	}
@@ -213,8 +205,8 @@ func (rt RateTable) SliceF(from, to, offset, freeze math.Duration) RateSlice {
 	if toI == uninitialized {
 		toI = len(rt) - 1
 	}
-	if freezeI == uninitialized {
-		freezeI = len(rt) - 1
+	if notifyI == uninitialized {
+		notifyI = len(rt) - 1
 	}
 
 	rateFor := func(idx int) Rate {
@@ -226,20 +218,20 @@ func (rt RateTable) SliceF(from, to, offset, freeze math.Duration) RateSlice {
 
 	// if we froze before the from point, we have one period at the frozen rate
 	if freeze != 0 && notify < from {
-		return RateSlice{RSRow{Rate: rateFor(freezeI), Duration: to - from}}
+		return RateSlice{RSRow{Rate: rateFor(notifyI), Duration: to - from}}
 	}
 
 	// if from and to are in the same rate block, or
 	// from and the freeze point are in the same rate block, we have one period
 	// at the from rate
-	if fromI == toI || fromI == freezeI {
+	if fromI == toI || fromI == notifyI {
 		return RateSlice{RSRow{Rate: rateFor(fromI), Duration: to - from}}
 	}
 	numRows := 1 - fromI
-	if toI <= freezeI {
+	if toI <= notifyI {
 		numRows += toI
 	} else {
-		numRows += freezeI
+		numRows += notifyI
 	}
 
 	// ok, the rest is relatively straightforward. We need special
@@ -248,21 +240,26 @@ func (rt RateTable) SliceF(from, to, offset, freeze math.Duration) RateSlice {
 	rs := make(RateSlice, numRows)
 	// - it's safe to index rt[fromI+1] because if fromI were the max value,
 	//   then we would have already returned: fromI must equal toI
-	// - we know that freezePoint > rt[fromI+1].From, because if fromI == freezeI,
+	// - we know that freezePoint > rt[fromI+1].From, because if fromI == notifyI,
 	//   we would have already returned. As we're here, we know that the
 	//   freeze point isn't in this first block.
 	rs[0] = RSRow{Rate: rateFor(fromI), Duration: rt[fromI+1].From - (from + offset)}
 	// freezing within the final rate block has no effect on the calculation
-	if freezeI == toI {
+	if notifyI == toI {
 		// it's safe to index rt[toI] because if toI were -1,
 		// then we would have already returned: fromI must equal toI
-		rs[numRows-1] = RSRow{Rate: rateFor(toI), Duration: to + offset - rt[toI].From}
+		rs[numRows-1] = RSRow{Rate: rateFor(toI), Duration: toEffective - rt[toI].From}
 	} else {
-		rs[numRows-1] = RSRow{Rate: rateFor(freezeI), Duration: freeze}
+		rs[numRows-1] = RSRow{Rate: rateFor(notifyI), Duration: freeze + notify - rt[notifyI].From}
+	}
+
+	upperBoundI := toI
+	if notifyI < toI {
+		upperBoundI = notifyI
 	}
 
 	// indexing rt[fromI+i+1] is safe because fromI+i+1 == toI at max i
-	for i := 1; i < toI-fromI; i++ {
+	for i := 1; i < upperBoundI-fromI; i++ {
 		rs[i] = RSRow{
 			Rate:     rt[fromI+i].Rate,
 			Duration: rt[fromI+i+1].From - rt[fromI+i].From,

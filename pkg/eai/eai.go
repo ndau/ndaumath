@@ -1,8 +1,6 @@
 package eai
 
 import (
-	"fmt"
-
 	"github.com/ericlagergren/decimal"
 	dmath "github.com/ericlagergren/decimal/math"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
@@ -109,10 +107,6 @@ func calculateEAIFactor(
 	} else {
 		rateSlice = unlockedTable.Slice(from, weightedAverageAge, offset)
 	}
-	fmt.Println("rate slice:")
-	for idx, row := range rateSlice {
-		fmt.Printf(" %2d: %s %s\n", idx, row.Duration, row.Rate.Big.String())
-	}
 	for _, row := range rateSlice {
 		// new balance = balance * e ^ (rate * time)
 		// first: what's the time? It's the fraction of a year used
@@ -142,12 +136,6 @@ func calculateEAIFactor(
 func ageOffset(lock *math.Lock, blockTime math.Timestamp) math.Duration {
 	if lock == nil {
 		return math.Duration(0)
-	}
-	if lock.UnlocksOn != nil {
-		// a notified lock has a offset computed such that the actual
-		// weighted average age plus the offset is equal to the value
-		// of that calculation at the moment of notification
-		return lock.UnlocksOn.Since(blockTime)
 	}
 	return lock.NoticePeriod
 }

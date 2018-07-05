@@ -124,8 +124,10 @@ func TestEAIFactorSoundness2(t *testing.T) {
 	// We thus get the following calculation to compute the EAI multiplier:
 	//
 	//    e^(6% * 21 days)
-	//  * e^(7% *  7 days)
-	//  * e^(7% * 56 days)
+	//  * e^(7% * 63 days)
+	//
+	// The 63 days of the final term are simply the seven unnotified days
+	// of the rate period plus the 56 days notified to date.
 
 	// calculate the expected value
 	expected := decimal.WithContext(decimal.Context128)
@@ -135,25 +137,25 @@ func TestEAIFactorSoundness2(t *testing.T) {
 	expected.SetUint64(1)
 
 	calc := func(period int, rate float64, days uint64) {
+		t.Logf("Period %d:", period)
 		time.SetUint64(days * math.Day)
 		time.Quo(time, decimal.New(1*math.Year, 0))
-		t.Logf("Duration period %d: %s", period, time)
+		t.Logf(" Duration: %s", time)
 		rfp := RateFromPercent(rate)
 		percent.Copy(&rfp.Big)
-		t.Logf("Rate period %d: %s", period, percent)
+		t.Logf(" Rate: %s", percent)
 		percent.Mul(percent, time)
 		dmath.Exp(percent, percent)
 		expected.Mul(expected, percent)
-		t.Logf("Factor period %d: %s", period, percent)
+		t.Logf(" Factor: %s", percent)
 	}
 
 	calc(0, 6, 21)
-	calc(1, 7, 7)
-	calc(2, 7, 56)
+	calc(1, 7, 63)
 
 	// calculate the actual value
 	blockTime := math.Timestamp(1 * math.Year)
-	unlocksOn := blockTime.Add(14 * math.Day)
+	unlocksOn := blockTime.Add(34 * math.Day)
 	lastEAICalc := blockTime.Sub(84 * math.Day)
 	weightedAverageAge := math.Duration(123 * math.Day)
 	actual := calculateEAIFactor(
