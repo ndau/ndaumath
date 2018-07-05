@@ -110,10 +110,9 @@ func TestEAIFactorSoundness2(t *testing.T) {
 	// Dashed lines in the following graph indicate points in the future,
 	// assuming no further transactions are issued.
 	//
-	//  6%              ┌─────|────────────────x-----┐
-	//  5%      ──x─────┘     |                      └---
-	//  4%                    |
-	//         _____________________________________
+	//  6%              ┌─────|────────────────x-------
+	//  5%      ──x─────┘     |
+	//         _________________________________________
 	//  actual    39    60    67              123   157
 	//  effect.  129   150   157..............157...157
 	//  month    (4)   (5)                          (5)
@@ -163,6 +162,100 @@ func TestEAIFactorSoundness2(t *testing.T) {
 		lastEAICalc, weightedAverageAge,
 		&math.Lock{
 			NoticePeriod: 90 * math.Day,
+			UnlocksOn:    &unlocksOn,
+		},
+		DefaultUnlockedEAI, DefaultLockBonusEAI,
+	)
+
+	// simplify
+	expected.Reduce()
+	actual.Reduce()
+
+	// we require equal contexts here so that if the test fails in the
+	// subsequent line, we know that it's not a context mismatch, but a value
+	require.Equal(t, expected.Context, actual.Context)
+	require.Equal(t, expected, actual)
+}
+
+func TestEAIFactorSoundness3(t *testing.T) {
+	//  What happens if an account is:
+	//
+	// - locked for 180 days
+	// - notified to unlock 165 days from now
+	// - 84 days since last EAI update
+	// - current actual weighted average age is 123 days
+	//
+	// The difference from case 2 is that there are three steps in the
+	// function, and the bonus EAI is 2% instead of 1%.
+	//
+	// The span of effective average age we care about for the unlocked
+	// portion runs from actual day 39 to actual day 123. The notify happens
+	// on actual day 108. It expires on actual day 288. At that point, the
+	// rate will drop back to the actual weighted average age.
+	//
+	// The effective period begins on day 129, and runs forward normally
+	// until effective day 157. Effective time freezes at that point. On
+	// actual day 157, the notice period ends and calculations resume using
+	// the actual weighted average age.
+	//
+	// Dashed lines in the following graph indicate points in the future,
+	// assuming no further transactions are issued.
+	//
+	// 10%                     ┌────────|────────x-------
+	//  9%              ┌──────┘        |
+	//  8%      ──x─────┘               |
+	//         ___________________________________________
+	//  actual    39    60     90      108      123   288
+	//  effect.  219   240    270      288......288...288
+	//  month    (7)   (8)    (9)                     (9)
+	//
+	// Because the account was locked for 180 days, and 180 days has a bonus
+	// rate of 2%, the actual rate used during the lock and notification
+	// periods should increase by a constant rate of 2%.
+	// We thus get the following calculation to compute the EAI multiplier:
+	//
+	//    e^(10% * 21 days)
+	//  * e^(11% * 30 days)
+	//  * e^(12% * 33 days)
+	//
+	// The 33 days of the final term are simply the 18 unnotified days
+	// of the rate period plus the 15 days notified to date.
+
+	// calculate the expected value
+	expected := decimal.WithContext(decimal.Context128)
+	percent := decimal.WithContext(decimal.Context128)
+	time := decimal.WithContext(decimal.Context128)
+
+	expected.SetUint64(1)
+
+	calc := func(period int, rate float64, days uint64) {
+		t.Logf("Period %d:", period)
+		time.SetUint64(days * math.Day)
+		time.Quo(time, decimal.New(1*math.Year, 0))
+		t.Logf(" Duration: %s (%d days)", time, days)
+		rfp := RateFromPercent(rate)
+		percent.Copy(&rfp.Big)
+		t.Logf(" Rate: %s", percent)
+		percent.Mul(percent, time)
+		dmath.Exp(percent, percent)
+		expected.Mul(expected, percent)
+		t.Logf(" Factor: %s", percent)
+	}
+
+	calc(0, 10, 21)
+	calc(1, 11, 30)
+	calc(2, 12, 33)
+
+	// calculate the actual value
+	blockTime := math.Timestamp(1 * math.Year)
+	unlocksOn := blockTime.Add(165 * math.Day)
+	lastEAICalc := blockTime.Sub(84 * math.Day)
+	weightedAverageAge := math.Duration(123 * math.Day)
+	actual := calculateEAIFactor(
+		blockTime,
+		lastEAICalc, weightedAverageAge,
+		&math.Lock{
+			NoticePeriod: 180 * math.Day,
 			UnlocksOn:    &unlocksOn,
 		},
 		DefaultUnlockedEAI, DefaultLockBonusEAI,
