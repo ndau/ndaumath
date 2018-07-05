@@ -1,15 +1,18 @@
 {
-  "name": "keyaddr",
+  "name": "ndaumath",
   "version": "1.0.0",
-  "description": "Address and key utility",
-  "main": "keyaddr.js",
+  "description": "A set of ndau math utilities",
+  "main": "index.js",
   "scripts": {
-    "test": "node keyaddr_test.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/oneiro-ndev/ndaumath.git"
+    "url": "git+https://github.com/oneiro-ndev/ndaumath.git"
   },
+  "keywords": [
+    "ndau"
+  ],
   "author": "",
   "license": "MIT",
   "bugs": {
