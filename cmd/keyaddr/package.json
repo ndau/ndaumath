@@ -4,7 +4,7 @@
   "description": "Address and key utility",
   "main": "keyaddr.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node keyaddr_test.js"
   },
   "repository": {
     "type": "git",
