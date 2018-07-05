@@ -1,5 +1,11 @@
 package main
 
+// This is the English wordlist taken from tendermint's (now-obsoleted) go-crypto library.
+// https://github.com/tendermint/go-crypto/tree/master/keys/words/wordlist
+// The words were chosen to be unique in their first 4 letters.
+// That library also contains wordlists for spanish, japanese, and simplified chinese, which
+// may be useful to us someday.
+
 var _english = []string{
 	"abandon",
 	"ability",

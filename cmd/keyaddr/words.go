@@ -9,15 +9,21 @@ var wordlists = map[string][]string{
 	"en": _english,
 }
 
+// getMask returns a byte offset and a mask for a given bit index
+func getMask(n int) (int, byte) {
+	byteix := n / 8
+	bitix := n % 8
+	mask := byte(1 << uint(7-bitix))
+	return byteix, mask
+}
+
 // nthBit returns the nth bit from b as an int (either 0 or 1),
 // treating b as a big-endian continuous array of bits.
 // For example, nthBit(9, []byte{0xAB, 0xCD}) is 1, because 0xABCD is
 // 10101011 11001111 and we are selecting the bit with the ^ under it).
 //           ^
 func nthBit(n int, b []byte) int {
-	byteix := n / 8
-	bitix := n % 8
-	mask := byte(1 << uint(7-bitix))
+	byteix, mask := getMask(n)
 	if b[byteix]&mask == 0 {
 		return 0
 	}
@@ -37,6 +43,7 @@ func setBit(n int, b []byte, v int) []byte {
 	return b
 }
 
+// getRun returns a continuous run of bits starting at a given point
 func getRun(start int, runlen int, b []byte) int {
 	r := 0
 	for i := 0; i < runlen; i++ {
