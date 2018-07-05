@@ -71,12 +71,13 @@ func TestEAIFactorSoundness1(t *testing.T) {
 	weightedAverageAge := math.Duration(123 * math.Day)
 	blockTime := math.Timestamp(weightedAverageAge) // for simplicity
 	lastEAICalc := blockTime.Sub(math.Duration(84 * math.Day))
-	actual := calculateEAIFactor(
+	actual, err := calculateEAIFactor(
 		blockTime,
 		lastEAICalc, weightedAverageAge,
 		&math.Lock{NoticePeriod: 90 * math.Day},
 		DefaultUnlockedEAI, DefaultLockBonusEAI,
 	)
+	require.NoError(t, err)
 
 	// simplify
 	expected.Reduce()
@@ -160,7 +161,7 @@ func TestEAIFactorSoundness2(t *testing.T) {
 	unlocksOn := blockTime.Add(34 * math.Day)
 	lastEAICalc := blockTime.Sub(84 * math.Day)
 	weightedAverageAge := math.Duration(123 * math.Day)
-	actual := calculateEAIFactor(
+	actual, err := calculateEAIFactor(
 		blockTime,
 		lastEAICalc, weightedAverageAge,
 		&math.Lock{
@@ -169,6 +170,7 @@ func TestEAIFactorSoundness2(t *testing.T) {
 		},
 		DefaultUnlockedEAI, DefaultLockBonusEAI,
 	)
+	require.NoError(t, err)
 
 	// simplify
 	expected.Reduce()
@@ -254,7 +256,7 @@ func TestEAIFactorSoundness3(t *testing.T) {
 	unlocksOn := blockTime.Add(165 * math.Day)
 	lastEAICalc := blockTime.Sub(84 * math.Day)
 	weightedAverageAge := math.Duration(123 * math.Day)
-	actual := calculateEAIFactor(
+	actual, err := calculateEAIFactor(
 		blockTime,
 		lastEAICalc, weightedAverageAge,
 		&math.Lock{
@@ -263,6 +265,7 @@ func TestEAIFactorSoundness3(t *testing.T) {
 		},
 		DefaultUnlockedEAI, DefaultLockBonusEAI,
 	)
+	require.NoError(t, err)
 
 	// simplify
 	expected.Reduce()
@@ -332,7 +335,7 @@ func TestEAIFactorSoundness4(t *testing.T) {
 	unlocksOn := blockTime.Add(34 * math.Day)
 	lastEAICalc := blockTime.Sub(4 * math.Day)
 	weightedAverageAge := math.Duration(123 * math.Day)
-	actual := calculateEAIFactor(
+	actual, err := calculateEAIFactor(
 		blockTime,
 		lastEAICalc, weightedAverageAge,
 		&math.Lock{
@@ -341,6 +344,7 @@ func TestEAIFactorSoundness4(t *testing.T) {
 		},
 		DefaultUnlockedEAI, DefaultLockBonusEAI,
 	)
+	require.NoError(t, err)
 
 	// simplify
 	expected.Reduce()
@@ -411,12 +415,13 @@ func TestEAIFactorSoundness5(t *testing.T) {
 	blockTime := math.Timestamp(1 * math.Year)
 	lastEAICalc := blockTime.Sub(84 * math.Day)
 	weightedAverageAge := math.Duration(123 * math.Day)
-	actual := calculateEAIFactor(
+	actual, err := calculateEAIFactor(
 		blockTime,
 		lastEAICalc, weightedAverageAge,
 		nil,
 		DefaultUnlockedEAI, DefaultLockBonusEAI,
 	)
+	require.NoError(t, err)
 
 	// simplify
 	expected.Reduce()
@@ -445,13 +450,13 @@ func TestCalculate(t *testing.T) {
 	//      1 ndau
 	//    =  100 000 000 napu (from constants)
 	//    * 0.01 665 776 679 ... (from scenario 1 log output)
-	//    =    1 665 776 napu, as the ndau spec requires truncation of dust
-	expected := math.Ndau(1665776)
+	//    =    1 665 777 napu, as the ndau spec requires rounding towards even
+	expected := math.Ndau(1665777)
 
 	weightedAverageAge := math.Duration(123 * math.Day)
 	blockTime := math.Timestamp(weightedAverageAge) // for simplicity
 	lastEAICalc := blockTime.Sub(math.Duration(84 * math.Day))
-	actual := Calculate(
+	actual, err := Calculate(
 		1*constants.QuantaPerUnit,
 		blockTime, lastEAICalc, weightedAverageAge,
 		&math.Lock{
@@ -459,6 +464,7 @@ func TestCalculate(t *testing.T) {
 		},
 		DefaultUnlockedEAI, DefaultLockBonusEAI,
 	)
+	require.NoError(t, err)
 
 	require.Equal(t, expected, actual)
 }

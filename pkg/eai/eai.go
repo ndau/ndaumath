@@ -1,6 +1,8 @@
 package eai
 
 import (
+	"fmt"
+
 	"github.com/ericlagergren/decimal"
 	dmath "github.com/ericlagergren/decimal/math"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
@@ -27,18 +29,26 @@ import (
 // Continuously compounded interest avoids that issue: both accounts will
 // see the same rate of return; the benefit of the one registered to the
 // frequent node is that it sees the increase more often.
+//
+// It is a logic error if `lock != nil && lock.UnlocksOn < blockTime`:
+// rates change at the unlock point, so this function must be called once
+// at its unlock moment, and once again for the unlocked span from the
+// unlock point until the next event.
 func Calculate(
 	balance math.Ndau,
 	blockTime, lastEAICalc math.Timestamp,
 	weightedAverageAge math.Duration,
 	lock *math.Lock,
 	ageTable, lockTable RateTable,
-) math.Ndau {
-	factor := calculateEAIFactor(
+) (math.Ndau, error) {
+	factor, err := calculateEAIFactor(
 		blockTime,
 		lastEAICalc, weightedAverageAge, lock,
 		ageTable, lockTable,
 	)
+	if err != nil {
+		return 0, err
+	}
 
 	// subtract 1 from the factor: we want just the EAI, not the new balance
 	qty := decimal.WithContext(decimal.Context128)
@@ -50,13 +60,13 @@ func Calculate(
 	qty.Mul(qty, factor)
 
 	// discard dust
-	dmath.Floor(qty, qty)
+	qty.RoundToInt()
 
 	eai, couldConvert := qty.Uint64()
 	if !couldConvert {
-		panic("Overflow in EAI calculation")
+		return 0, math.OverflowError{}
 	}
-	return math.Ndau(eai)
+	return math.Ndau(eai), nil
 }
 
 // calculateEAIFactor calculates the EAI factor for a given table
@@ -84,7 +94,7 @@ func calculateEAIFactor(
 	weightedAverageAge math.Duration,
 	lock *math.Lock,
 	unlockedTable, lockBonusTable RateTable,
-) *decimal.Big {
+) (*decimal.Big, error) {
 	factor := decimal.WithContext(decimal.Context128)
 	factor.SetUint64(1)
 
@@ -96,7 +106,9 @@ func calculateEAIFactor(
 	var rateSlice RateSlice
 	if lock != nil && lock.UnlocksOn != nil {
 		if *lock.UnlocksOn < blockTime {
-			return nil
+			return nil, fmt.Errorf("*lock.UnlocksOn (%s) < blockTime (%s)",
+				lock.UnlocksOn.String(), blockTime.String(),
+			)
 		}
 		notify := lock.UnlocksOn.Sub(lock.NoticePeriod)
 		freeze := blockTime.Since(notify)
@@ -126,7 +138,7 @@ func calculateEAIFactor(
 		factor.Mul(factor, qty)
 	}
 
-	return factor
+	return factor, nil
 }
 
 // ageOffset calculates the age offset for an account based on its lock
