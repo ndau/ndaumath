@@ -49,11 +49,8 @@ func Calculate(
 	qty.SetUint64(uint64(balance))
 	qty.Mul(qty, factor)
 
-	// factor is now no longer the exponentiation factor: it's the rounding
-	// increment
-	factor.SetUint64(0)
 	// discard dust
-	dmath.Floor(qty, factor)
+	dmath.Floor(qty, qty)
 
 	eai, couldConvert := qty.Uint64()
 	if !couldConvert {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/ericlagergren/decimal"
 	dmath "github.com/ericlagergren/decimal/math"
+	"github.com/oneiro-ndev/ndaumath/pkg/constants"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 	"github.com/stretchr/testify/require"
 )
@@ -63,6 +64,8 @@ func TestEAIFactorSoundness1(t *testing.T) {
 	calc(1, 7, 30)
 	calc(2, 8, 30)
 	calc(3, 9, 3)
+
+	t.Logf("Total factor: %s", expected)
 
 	// calculate the actual value
 	weightedAverageAge := math.Duration(123 * math.Day)
@@ -422,5 +425,40 @@ func TestEAIFactorSoundness5(t *testing.T) {
 	// we require equal contexts here so that if the test fails in the
 	// subsequent line, we know that it's not a context mismatch, but a value
 	require.Equal(t, expected.Context, actual.Context)
+	require.Equal(t, expected, actual)
+}
+
+func TestCalculate(t *testing.T) {
+	// the meat of the math happens in the calculation of the EAI factor,
+	// but it's also worth sanity-checking the actual public function which
+	// takes and returns Ndau
+	//
+	// Let's take the example from case 1:
+	// - locked for 90 days
+	// - not notified
+	// - 84 days since last EAI update
+	// - current actual weighted average age is 123 days
+	//
+	// Let's say additionally that the account contained exactly 1 ndau after
+	// its last EAI update. The expected value calculation is easy:
+	//
+	//      1 ndau
+	//    =  100 000 000 napu (from constants)
+	//    * 0.01 665 776 679 ... (from scenario 1 log output)
+	//    =    1 665 776 napu, as the ndau spec requires truncation of dust
+	expected := math.Ndau(1665776)
+
+	weightedAverageAge := math.Duration(123 * math.Day)
+	blockTime := math.Timestamp(weightedAverageAge) // for simplicity
+	lastEAICalc := blockTime.Sub(math.Duration(84 * math.Day))
+	actual := Calculate(
+		1*constants.QuantaPerUnit,
+		blockTime, lastEAICalc, weightedAverageAge,
+		&math.Lock{
+			NoticePeriod: 90 * math.Day,
+		},
+		DefaultUnlockedEAI, DefaultLockBonusEAI,
+	)
+
 	require.Equal(t, expected, actual)
 }
