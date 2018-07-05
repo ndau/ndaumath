@@ -32,9 +32,7 @@ func nthBit(n int, b []byte) int {
 
 // setBit sets the nth bit in b to zero if v is zero, otherwise 1
 func setBit(n int, b []byte, v int) []byte {
-	byteix := n / 8
-	bitix := n % 8
-	mask := byte(1 << uint(7-bitix))
+	byteix, mask := getMask(n)
 	if v == 0 {
 		b[byteix] &= ^mask
 	} else {
