@@ -2,6 +2,7 @@ package types
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -122,7 +123,12 @@ func (d Duration) TimeDuration() time.Duration {
 
 // String represents a Duration as a human-readable string
 func (d Duration) String() string {
-	return d.TimeDuration().String()
+	td := d.TimeDuration()
+	day := 24 * time.Hour
+	if td < day {
+		return td.String()
+	}
+	return fmt.Sprintf("%dd%s", td/day, (td % day).String())
 }
 
 // UpdateWeightedAverageAge computes the weighted average age
