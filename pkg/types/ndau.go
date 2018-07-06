@@ -24,7 +24,7 @@ func (n Ndau) Add(other Ndau) (Ndau, error) {
 	// otherwise, if the sum doesn't have the same sign
 	// we overflowed
 	if (n > 0) == (t < 0) {
-		return t, OverflowError{}
+		return t, ErrorOverflow
 	}
 	return t, nil
 }

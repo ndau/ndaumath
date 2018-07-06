@@ -7,6 +7,8 @@ package main
 // Use "go generate" to build this.
 
 // object API --
+//  WordsFromBytes(lang:string, bytes:string) : string -- converts the bytes to a space-separated list of mnemonic words in the specified language
+//  BytesFromWords(lang:string, words string) : string -- converts a space-separated list of words in lang back to a set of bytes
 //  NewPrivateMaster(seed:string) : key -- creates and returns a new private master key using the given seed.
 //  NewKey(string) : key -- creates a key from its text representation (if it was valid)
 //  NewAddress(string) : address -- creates an address object from the string representing it (if valid)
@@ -92,6 +94,18 @@ func main() {
 	// Promise that resolves with the new key, or rejects with an error.
 	// function generate(kind: string, data: string) : Promise
 	js.Module.Get("exports").Set("generate", jopher.Promisify(generateWrapper))
+
+	// wordsFromBytes gets a list of words that characterize an array of bytes;
+	// first argument is a language code which for now must be 'en'
+	// the contents of the resolved promise is an array of strings
+	// function wordsFromBytes(lang: string, data: string) : Promise
+	js.Module.Get("exports").Set("wordsFromBytes", jopher.Promisify(wordsFromBytes))
+
+	// bytesFromWords retrieves a list of words that characterize an array of bytes;
+	// first argument is a language code which for now must be 'en'
+	// the contents of the resolved promise is a string containing the resulting bytes
+	// function wordsFromBytes(lang: string, data: string) : Promise
+	js.Module.Get("exports").Set("bytesFromWords", jopher.Promisify(bytesFromWords))
 }
 
 func newPrivateMaster(seed string) (*js.Object, error) {
@@ -225,4 +239,20 @@ func generateWrapper(kind string, data string) (string, error) {
 	}
 	a, err := address.Generate(k, []byte(data))
 	return a.String(), err
+}
+
+func wordsFromBytes(lang, b string) ([]string, error) {
+	return WordsFromBytes(lang, []byte(b))
+}
+
+func bytesFromWords(lang string, w []interface{}) (string, error) {
+	s := make([]string, len(w))
+	for i, word := range w {
+		s[i] = word.(string)
+	}
+	b, err := BytesFromWords(lang, s)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
