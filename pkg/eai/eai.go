@@ -117,6 +117,8 @@ func calculateEAIFactor(
 		rateSlice = unlockedTable.Slice(from, weightedAverageAge, offset)
 	}
 	for _, row := range rateSlice {
+		// fmt.Printf("%s @ %s\n", row.Duration.String(), row.Rate.String())
+
 		// new balance = balance * e ^ (rate * time)
 		// first: what's the time? It's the fraction of a year used
 		qty.SetUint64(uint64(row.Duration))

@@ -11,6 +11,135 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestEAIFactorUnlocked(t *testing.T) {
+	// simple tests that the eai factor for unlocked accounts is e ** (rate * time)
+	// there is no period in the rate table shorter than a month, so using a few days
+	// should be fine.
+
+	// special case for 0 rate
+	blockTime := math.Timestamp(DefaultUnlockedEAI[0].From - 1)
+	lastEAICalc := blockTime.Sub(1 * math.Day)
+	weightedAverageAge := math.Duration(2 * math.Day)
+	zero, err := calculateEAIFactor(
+		blockTime, lastEAICalc, weightedAverageAge, nil,
+		DefaultUnlockedEAI, DefaultLockBonusEAI,
+	)
+	t.Run("one", func(t *testing.T) {
+		require.NoError(t, err)
+		d := decimal.WithContext(decimal.Context128)
+		d.SetUint64(1)
+		require.Equal(t, d, zero.Reduce())
+	})
+
+	// now test each particular rate
+	var expect *decimal.Big
+	time := decimal.WithContext(decimal.Context128)
+	time.SetUint64(1 * math.Day)
+	time.Quo(time, decimal.New(1*math.Year, 0))
+	for idx, rate := range DefaultUnlockedEAI {
+		blockTime := math.Timestamp(rate.From + (2 * math.Day))
+		weightedAverageAge = math.Duration(blockTime)
+		lastEAICalc = blockTime.Sub(1 * math.Day)
+
+		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+			t.Logf("block time: %s", blockTime.String())
+			t.Logf("last eai:   %s", lastEAICalc.String())
+			t.Logf("WAA:        %s", weightedAverageAge.String())
+			t.Logf("rate:       %s", rate.Rate.String())
+			expect = decimal.WithContext(decimal.Context128)
+			expect.Copy(&rate.Rate.Big)
+			expect.Mul(expect, time)
+			dmath.Exp(expect, expect)
+
+			// generating expect in this way raises condition flags
+			t.Log("expect conditions:", expect.Context.Conditions.Error())
+			expect.Context.Conditions = 0
+
+			factor, err := calculateEAIFactor(
+				blockTime, lastEAICalc, weightedAverageAge, nil,
+				DefaultUnlockedEAI, DefaultLockBonusEAI,
+			)
+			require.NoError(t, err)
+			require.Equal(t, decimal.Condition(0), factor.Context.Conditions)
+
+			expect.Reduce()
+			factor.Reduce()
+
+			t.Logf("expect:     %s", expect)
+			t.Logf("actual:     %s", factor)
+
+			require.Equal(t, expect, factor)
+		})
+	}
+}
+
+func TestEAIFactorLocked(t *testing.T) {
+	// simple tests that the eai factor for locked accounts is e ** (rate * time),
+	// where rate is the unlocked rate of the lock period plus the lock duration,
+	// plus the lock bonus rate.
+	// there is no period in the lock rate table shorter than a month, so using a few days
+	// should be fine.
+
+	// for each of these cases we're going to use a WAA old enough to get the
+	// max rate anyway, so we don't have to deal with the complexity of including
+	// the lock duration in the base rate calculation.
+	createdAt := math.Timestamp(0)
+	blockTime := math.Timestamp(
+		DefaultUnlockedEAI[len(DefaultUnlockedEAI)-1].From + (2 * math.Day),
+	)
+	lastEAICalc := blockTime.Sub(1 * math.Day)
+	weightedAverageAge := blockTime.Since(createdAt)
+
+	baseRate := DefaultUnlockedEAI[len(DefaultUnlockedEAI)-1].Rate
+	expect := decimal.WithContext(decimal.Context128)
+	oneDay := decimal.WithContext(decimal.Context128)
+	oneDay.SetUint64(math.Day)
+	oneDay.Quo(oneDay, decimal.New(math.Year, 0))
+
+	// special case for 0 lock rate
+	lock := math.Lock{NoticePeriod: DefaultLockBonusEAI[0].From - math.Day}
+	t.Run("no lock bonus", func(t *testing.T) {
+		expect.Copy(&baseRate.Big)
+		expect.Mul(expect, oneDay)
+		dmath.Exp(expect, expect)
+		expect.Reduce()
+		// generating expect in this way raises condition flags
+		t.Log("expect conditions:", expect.Context.Conditions.Error())
+		expect.Context.Conditions = 0
+
+		factor, err := calculateEAIFactor(
+			blockTime, lastEAICalc, weightedAverageAge, &lock,
+			DefaultUnlockedEAI, DefaultLockBonusEAI,
+		)
+		require.NoError(t, err)
+		factor.Reduce()
+		require.Equal(t, expect, factor)
+	})
+
+	// now test each particular lock bonus rate
+	for idx, lockRate := range DefaultLockBonusEAI {
+		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+			expect.Copy(&baseRate.Big)
+			expect.Add(expect, &lockRate.Rate.Big)
+			expect.Mul(expect, oneDay)
+			dmath.Exp(expect, expect)
+			expect.Reduce()
+			// generating expect in this way raises condition flags
+			t.Log("expect conditions:", expect.Context.Conditions.Error())
+			expect.Context.Conditions = 0
+
+			lock = math.Lock{NoticePeriod: lockRate.From}
+			factor, err := calculateEAIFactor(
+				blockTime, lastEAICalc, weightedAverageAge, &lock,
+				DefaultUnlockedEAI, DefaultLockBonusEAI,
+			)
+			require.NoError(t, err)
+			factor.Reduce()
+			require.Equal(t, expect, factor)
+		})
+	}
+}
+
 func TestEAIFactorSoundness(t *testing.T) {
 	days34 := math.Duration(34 * math.Day)
 	days90 := math.Duration(90 * math.Day)
