@@ -20,7 +20,7 @@ var _ encoding.TextMarshaler = (*Address)(nil)
 var _ encoding.TextUnmarshaler = (*Address)(nil)
 
 // MarshalText implements encoding.TextMarshaler
-func (a Address) MarshalText() ([]byte, error) {
+func (a *Address) MarshalText() ([]byte, error) {
 	return []byte(a.addr), nil
 }
 
