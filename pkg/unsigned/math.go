@@ -1,4 +1,4 @@
-package decmath
+package unsigned
 
 import (
 	"github.com/ericlagergren/decimal"

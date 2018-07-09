@@ -1,4 +1,4 @@
-package decmath
+package signed
 
 import (
 	"math"
@@ -10,19 +10,19 @@ import (
 
 func TestMul(t *testing.T) {
 	type args struct {
-		a uint64
-		b uint64
+		a int64
+		b int64
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    uint64
+		want    int64
 		wantErr bool
 	}{
 		{"a", args{6, 7}, 42, false},
 		{"b", args{600000000, 700000000}, 420000000000000000, false},
 		{"c", args{600000000000, 700000000000}, 0, true},
-		{"d", args{math.MaxUint32, math.MaxUint32}, math.MaxUint32 * math.MaxUint32, false},
+		{"d", args{math.MaxInt32, math.MaxInt32}, math.MaxInt32 * math.MaxInt32, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -40,19 +40,19 @@ func TestMul(t *testing.T) {
 
 func TestDiv(t *testing.T) {
 	type args struct {
-		a uint64
-		b uint64
+		a int64
+		b int64
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    uint64
+		want    int64
 		wantErr bool
 	}{
 		{"a", args{42, 7}, 6, false},
 		{"b", args{420000000000000000, 700000000}, 600000000, false},
 		{"c", args{600000000000, 0}, 0, true},
-		{"d", args{math.MaxUint32 * math.MaxUint32, math.MaxUint32}, math.MaxUint32, false},
+		{"d", args{math.MaxInt32 * math.MaxInt32, math.MaxInt32}, math.MaxInt32, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -70,20 +70,20 @@ func TestDiv(t *testing.T) {
 
 func TestMod(t *testing.T) {
 	type args struct {
-		a uint64
-		b uint64
+		a int64
+		b int64
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    uint64
+		want    int64
 		wantErr bool
 	}{
 		{"a", args{42, 7}, 0, false},
 		{"b", args{42, 5}, 2, false},
 		{"c", args{420000000000000000, 700000001}, 100000001, false},
 		{"d", args{12, 0}, 0, true},
-		{"e", args{math.MaxUint32 * math.MaxUint32, math.MaxInt32}, 1, false},
+		{"e", args{math.MaxInt32 * math.MaxInt32, math.MaxInt32}, 0, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -101,21 +101,21 @@ func TestMod(t *testing.T) {
 
 func TestDivMod(t *testing.T) {
 	type args struct {
-		a uint64
-		b uint64
+		a int64
+		b int64
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    uint64
-		want1   uint64
+		want    int64
+		want1   int64
 		wantErr bool
 	}{
 		{"a", args{42, 7}, 6, 0, false},
 		{"b", args{42, 5}, 8, 2, false},
 		{"c", args{420000000000000000, 700000001}, 599999999, 100000001, false},
 		{"d", args{12, 0}, 0, 0, true},
-		{"e", args{math.MaxUint32 * math.MaxUint32, math.MaxInt32}, (math.MaxUint32 * math.MaxUint32) / math.MaxInt32, 1, false},
+		{"e", args{math.MaxInt32 * math.MaxInt32, math.MaxInt32}, math.MaxInt32, 0, false},
 		{"f", args{42, 55}, 0, 42, false},
 	}
 	for _, tt := range tests {
@@ -137,14 +137,14 @@ func TestDivMod(t *testing.T) {
 
 func TestMulDiv(t *testing.T) {
 	type args struct {
-		v uint64
-		n uint64
-		d uint64
+		v int64
+		n int64
+		d int64
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    uint64
+		want    int64
 		wantErr bool
 	}{
 		{"a", args{80, 2, 5}, 32, false},
@@ -154,7 +154,6 @@ func TestMulDiv(t *testing.T) {
 		{"e", args{80000000000, 2, 5}, 32000000000, false},
 		{"f", args{80000000000, 2, 0}, 0, true},
 		{"g", args{147, 155, 132}, 172, false},
-		{"h", args{14717364050318377211, 15574702891736741942, 1324724618575407633}, 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -170,22 +169,21 @@ func TestMulDiv(t *testing.T) {
 	}
 }
 
-func bigmuldiv(a, b, c uint64) uint64 {
-	x := big.NewInt(0).SetUint64(a)
-	y := big.NewInt(0).SetUint64(b)
-	z := big.NewInt(0).SetUint64(c)
+func bigmuldiv(a, b, c int64) int64 {
+	x := big.NewInt(0).SetInt64(a)
+	y := big.NewInt(0).SetInt64(b)
+	z := big.NewInt(0).SetInt64(c)
 	r := big.NewInt(0)
 	q := big.NewInt(0)
 	r.Mul(x, y)
 	q.Div(r, z)
-	return q.Uint64()
+	return q.Int64()
 }
 
 func compareOne(r *rand.Rand, t *testing.T) {
-	// make sure they're never negative
-	a := r.Uint64() //& 0x7FFFFFFFFFFFFFFF
-	b := r.Uint64() //& 0x7FFFFFFFFFFFFFFF
-	c := r.Uint64() //& 0x7FFFFFFFFFFFFFFF
+	a := r.Int63()
+	b := r.Int63()
+	c := r.Int63()
 	if b > c {
 		b, c = c, b
 	}
