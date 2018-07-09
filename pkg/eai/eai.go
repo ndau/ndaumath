@@ -38,7 +38,7 @@ func Calculate(
 	balance math.Ndau,
 	blockTime, lastEAICalc math.Timestamp,
 	weightedAverageAge math.Duration,
-	lock *math.Lock,
+	lock Lock,
 	ageTable, lockTable RateTable,
 ) (math.Ndau, error) {
 	factor, err := calculateEAIFactor(
@@ -92,25 +92,28 @@ func Calculate(
 func calculateEAIFactor(
 	blockTime, lastEAICalc math.Timestamp,
 	weightedAverageAge math.Duration,
-	lock *math.Lock,
+	lock Lock,
 	unlockedTable, lockBonusTable RateTable,
 ) (*decimal.Big, error) {
 	factor := decimal.WithContext(decimal.Context128)
 	factor.SetUint64(1)
 
 	lastEAICalcAge := blockTime.Since(lastEAICalc)
-	offset := ageOffset(lock, blockTime)
+	var offset math.Duration
+	if lock != nil {
+		offset = lock.GetNoticePeriod()
+	}
 	from := weightedAverageAge - lastEAICalcAge
 	qty := decimal.WithContext(decimal.Context128)
 	rate := decimal.WithContext(decimal.Context128)
 	var rateSlice RateSlice
-	if lock != nil && lock.UnlocksOn != nil {
-		if *lock.UnlocksOn < blockTime {
+	if lock != nil && lock.GetUnlocksOn() != nil {
+		if *lock.GetUnlocksOn() < blockTime {
 			return nil, fmt.Errorf("*lock.UnlocksOn (%s) < blockTime (%s)",
-				lock.UnlocksOn.String(), blockTime.String(),
+				lock.GetUnlocksOn().String(), blockTime.String(),
 			)
 		}
-		notify := lock.UnlocksOn.Sub(lock.NoticePeriod)
+		notify := lock.GetUnlocksOn().Sub(lock.GetNoticePeriod())
 		freeze := blockTime.Since(notify)
 		rateSlice = unlockedTable.SliceF(from, weightedAverageAge, offset, freeze)
 	} else {
@@ -128,7 +131,7 @@ func calculateEAIFactor(
 		// the lock bonus
 		rate.Copy(&row.Rate.Big)
 		if lock != nil {
-			bonus := lockBonusTable.RateAt(lock.NoticePeriod)
+			bonus := lockBonusTable.RateAt(lock.GetNoticePeriod())
 			rate.Add(rate, &bonus.Big)
 		}
 
@@ -141,12 +144,4 @@ func calculateEAIFactor(
 	}
 
 	return factor, nil
-}
-
-// ageOffset calculates the age offset for an account based on its lock
-func ageOffset(lock *math.Lock, blockTime math.Timestamp) math.Duration {
-	if lock == nil {
-		return math.Duration(0)
-	}
-	return lock.NoticePeriod
 }

@@ -11,6 +11,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type testLock struct {
+	NoticePeriod math.Duration
+	UnlocksOn    *math.Timestamp
+}
+
+func (l *testLock) GetNoticePeriod() math.Duration {
+	if l != nil {
+		return l.NoticePeriod
+	}
+	return 0
+}
+
+func (l *testLock) GetUnlocksOn() *math.Timestamp {
+	if l != nil {
+		return l.UnlocksOn
+	}
+	return nil
+}
+
+var _ Lock = (*testLock)(nil)
+
 func TestEAIFactorUnlocked(t *testing.T) {
 	// simple tests that the eai factor for unlocked accounts is e ** (rate * time)
 	// there is no period in the rate table shorter than a month, so using a few days
@@ -97,7 +118,7 @@ func TestEAIFactorLocked(t *testing.T) {
 	oneDay.Quo(oneDay, decimal.New(math.Year, 0))
 
 	// special case for 0 lock rate
-	lock := math.Lock{NoticePeriod: DefaultLockBonusEAI[0].From - math.Day}
+	lock := testLock{NoticePeriod: DefaultLockBonusEAI[0].From - math.Day}
 	t.Run("no lock bonus", func(t *testing.T) {
 		expect.Copy(&baseRate.Big)
 		expect.Mul(expect, oneDay)
@@ -128,7 +149,7 @@ func TestEAIFactorLocked(t *testing.T) {
 			t.Log("expect conditions:", expect.Context.Conditions.Error())
 			expect.Context.Conditions = 0
 
-			lock = math.Lock{NoticePeriod: lockRate.From}
+			lock = testLock{NoticePeriod: lockRate.From}
 			factor, err := calculateEAIFactor(
 				blockTime, lastEAICalc, weightedAverageAge, &lock,
 				DefaultUnlockedEAI, DefaultLockBonusEAI,
@@ -402,9 +423,9 @@ func TestEAIFactorSoundness(t *testing.T) {
 			blockTime := math.Timestamp(1 * math.Year)
 			lastEAICalc := blockTime.Sub(scase.lastEAIOffset)
 			weightedAverageAge := math.Duration(123 * math.Day)
-			var lock *math.Lock
+			var lock *testLock
 			if scase.lockPeriod != nil {
-				lock = &math.Lock{NoticePeriod: *scase.lockPeriod}
+				lock = &testLock{NoticePeriod: *scase.lockPeriod}
 				if scase.lockNotifyOffset != nil {
 					uo := blockTime.Add(*scase.lockNotifyOffset)
 					lock.UnlocksOn = &uo
@@ -456,7 +477,7 @@ func TestCalculate(t *testing.T) {
 	actual, err := Calculate(
 		1*constants.QuantaPerUnit,
 		blockTime, lastEAICalc, weightedAverageAge,
-		&math.Lock{
+		&testLock{
 			NoticePeriod: 90 * math.Day,
 		},
 		DefaultUnlockedEAI, DefaultLockBonusEAI,
