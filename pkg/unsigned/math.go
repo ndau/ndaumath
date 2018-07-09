@@ -1,14 +1,52 @@
 package unsigned
 
 import (
+	"math"
+
 	"github.com/ericlagergren/decimal"
 	"github.com/oneiro-ndev/ndaumath/pkg/types"
 )
 
+// makeDecimal constructs a decimal object from a uint64 and avoids a bug in the decimal package
+// where the value is exactly equal to MaxUint64.
+func makeDecimal(n uint64) *decimal.Big {
+	if n == math.MaxUint64 {
+		x := decimal.WithContext(decimal.Context128).SetUint64(n - 1)
+		i := decimal.WithContext(decimal.Context128).SetUint64(1)
+		x.Add(x, i)
+		return x
+	}
+	return decimal.WithContext(decimal.Context128).SetUint64(n)
+}
+
+// Add adds two uint64s and errors if there is an overflow
+func Add(a, b uint64) (uint64, error) {
+	x := makeDecimal(a)
+	y := makeDecimal(b)
+	x.Add(x, y)
+	ret, ok := x.Uint64()
+	if !ok {
+		return 0, types.ErrorOverflow
+	}
+	return ret, nil
+}
+
+// Sub adds two uint64s and errors if there is an overflow
+func Sub(a, b uint64) (uint64, error) {
+	x := makeDecimal(a)
+	y := makeDecimal(b)
+	x.Sub(x, y)
+	ret, ok := x.Uint64()
+	if !ok {
+		return 0, types.ErrorOverflow
+	}
+	return ret, nil
+}
+
 // Mul multiplies two uint64s and errors if there is an overflow
 func Mul(a, b uint64) (uint64, error) {
-	x := decimal.WithContext(decimal.Context128).SetUint64(a)
-	y := decimal.WithContext(decimal.Context128).SetUint64(b)
+	x := makeDecimal(a)
+	y := makeDecimal(b)
 	x.Mul(x, y)
 	ret, ok := x.Uint64()
 	if !ok {
@@ -23,8 +61,8 @@ func Div(a, b uint64) (uint64, error) {
 		return 0, types.ErrorDivideByZero
 	}
 
-	x := decimal.WithContext(decimal.Context128).SetUint64(a)
-	y := decimal.WithContext(decimal.Context128).SetUint64(b)
+	x := makeDecimal(a)
+	y := makeDecimal(b)
 	x.QuoInt(x, y)
 	ret, ok := x.Uint64()
 	if !ok {
@@ -40,8 +78,8 @@ func Mod(a, b uint64) (uint64, error) {
 		return 0, types.ErrorDivideByZero
 	}
 
-	x := decimal.WithContext(decimal.Context128).SetUint64(a)
-	y := decimal.WithContext(decimal.Context128).SetUint64(b)
+	x := makeDecimal(a)
+	y := makeDecimal(b)
 	x.Rem(x, y)
 	ret, ok := x.Uint64()
 	if !ok {
@@ -57,8 +95,8 @@ func DivMod(a, b uint64) (uint64, uint64, error) {
 		return 0, 0, types.ErrorDivideByZero
 	}
 
-	x := decimal.WithContext(decimal.Context128).SetUint64(a)
-	y := decimal.WithContext(decimal.Context128).SetUint64(b)
+	x := makeDecimal(a)
+	y := makeDecimal(b)
 	x.QuoRem(x, y, y)
 	q, ok := x.Uint64()
 	if !ok {
@@ -79,9 +117,9 @@ func MulDiv(v, n, d uint64) (uint64, error) {
 		return 0, types.ErrorDivideByZero
 	}
 
-	x := decimal.WithContext(decimal.Context128).SetUint64(v)
-	y := decimal.WithContext(decimal.Context128).SetUint64(n)
-	z := decimal.WithContext(decimal.Context128).SetUint64(d)
+	x := makeDecimal(v)
+	y := makeDecimal(n)
+	z := makeDecimal(d)
 	x.Mul(x, y)
 	x.QuoInt(x, z)
 	ret, ok := x.Uint64()
