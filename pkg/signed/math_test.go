@@ -8,6 +8,81 @@ import (
 	"time"
 )
 
+func TestAdd(t *testing.T) {
+	type args struct {
+		a int64
+		b int64
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    int64
+		wantErr bool
+	}{
+		{"simple", args{6, 7}, 13, false},
+		{"bigger than int32", args{600000000, 700000000}, 1300000000, false},
+		{"max value adding 0", args{math.MaxInt64, 0}, math.MaxInt64, false},
+		{"crossing int32 border", args{math.MaxUint32, math.MaxUint32}, 2 * math.MaxUint32, false},
+		{"just barely overflowing", args{math.MaxInt64, 1}, 0, true},
+		{"simple neg", args{1, -1}, 0, false},
+		{"max-1", args{int64(math.MaxInt64), -1}, int64(math.MaxInt64 - 1), false},
+		{"max+1", args{int64(math.MaxInt64), 1}, 0, true},
+		{"max possible sum", args{int64(math.MaxInt64 / 2), int64(math.MaxInt64 / 2)}, int64(math.MaxInt64) - 1, false},
+		{"max negative + 1", args{int64(math.MinInt64), 1}, int64(math.MinInt64 + 1), false},
+		{"sum of max and min", args{int64(math.MaxInt64), int64(math.MinInt64)}, -1, false},
+		{"half of min", args{int64(math.MinInt64 / 2), int64(math.MinInt64 / 2)}, int64(math.MinInt64), false},
+		{"negative overflow", args{int64(math.MinInt64), -1}, 0, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Add(tt.args.a, tt.args.b)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Add() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Add() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSub(t *testing.T) {
+	type args struct {
+		a int64
+		b int64
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    int64
+		wantErr bool
+	}{
+		{"subtract a negative", args{1, -1}, 2, false},
+		{"simple sum", args{1, 1}, 0, false},
+		{"result less than zero", args{1, 100}, -99, false},
+		{"simple subtraction", args{654321, 123456}, 530865, false},
+		{"close to max", args{int64(math.MaxInt64), 1}, int64(math.MaxInt64 - 1), false},
+		{"overflow", args{int64(math.MaxInt64), -1}, 0, true},
+		{"close to max result", args{int64(math.MaxInt64 / 2), -int64(math.MaxInt64 / 2)}, int64(math.MaxInt64 - 1), false},
+		{"close to neg max", args{int64(math.MinInt64), -1}, int64(math.MinInt64 + 1), false},
+		{"pos and neg maxes", args{int64(math.MaxInt64), int64(math.MaxInt64)}, 0, false},
+		{"neg max", args{int64(math.MinInt64 / 2), -int64(math.MinInt64 / 2)}, int64(math.MinInt64), false},
+		{"negative overflow", args{int64(math.MinInt64), 1}, 0, true}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Sub(tt.args.a, tt.args.b)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Sub() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Sub() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestMul(t *testing.T) {
 	type args struct {
 		a int64
@@ -19,10 +94,12 @@ func TestMul(t *testing.T) {
 		want    int64
 		wantErr bool
 	}{
-		{"a", args{6, 7}, 42, false},
-		{"b", args{600000000, 700000000}, 420000000000000000, false},
-		{"c", args{600000000000, 700000000000}, 0, true},
-		{"d", args{math.MaxInt32, math.MaxInt32}, math.MaxInt32 * math.MaxInt32, false},
+		{"simple", args{6, 7}, 42, false},
+		{"bigger than int32", args{600000000, 700000000}, 420000000000000000, false},
+		{"multiply by zero", args{10, 0}, 0, false},
+		{"multiply by zero the other way", args{0, 10}, 0, false},
+		{"too big to fit", args{600000000000, 700000000000}, 0, true},
+		{"at the limit", args{math.MaxInt32, math.MaxInt32}, math.MaxInt32 * math.MaxInt32, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -49,10 +126,11 @@ func TestDiv(t *testing.T) {
 		want    int64
 		wantErr bool
 	}{
-		{"a", args{42, 7}, 6, false},
-		{"b", args{420000000000000000, 700000000}, 600000000, false},
-		{"c", args{600000000000, 0}, 0, true},
-		{"d", args{math.MaxInt32 * math.MaxInt32, math.MaxInt32}, math.MaxInt32, false},
+		{"simple", args{42, 7}, 6, false},
+		{"divide zero by", args{0, 7}, 0, false},
+		{"big numbers", args{420000000000000000, 700000000}, 600000000, false},
+		{"divide by zero", args{600000000000, 0}, 0, true},
+		{"at the limit", args{math.MaxInt32 * math.MaxInt32, math.MaxInt32}, math.MaxInt32, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -79,11 +157,12 @@ func TestMod(t *testing.T) {
 		want    int64
 		wantErr bool
 	}{
-		{"a", args{42, 7}, 0, false},
-		{"b", args{42, 5}, 2, false},
-		{"c", args{420000000000000000, 700000001}, 100000001, false},
-		{"d", args{12, 0}, 0, true},
-		{"e", args{math.MaxInt32 * math.MaxInt32, math.MaxInt32}, 0, false},
+		{"simple 0 remainder", args{42, 7}, 0, false},
+		{"simple with remainder", args{42, 5}, 2, false},
+		{"divide zero by", args{0, 7}, 0, false},
+		{"big with remainder", args{420000000000000000, 700000001}, 100000001, false},
+		{"divide by zero", args{12, 0}, 0, true},
+		{"big", args{math.MaxInt32 * math.MaxInt32, math.MaxInt32}, 0, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -111,12 +190,13 @@ func TestDivMod(t *testing.T) {
 		want1   int64
 		wantErr bool
 	}{
-		{"a", args{42, 7}, 6, 0, false},
-		{"b", args{42, 5}, 8, 2, false},
-		{"c", args{420000000000000000, 700000001}, 599999999, 100000001, false},
-		{"d", args{12, 0}, 0, 0, true},
-		{"e", args{math.MaxInt32 * math.MaxInt32, math.MaxInt32}, math.MaxInt32, 0, false},
-		{"f", args{42, 55}, 0, 42, false},
+		{"simple no remainder", args{42, 7}, 6, 0, false},
+		{"simple with remainder", args{42, 5}, 8, 2, false},
+		{"divide zero by", args{0, 7}, 0, 0, false},
+		{"big numbers", args{420000000000000000, 700000001}, 599999999, 100000001, false},
+		{"divide by zero", args{12, 0}, 0, 0, true},
+		{"zero result with remainder", args{42, 55}, 0, 42, false},
+		{"at the limit", args{math.MaxInt32 * math.MaxInt32, math.MaxInt32}, math.MaxInt32, 0, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -147,13 +227,17 @@ func TestMulDiv(t *testing.T) {
 		want    int64
 		wantErr bool
 	}{
-		{"a", args{80, 2, 5}, 32, false},
-		{"b", args{82, 2, 5}, 32, false},
-		{"c", args{83, 2, 5}, 33, false},
-		{"d", args{80000000000, 2000000000, 5000000000}, 32000000000, false},
-		{"e", args{80000000000, 2, 5}, 32000000000, false},
-		{"f", args{80000000000, 2, 0}, 0, true},
-		{"g", args{147, 155, 132}, 172, false},
+		{"simple with exact result", args{80, 2, 5}, 32, false},
+		{"simple with result rounded down", args{82, 2, 5}, 32, false},
+		{"simple with result rounded up", args{83, 2, 5}, 33, false},
+		{"zero for v", args{0, 2, 5}, 0, false},
+		{"zero for n", args{0, 2, 5}, 0, false},
+		{"simple with numbers > maxint32", args{80000000000, 2000000000, 5000000000}, 32000000000, false},
+		{"big number with small ratio", args{80000000000, 2, 5}, 32000000000, false},
+		{"divide by zero", args{80000000000, 2, 0}, 0, true},
+		{"approximate with ratio > 1", args{147, 155, 132}, 172, false},
+		{"too big with ratio > 1", args{math.MaxInt64, 1557470289173674194, 132472461857540763}, 0, true},
+		{"too big with ratio < 1", args{math.MaxInt64, 132472461857540763, 1557470289173674194}, 784504724644480276, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

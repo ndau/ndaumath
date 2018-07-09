@@ -5,6 +5,30 @@ import (
 	"github.com/oneiro-ndev/ndaumath/pkg/types"
 )
 
+// Add adds two int64s and errors if there is an overflow
+func Add(a, b int64) (int64, error) {
+	x := decimal.WithContext(decimal.Context128).SetMantScale(a, 0)
+	y := decimal.WithContext(decimal.Context128).SetMantScale(b, 0)
+	x.Add(x, y)
+	ret, ok := x.Int64()
+	if !ok {
+		return 0, types.ErrorOverflow
+	}
+	return ret, nil
+}
+
+// Sub subtracts two int64s and errors if there is an overflow
+func Sub(a, b int64) (int64, error) {
+	x := decimal.WithContext(decimal.Context128).SetMantScale(a, 0)
+	y := decimal.WithContext(decimal.Context128).SetMantScale(b, 0)
+	x.Sub(x, y)
+	ret, ok := x.Int64()
+	if !ok {
+		return 0, types.ErrorOverflow
+	}
+	return ret, nil
+}
+
 // Mul multiplies two int64s and errors if there is an overflow
 func Mul(a, b int64) (int64, error) {
 	x := decimal.WithContext(decimal.Context128).SetMantScale(a, 0)
