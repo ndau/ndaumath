@@ -64,7 +64,7 @@ func Calculate(
 
 	eai, couldConvert := qty.Uint64()
 	if !couldConvert {
-		return 0, math.OverflowError{}
+		return 0, math.ErrorOverflow
 	}
 	return math.Ndau(eai), nil
 }
