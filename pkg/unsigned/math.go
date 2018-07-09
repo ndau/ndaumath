@@ -4,7 +4,7 @@ import (
 	"math"
 
 	"github.com/ericlagergren/decimal"
-	"github.com/oneiro-ndev/ndaumath/pkg/types"
+	"github.com/oneiro-ndev/ndaumath/pkg/ndauerr"
 )
 
 // makeDecimal constructs a decimal object from a uint64 and avoids a bug in the decimal package
@@ -26,7 +26,7 @@ func Add(a, b uint64) (uint64, error) {
 	x.Add(x, y)
 	ret, ok := x.Uint64()
 	if !ok {
-		return 0, types.ErrorOverflow
+		return 0, ndauerr.ErrOverflow
 	}
 	return ret, nil
 }
@@ -38,7 +38,7 @@ func Sub(a, b uint64) (uint64, error) {
 	x.Sub(x, y)
 	ret, ok := x.Uint64()
 	if !ok {
-		return 0, types.ErrorOverflow
+		return 0, ndauerr.ErrOverflow
 	}
 	return ret, nil
 }
@@ -50,7 +50,7 @@ func Mul(a, b uint64) (uint64, error) {
 	x.Mul(x, y)
 	ret, ok := x.Uint64()
 	if !ok {
-		return 0, types.ErrorOverflow
+		return 0, ndauerr.ErrOverflow
 	}
 	return ret, nil
 }
@@ -58,7 +58,7 @@ func Mul(a, b uint64) (uint64, error) {
 // Div divides two uint64s and throws errors if there are problems
 func Div(a, b uint64) (uint64, error) {
 	if b == 0 {
-		return 0, types.ErrorDivideByZero
+		return 0, ndauerr.ErrDivideByZero
 	}
 
 	x := makeDecimal(a)
@@ -66,7 +66,7 @@ func Div(a, b uint64) (uint64, error) {
 	x.QuoInt(x, y)
 	ret, ok := x.Uint64()
 	if !ok {
-		return 0, types.ErrorMath
+		return 0, ndauerr.ErrMath
 	}
 	return ret, nil
 }
@@ -75,7 +75,7 @@ func Div(a, b uint64) (uint64, error) {
 // if there are issues.
 func Mod(a, b uint64) (uint64, error) {
 	if b == 0 {
-		return 0, types.ErrorDivideByZero
+		return 0, ndauerr.ErrDivideByZero
 	}
 
 	x := makeDecimal(a)
@@ -83,7 +83,7 @@ func Mod(a, b uint64) (uint64, error) {
 	x.Rem(x, y)
 	ret, ok := x.Uint64()
 	if !ok {
-		return 0, types.ErrorMath
+		return 0, ndauerr.ErrMath
 	}
 	return ret, nil
 }
@@ -92,7 +92,7 @@ func Mod(a, b uint64) (uint64, error) {
 // returns both, and and returns errors if there are issues.
 func DivMod(a, b uint64) (uint64, uint64, error) {
 	if b == 0 {
-		return 0, 0, types.ErrorDivideByZero
+		return 0, 0, ndauerr.ErrDivideByZero
 	}
 
 	x := makeDecimal(a)
@@ -100,11 +100,11 @@ func DivMod(a, b uint64) (uint64, uint64, error) {
 	x.QuoRem(x, y, y)
 	q, ok := x.Uint64()
 	if !ok {
-		return 0, 0, types.ErrorMath
+		return 0, 0, ndauerr.ErrMath
 	}
 	r, ok := y.Uint64()
 	if !ok {
-		return 0, 0, types.ErrorMath
+		return 0, 0, ndauerr.ErrMath
 	}
 	return q, r, nil
 }
@@ -114,7 +114,7 @@ func DivMod(a, b uint64) (uint64, uint64, error) {
 // cannot be converted back to uint64.
 func MulDiv(v, n, d uint64) (uint64, error) {
 	if d == 0 {
-		return 0, types.ErrorDivideByZero
+		return 0, ndauerr.ErrDivideByZero
 	}
 
 	x := makeDecimal(v)
@@ -124,7 +124,7 @@ func MulDiv(v, n, d uint64) (uint64, error) {
 	x.QuoInt(x, z)
 	ret, ok := x.Uint64()
 	if !ok {
-		return 0, types.ErrorOverflow
+		return 0, ndauerr.ErrOverflow
 	}
 	return ret, nil
 }

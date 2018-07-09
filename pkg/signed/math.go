@@ -2,7 +2,7 @@ package signed
 
 import (
 	"github.com/ericlagergren/decimal"
-	"github.com/oneiro-ndev/ndaumath/pkg/types"
+	"github.com/oneiro-ndev/ndaumath/pkg/ndauerr"
 )
 
 // Add adds two int64s and errors if there is an overflow
@@ -12,7 +12,7 @@ func Add(a, b int64) (int64, error) {
 	x.Add(x, y)
 	ret, ok := x.Int64()
 	if !ok {
-		return 0, types.ErrorOverflow
+		return 0, ndauerr.ErrOverflow
 	}
 	return ret, nil
 }
@@ -24,7 +24,7 @@ func Sub(a, b int64) (int64, error) {
 	x.Sub(x, y)
 	ret, ok := x.Int64()
 	if !ok {
-		return 0, types.ErrorOverflow
+		return 0, ndauerr.ErrOverflow
 	}
 	return ret, nil
 }
@@ -36,7 +36,7 @@ func Mul(a, b int64) (int64, error) {
 	x.Mul(x, y)
 	ret, ok := x.Int64()
 	if !ok {
-		return 0, types.ErrorOverflow
+		return 0, ndauerr.ErrOverflow
 	}
 	return ret, nil
 }
@@ -44,7 +44,7 @@ func Mul(a, b int64) (int64, error) {
 // Div divides two int64s and throws errors if there are problems
 func Div(a, b int64) (int64, error) {
 	if b == 0 {
-		return 0, types.ErrorDivideByZero
+		return 0, ndauerr.ErrDivideByZero
 	}
 
 	x := decimal.WithContext(decimal.Context128).SetMantScale(a, 0)
@@ -52,7 +52,7 @@ func Div(a, b int64) (int64, error) {
 	x.QuoInt(x, y)
 	ret, ok := x.Int64()
 	if !ok {
-		return 0, types.ErrorMath
+		return 0, ndauerr.ErrMath
 	}
 	return ret, nil
 }
@@ -61,7 +61,7 @@ func Div(a, b int64) (int64, error) {
 // if there are issues.
 func Mod(a, b int64) (int64, error) {
 	if b == 0 {
-		return 0, types.ErrorDivideByZero
+		return 0, ndauerr.ErrDivideByZero
 	}
 
 	x := decimal.WithContext(decimal.Context128).SetMantScale(a, 0)
@@ -69,7 +69,7 @@ func Mod(a, b int64) (int64, error) {
 	x.Rem(x, y)
 	ret, ok := x.Int64()
 	if !ok {
-		return 0, types.ErrorMath
+		return 0, ndauerr.ErrMath
 	}
 	return ret, nil
 }
@@ -78,7 +78,7 @@ func Mod(a, b int64) (int64, error) {
 // returns both, and and returns errors if there are issues.
 func DivMod(a, b int64) (int64, int64, error) {
 	if b == 0 {
-		return 0, 0, types.ErrorDivideByZero
+		return 0, 0, ndauerr.ErrDivideByZero
 	}
 
 	x := decimal.WithContext(decimal.Context128).SetMantScale(a, 0)
@@ -86,11 +86,11 @@ func DivMod(a, b int64) (int64, int64, error) {
 	x.QuoRem(x, y, y)
 	q, ok := x.Int64()
 	if !ok {
-		return 0, 0, types.ErrorMath
+		return 0, 0, ndauerr.ErrMath
 	}
 	r, ok := y.Int64()
 	if !ok {
-		return 0, 0, types.ErrorMath
+		return 0, 0, ndauerr.ErrMath
 	}
 	return q, r, nil
 }
@@ -100,7 +100,7 @@ func DivMod(a, b int64) (int64, int64, error) {
 // cannot be converted back to int64.
 func MulDiv(v, n, d int64) (int64, error) {
 	if d == 0 {
-		return 0, types.ErrorDivideByZero
+		return 0, ndauerr.ErrDivideByZero
 	}
 
 	x := decimal.WithContext(decimal.Context128).SetMantScale(v, 0)
@@ -110,7 +110,7 @@ func MulDiv(v, n, d int64) (int64, error) {
 	x.QuoInt(x, z)
 	ret, ok := x.Int64()
 	if !ok {
-		return 0, types.ErrorOverflow
+		return 0, ndauerr.ErrOverflow
 	}
 	return ret, nil
 }
