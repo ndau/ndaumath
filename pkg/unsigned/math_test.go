@@ -86,6 +86,8 @@ func TestMul(t *testing.T) {
 	}{
 		{"simple", args{6, 7}, 42, false},
 		{"bigger than int32", args{600000000, 700000000}, 420000000000000000, false},
+		{"multiply by zero", args{10, 0}, 0, false},
+		{"multiply by zero the other way", args{0, 10}, 0, false},
 		{"too big to fit", args{600000000000, 700000000000}, 0, true},
 		{"getting close to the limit", args{math.MaxUint32, math.MaxUint32}, math.MaxUint32 * math.MaxUint32, false},
 	}
@@ -115,6 +117,7 @@ func TestDiv(t *testing.T) {
 		wantErr bool
 	}{
 		{"simple", args{42, 7}, 6, false},
+		{"divide zero by", args{0, 7}, 0, false},
 		{"big numbers", args{420000000000000000, 700000000}, 600000000, false},
 		{"divide by zero", args{600000000000, 0}, 0, true},
 		{"close to the limit", args{math.MaxUint32 * math.MaxUint32, math.MaxUint32}, math.MaxUint32, false},
@@ -146,6 +149,7 @@ func TestMod(t *testing.T) {
 	}{
 		{"simple 0 remainder", args{42, 7}, 0, false},
 		{"simple with remainder", args{42, 5}, 2, false},
+		{"divide zero by", args{0, 7}, 0, false},
 		{"big with remainder", args{420000000000000000, 700000001}, 100000001, false},
 		{"divide by zero", args{12, 0}, 0, true},
 		{"big", args{math.MaxUint32 * math.MaxUint32, math.MaxInt32}, 1, false},
@@ -178,6 +182,7 @@ func TestDivMod(t *testing.T) {
 	}{
 		{"simple no remainder", args{42, 7}, 6, 0, false},
 		{"simple with remainder", args{42, 5}, 8, 2, false},
+		{"divide zero by", args{0, 7}, 0, 0, false},
 		{"big numbers", args{420000000000000000, 700000001}, 599999999, 100000001, false},
 		{"divide by zero", args{12, 0}, 0, 0, true},
 		{"at the limit", args{math.MaxUint32 * math.MaxUint32, math.MaxInt32}, (math.MaxUint32 * math.MaxUint32) / math.MaxInt32, 1, false},
@@ -215,6 +220,8 @@ func TestMulDiv(t *testing.T) {
 		{"simple with exact result", args{80, 2, 5}, 32, false},
 		{"simple with result rounded down", args{82, 2, 5}, 32, false},
 		{"simple with result rounded up", args{83, 2, 5}, 33, false},
+		{"zero for v", args{0, 2, 5}, 0, false},
+		{"zero for n", args{0, 2, 5}, 0, false},
 		{"simple with numbers > maxint32", args{80000000000, 2000000000, 5000000000}, 32000000000, false},
 		{"big number with small ratio", args{80000000000, 2, 5}, 32000000000, false},
 		{"divide by zero", args{80000000000, 2, 0}, 0, true},
