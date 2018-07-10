@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
+	"github.com/oneiro-ndev/ndaumath/pkg/signed"
 )
 
 //go:generate msgp -tests=0
@@ -16,22 +17,14 @@ type Ndau int64
 // Add adds a value to an Ndau
 // It may return an overflow error
 func (n Ndau) Add(other Ndau) (Ndau, error) {
-	t := n + other
-	// if the signs are opposite there's no way it can overflow
-	if (n > 0) == (other < 0) {
-		return t, nil
-	}
-	// otherwise, if the sum doesn't have the same sign
-	// we overflowed
-	if (n > 0) == (t < 0) {
-		return t, ErrorOverflow
-	}
-	return t, nil
+	t, err := signed.Add(int64(n), int64(other))
+	return Ndau(t), err
 }
 
 // Sub subtracts, and may overflow
 func (n Ndau) Sub(other Ndau) (Ndau, error) {
-	return n.Add(-other)
+	t, err := signed.Sub(int64(n), int64(other))
+	return Ndau(t), err
 }
 
 // Abs returns the absolute value without converting to float
