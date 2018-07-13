@@ -6,7 +6,7 @@ To build it, you need [gomobile](https://godoc.org/golang.org/x/mobile/cmd/gomob
 go get golang.org/x/mobile/cmd/gomobile
 ```
 
-To build IOS, you need XCode installed, and then you need to do:
+To build IOS, you need XCode -- and its command line tools -- installed, and then you need to do:
 
 ```sh
 gomobile init
@@ -23,10 +23,10 @@ This will build IOS and generate Keyaddr.framework.
 For Android, you need a current JDK, a current Android Studio, and a current NDK. Install the JDK and Android Studio, then set the location for ANDROID_HOME:
 
 ```sh
-export ANDROID_HOME=/Users/YOUR_USER_NAME/Library/Android/sdk/
+export ANDROID_HOME=$HOME/Library/Android/sdk/
 ```
 
-(substitute your user name appropriately)
+If your android home is not there, then set this appropriately.
 
 Download [the ndk](https://developer.android.com/ndk/downloads/) and put it wherever you like (I put it in my Downloads folder), then tell gomobile how to find it:
 
