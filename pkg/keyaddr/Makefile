@@ -4,7 +4,7 @@ ANDROID_HOME ?= $(HOME)/Library/Android/sdk/
 
 default: all
 
-all: test build ios android
+all: clean test build ios android
 
 test:
 	go test
@@ -15,6 +15,10 @@ ios: Keyaddr.framework
 
 Keyaddr.framework: api.go
 	gomobile bind -target ios -v
+
+keyaddr.zip: Keyaddr.framework
+	rm keyaddr.zip
+	zip -ur keyaddr Keyaddr.framework/
 
 android: keyaddr.aar
 

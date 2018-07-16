@@ -11,7 +11,7 @@ import (
 func TestWordsFromBytes(t *testing.T) {
 	type args struct {
 		lang string
-		b    []byte
+		s    string
 	}
 	tests := []struct {
 		name    string
@@ -19,13 +19,16 @@ func TestWordsFromBytes(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"basic", args{"en", []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}},
+		{"basic", args{"en", "AAECAwQFBgcICQoLDA0ODw=="},
 			"abandon amount liar amount expire adjust cage candy arch gather drum bundle", false},
-		{"generates an error", args{"foo", []byte{}}, "", true},
+		{"minor change gets slightly different words", args{"en", "AAECAwQFBgcIcQoLDA0ODw=="},
+			"abandon amount liar amount expire adjust canyon candy arch gather drum business", false},
+		{"generates an error", args{"foo", ""}, "", true},
+		{"detects encoding error (bad length)", args{"en", "AAECAwQFBgcIcoLDA0ODw=="}, "", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := WordsFromBytes(tt.args.lang, tt.args.b)
+			got, err := WordsFromBytes(tt.args.lang, tt.args.s)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("WordsFromBytes() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -45,14 +48,14 @@ func TestWordsToBytes(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []byte
+		want    string
 		wantErr bool
 	}{
 		{"basic", args{"en", "abandon amount liar amount expire adjust cage candy arch gather drum bundle"},
-			[]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}, false},
+			"AAECAwQFBgcICQoLDA0ODw==", false},
 		{"generates an error for bad words", args{"en", "abandon amount blah amount expire adjust cage candy arch gather drum bundle"},
-			nil, true},
-		{"generates an error for language", args{"foo", "blah"}, nil, true},
+			"", true},
+		{"generates an error for language", args{"foo", "blah"}, "", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -70,7 +73,7 @@ func TestWordsToBytes(t *testing.T) {
 
 func TestNewKey(t *testing.T) {
 	type args struct {
-		seed []byte
+		seed string
 	}
 	tests := []struct {
 		name    string
@@ -78,8 +81,10 @@ func TestNewKey(t *testing.T) {
 		want    *Key
 		wantErr bool
 	}{
-		{"generates a known key", args{[]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}},
+		{"generates a known key", args{"AAECAwQFBgcICQoLDA0ODw=="},
 			&Key{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"}, false},
+		{"fails for bad encoding", args{"AAAwQFBgcICQoLDA0ODw=="}, nil, true},
+		{"fails for too-short key", args{"AQIDBA=="}, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -212,7 +217,7 @@ func TestKey_Sign(t *testing.T) {
 		Key string
 	}
 	type args struct {
-		msg []byte
+		msg string
 	}
 	tests := []struct {
 		name    string
@@ -223,12 +228,12 @@ func TestKey_Sign(t *testing.T) {
 	}{
 		{"basic",
 			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
-			args{[]byte{1, 2, 3, 4}},
+			args{"AQIDBA=="},
 			&Signature{"gbcseiia598sbs4u8p76adr2cgbkhy679867sba4dsaggchk657yzg3f92waeiaaxz8qf7k46cnwt3g2inycttseh38bw5j7nac2jkdg7nywbe7zxi======"},
 			false},
 		{"public key should error",
 			fields{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"},
-			args{[]byte{1, 2, 3, 4}},
+			args{"AQIDBA=="},
 			nil,
 			true},
 	}
