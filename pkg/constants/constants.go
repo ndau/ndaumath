@@ -24,7 +24,7 @@ const MaxQuantaPerAddress = math.MaxInt64
 const TimestampFormat = "2006-01-02T15:04:05Z"
 
 // EpochStart is the text representation of the start time of our Epoch.
-const EpochStart = "2018-01-01T00:00:00Z"
+const EpochStart = "2000-01-01T00:00:00Z"
 
 // Epoch is the basic moment from which Ndau chain time calculations begin.
 var Epoch time.Time
