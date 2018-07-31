@@ -5,6 +5,7 @@ import (
 
 	"github.com/ericlagergren/decimal"
 	dmath "github.com/ericlagergren/decimal/math"
+	"github.com/oneiro-ndev/ndaumath/pkg/ndauerr"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 )
 
@@ -64,7 +65,7 @@ func Calculate(
 
 	eai, couldConvert := qty.Uint64()
 	if !couldConvert {
-		return 0, math.ErrorOverflow
+		return 0, ndauerr.ErrOverflow
 	}
 	return math.Ndau(eai), nil
 }
