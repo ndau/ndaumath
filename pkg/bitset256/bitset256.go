@@ -11,7 +11,7 @@ import (
 // word order (the 0 bit is the 0 bit of the 0th word).
 type Bitset256 [4]uint64
 
-// New creates a new bitset and allows setting some of its bits at the same time
+// New creates a new bitset and allows setting some of its bits at the same time.
 func New(ixs ...int) *Bitset256 {
 	b := &Bitset256{}
 	for _, i := range ixs {
@@ -20,7 +20,7 @@ func New(ixs ...int) *Bitset256 {
 	return b
 }
 
-// Clone creates a copy of a bitset
+// Clone creates a copy of a bitset.
 func (b *Bitset256) Clone() *Bitset256 {
 	c := *b
 	return &c
@@ -34,7 +34,7 @@ func (b *Bitset256) Get(ix int) bool {
 	return (b[w] & mask) != 0
 }
 
-// Set unconditionally forces a single bit at the index to 1 and returns the pointer to the bitset
+// Set unconditionally forces a single bit at the index to 1 and returns the pointer to the bitset.
 // The index is taken mod256.
 func (b *Bitset256) Set(ix int) *Bitset256 {
 	w := (ix & 0xFF) / 64
@@ -44,7 +44,7 @@ func (b *Bitset256) Set(ix int) *Bitset256 {
 	return b
 }
 
-// Clear unconditionally forces a single bit to 0 and returns the pointer to the bitset
+// Clear unconditionally forces a single bit to 0 and returns the pointer to the bitset.
 // The index is taken mod256.
 func (b *Bitset256) Clear(ix int) *Bitset256 {
 	w := (ix & 0xFF) / 64
@@ -54,7 +54,7 @@ func (b *Bitset256) Clear(ix int) *Bitset256 {
 	return b
 }
 
-// Equals returns true if the two bitsets have identical contents
+// Equals returns true if the two bitsets have identical contents.
 func (b *Bitset256) Equals(other *Bitset256) bool {
 	for i := 0; i < 4; i++ {
 		if b[i] != other[i] {
@@ -66,7 +66,7 @@ func (b *Bitset256) Equals(other *Bitset256) bool {
 
 // Intersect returns a pointer to a new Bitset256 that is the intersection
 // of its two source bitsets (the only bits that are set are the ones where
-// both source sets had a 1 bit)
+// both source sets had a 1 bit).
 func (b *Bitset256) Intersect(other *Bitset256) *Bitset256 {
 	r := b.Clone()
 	for i := 0; i < 4; i++ {
@@ -77,7 +77,7 @@ func (b *Bitset256) Intersect(other *Bitset256) *Bitset256 {
 
 // Union returns a pointer to a new Bitset256 that is the union
 // of its two source bitsets (the only bits that are set are the ones where
-// either source set had a 1 bit)
+// either source set had a 1 bit).
 func (b *Bitset256) Union(other *Bitset256) *Bitset256 {
 	r := b.Clone()
 	for i := 0; i < 4; i++ {
@@ -91,7 +91,7 @@ func (b *Bitset256) IsSubsetOf(other *Bitset256) bool {
 	return b.Equals(b.Intersect(other))
 }
 
-// Count returns the number of 1 bits that are set
+// Count returns the number of 1 bits that are set.
 func (b *Bitset256) Count() int {
 	c := 0
 	for i := 0; i < 4; i++ {
@@ -128,7 +128,7 @@ func FromBytes(ba []byte) (*Bitset256, error) {
 	return b, nil
 }
 
-// AsHex returns a string representation of the bitset as a 256-bit number in hex (64 characters)
+// AsHex returns a string representation of the bitset as a 256-bit number in hex (64 characters).
 // It follows the same rules as AsBytes.
 func (b *Bitset256) AsHex() string {
 	return hex.EncodeToString(b.AsBytes())

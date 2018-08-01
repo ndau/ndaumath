@@ -131,3 +131,10 @@ func TestUnion(t *testing.T) {
 	assert.True(t, buzz.IsSubsetOf(all))
 	assert.True(t, all.IsSubsetOf(all))
 }
+
+func TestAsHex2(t *testing.T) {
+	b := setMultiples(4)
+	assert.Equal(t, "1111111111111111111111111111111111111111111111111111111111111111", b.AsHex())
+	c := New(0, 17, 34, 51)
+	assert.Equal(t, "0000000000000008000000000000000400000000000000020000000000000001", c.AsHex())
+}
