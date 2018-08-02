@@ -26,20 +26,25 @@ func (b *Bitset256) Clone() *Bitset256 {
 	return &c
 }
 
+// wmask is a helper function which, given an index,
+// returns the word to index into and the mask to use for selecting the given bit
+func wmask(ix int) (int, uint64) {
+	w := (ix & 0xFF) >> 6 // faster divide by 64
+	mask := uint64(1) << byte(ix&0x3F)
+	return w, mask
+}
+
 // Get retrieves the value of a single bit at the given index.
 // The index is taken mod256.
 func (b *Bitset256) Get(ix int) bool {
-	w := (ix & 0xFF) / 64
-	mask := uint64(1) << byte(ix%64)
+	w, mask := wmask(ix)
 	return (b[w] & mask) != 0
 }
 
 // Set unconditionally forces a single bit at the index to 1 and returns the pointer to the bitset.
 // The index is taken mod256.
 func (b *Bitset256) Set(ix int) *Bitset256 {
-	w := (ix & 0xFF) / 64
-	// create a mask for the bit we need to set
-	mask := uint64(1) << byte(ix%64)
+	w, mask := wmask(ix)
 	b[w] |= mask
 	return b
 }
@@ -47,10 +52,8 @@ func (b *Bitset256) Set(ix int) *Bitset256 {
 // Clear unconditionally forces a single bit to 0 and returns the pointer to the bitset.
 // The index is taken mod256.
 func (b *Bitset256) Clear(ix int) *Bitset256 {
-	w := (ix & 0xFF) / 64
-	// this mask needs all bits on except the one we're clearing
-	mask := ^(uint64(1) << byte(ix%64))
-	b[w] &= mask
+	w, mask := wmask(ix)
+	b[w] &= ^mask
 	return b
 }
 
@@ -101,8 +104,8 @@ func (b *Bitset256) Count() int {
 }
 
 // AsBytes returns the bitset as a slice of 32 bytes, where the 0 bits in the bitset are in the
-// last element of the slice. This is so rendering the slice to a visual form will show the
-// bits in the correct order.
+// last element of the slice (basically, big-endian format). This is so that rendering the slice
+// to a visual format will show the bits in an expected order.
 func (b *Bitset256) AsBytes() []byte {
 	ba := make([]byte, 32)
 	for i := uint(0); i < 4; i++ {
