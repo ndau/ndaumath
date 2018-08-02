@@ -137,4 +137,8 @@ func TestAsHex2(t *testing.T) {
 	assert.Equal(t, "1111111111111111111111111111111111111111111111111111111111111111", b.AsHex())
 	c := New(0, 17, 34, 51)
 	assert.Equal(t, "0000000000000008000000000000000400000000000000020000000000000001", c.AsHex())
+	for i := 0; i < 256; i++ {
+		c.Toggle(i)
+	}
+	assert.Equal(t, "fffffffffffffff7fffffffffffffffbfffffffffffffffdfffffffffffffffe", c.AsHex())
 }

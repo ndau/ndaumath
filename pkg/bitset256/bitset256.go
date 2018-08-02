@@ -6,9 +6,20 @@ import (
 	"math/bits"
 )
 
-// Bitset256 is an efficient way to store individual bits corresponding to 256 values (i.e.,
-// using a byte as an index). The bits are stored in an array of 4 64-bit words, in little-endian
-// word order (the 0 bit is the 0 bit of the 0th word).
+// The bitset256 package supports an efficient array of 256 boolean values with
+// associated operations like get, set, intersection, union, as well as
+// conversion to/from strings and arrays of bytes. The bits are stored in an array of 4
+// 64-bit words, in little-endian word order (the 0 bit is the 0 bit of the 0th
+// word).
+//
+// It is not implemented with a third party bitset package because the ones I
+// looked at allowed for arbitrary sizes; we only needed a 256-bit one and
+// performance is pretty important in this use case.
+//
+// It is intended for use in chaincode to manage the list of valid opcodes.
+
+// Bitset256 is an efficient way to store individual bits corresponding to 256
+// values (i.e., using a byte as an index).
 type Bitset256 [4]uint64
 
 // New creates a new bitset and allows setting some of its bits at the same time.
@@ -28,6 +39,7 @@ func (b *Bitset256) Clone() *Bitset256 {
 
 // wmask is a helper function which, given an index,
 // returns the word to index into and the mask to use for selecting the given bit
+// The index is taken mod256.
 func wmask(ix int) (int, uint64) {
 	w := (ix & 0xFF) >> 6 // faster divide by 64
 	mask := uint64(1) << byte(ix&0x3F)
@@ -35,14 +47,12 @@ func wmask(ix int) (int, uint64) {
 }
 
 // Get retrieves the value of a single bit at the given index.
-// The index is taken mod256.
 func (b *Bitset256) Get(ix int) bool {
 	w, mask := wmask(ix)
 	return (b[w] & mask) != 0
 }
 
 // Set unconditionally forces a single bit at the index to 1 and returns the pointer to the bitset.
-// The index is taken mod256.
 func (b *Bitset256) Set(ix int) *Bitset256 {
 	w, mask := wmask(ix)
 	b[w] |= mask
@@ -50,10 +60,17 @@ func (b *Bitset256) Set(ix int) *Bitset256 {
 }
 
 // Clear unconditionally forces a single bit to 0 and returns the pointer to the bitset.
-// The index is taken mod256.
 func (b *Bitset256) Clear(ix int) *Bitset256 {
 	w, mask := wmask(ix)
 	b[w] &= ^mask
+	return b
+}
+
+// Toggle reverses the state of a single bit at the index and returns the pointer to the bitset.
+// The index is taken mod256.
+func (b *Bitset256) Toggle(ix int) *Bitset256 {
+	w, mask := wmask(ix)
+	b[w] ^= mask
 	return b
 }
 
