@@ -67,7 +67,6 @@ func (b *Bitset256) Clear(ix int) *Bitset256 {
 }
 
 // Toggle reverses the state of a single bit at the index and returns the pointer to the bitset.
-// The index is taken mod256.
 func (b *Bitset256) Toggle(ix int) *Bitset256 {
 	w, mask := wmask(ix)
 	b[w] ^= mask
