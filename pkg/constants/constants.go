@@ -2,6 +2,7 @@ package constants
 
 import (
 	"math"
+	"regexp"
 	"time"
 )
 
@@ -35,6 +36,28 @@ const MaxTimestamp = math.MaxInt64
 // MinTimestamp is the minimum value a timestamp can take on
 const MinTimestamp = 0
 
+// DurationFormat is the format regex used to parse durations
+//
+// Allowable durations broadly follow the RFC3339 duration
+// specification: `\dy\dm\dd(t\dh\dm\ds)`. Note that `m`
+// is used for both months and minutes: `1m` is one month,
+// and `t1m` is one minute. Leading `p` chars are allowed.
+//
+// There is no `w` symbol for weeks; use multiples of days
+// or months instead.
+const DurationFormat = `(?i)^p?((?P<years>\d+)y)?((?P<months>\d{1,2})m)?((?P<days>\d{1,2})d)?(t((?P<hours>\d{1,2})h)?((?P<minutes>\d{1,2})m)?((?P<seconds>\d{1,2})s)?)?$`
+
+// DurationRE is the regular expression used to parse Durations
+//
+// Allowable durations broadly follow the RFC3339 duration
+// specification: `\dy\dm\dd(t\dh\dm\ds)`. Note that `m`
+// is used for both months and minutes: `1m` is one month,
+// and `t1m` is one minute. Leading `p` chars are allowed.
+//
+// There is no `w` symbol for weeks; use multiples of days
+// or months instead.
+var DurationRE *regexp.Regexp
+
 // MaxDuration is the maximum value a duration can contain
 const MaxDuration = math.MaxInt64
 
@@ -43,4 +66,5 @@ const MinDuration = math.MinInt64
 
 func init() {
 	Epoch, _ = time.Parse(TimestampFormat, EpochStart)
+	DurationRE = regexp.MustCompile(DurationFormat)
 }

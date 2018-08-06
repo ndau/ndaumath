@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTimestampFrom(t *testing.T) {
@@ -221,5 +222,22 @@ func TestDuration_UpdateWeightedAverageAge(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestParseDuration(t *testing.T) {
+	good := []string{
+		"",
+		"t1s",
+		"1m",
+		"t1m",
+		"p1y2m3dt4h5m6s",
+		"P1Y2M3DT4H5M6S",
+	}
+
+	for _, good_example := range good {
+		t.Log(good_example)
+		_, err := ParseDuration(good_example)
+		require.NoError(t, err)
 	}
 }

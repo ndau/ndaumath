@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
@@ -105,8 +106,14 @@ const (
 	// hyperfine levels of the ground state of the cesium 133 atom,
 	// per the 13th CGPM (1967).
 	Second = Millisecond * 1000
-	// Day is exactly 86400 Seconds
-	Day = Second * 86400
+	// Minute is exactly 60 Seconds
+	Minute = Second * 60
+	// Hour is exactly 60 Minutes
+	Hour = Minute * 60
+	// Day is exactly 24 Hours
+	Day = Hour * 24
+	// Month is exactly 30 Days
+	Month = Day * 30
 	// Year is exactly 365 days
 	Year = Day * 365
 )
@@ -119,6 +126,67 @@ func DurationFrom(d time.Duration) Duration {
 // TimeDuration converts a Duration into a time.Duration
 func (d Duration) TimeDuration() time.Duration {
 	return time.Duration(int64(d) / Millisecond * int64(time.Millisecond))
+}
+
+// ParseDuration creates a duration from a duration string
+//
+// Allowable durations broadly follow the RFC3339 duration
+// specification: `\dy\dm\dd(t\dh\dm\ds)`. Note that `m`
+// is used for both months and minutes: `1m` is one month,
+// and `t1m` is one minute. Leading `p` chars are allowed.
+//
+// There is no `w` symbol for weeks; use multiples of days
+// or months instead.
+//
+// Integral seconds are the smallest unit of time which
+// can be parsed.
+func ParseDuration(s string) (Duration, error) {
+	match := constants.DurationRE.FindStringSubmatch(s)
+	if match == nil {
+		return Duration(0), fmt.Errorf("Invalid duration format")
+	}
+
+	// get match groups by name:
+	// https://stackoverflow.com/a/20751656/504550
+	result := make(map[string]string)
+	for i, name := range constants.DurationRE.SubexpNames() {
+		if i != 0 && name != "" {
+			result[name] = match[i]
+		}
+	}
+
+	duration := Duration(0)
+	addTime := func(name string, unit uint64) error {
+		if result[name] != "" {
+			value, err := strconv.ParseUint(result[name], 10, 64)
+			if err != nil {
+				return fmt.Errorf("Invalid integer: %s", result[name])
+			}
+			duration += Duration(value * unit)
+		}
+		return nil
+	}
+
+	if err := addTime("years", Year); err != nil {
+		return Duration(0), err
+	}
+	if err := addTime("months", Month); err != nil {
+		return Duration(0), err
+	}
+	if err := addTime("days", Day); err != nil {
+		return Duration(0), err
+	}
+	if err := addTime("hours", Hour); err != nil {
+		return Duration(0), err
+	}
+	if err := addTime("minutes", Minute); err != nil {
+		return Duration(0), err
+	}
+	if err := addTime("seconds", Second); err != nil {
+		return Duration(0), err
+	}
+
+	return duration, nil
 }
 
 // String represents a Duration as a human-readable string
