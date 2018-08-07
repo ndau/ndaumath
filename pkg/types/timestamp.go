@@ -138,9 +138,6 @@ func (d Duration) TimeDuration() time.Duration {
 //
 // There is no `w` symbol for weeks; use multiples of days
 // or months instead.
-//
-// Integral seconds are the smallest unit of time which
-// can be parsed.
 func ParseDuration(s string) (Duration, error) {
 	match := constants.DurationRE.FindStringSubmatch(s)
 	if match == nil {
@@ -184,6 +181,9 @@ func ParseDuration(s string) (Duration, error) {
 		return Duration(0), err
 	}
 	if err := addTime("seconds", Second); err != nil {
+		return Duration(0), err
+	}
+	if err := addTime("micros", Microsecond); err != nil {
 		return Duration(0), err
 	}
 

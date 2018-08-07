@@ -247,6 +247,12 @@ func TestParseDuration(t *testing.T) {
 		{"t100h", args{"100m"}, Duration(0), true},          // 3 digit anything else
 		{"t100m", args{"100m"}, Duration(0), true},          // 3 digit anything else
 		{"t100s", args{"100m"}, Duration(0), true},          // 3 digit anything else
+		{"t1u", args{"t1u"}, Duration(1), false},
+		{"t1us", args{"t1us"}, Duration(1), false},
+		{"t1μ", args{"t1μ"}, Duration(1), false},
+		{"t1μs", args{"t1μs"}, Duration(1), false},
+		{"t999999μ", args{"t999999μ"}, Duration(999999), false},
+		{"t1000000μ", args{"t1000000μ"}, Duration(0), true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

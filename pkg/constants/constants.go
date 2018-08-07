@@ -37,7 +37,7 @@ const MaxTimestamp = math.MaxInt64
 const MinTimestamp = 0
 
 // DurationFormat is the format regex used to parse durations
-const DurationFormat = `(?i)^p?((?P<years>\d+)y)?((?P<months>\d{1,2})m)?((?P<days>\d{1,2})d)?(t((?P<hours>\d{1,2})h)?((?P<minutes>\d{1,2})m)?((?P<seconds>\d{1,2})s)?)?$`
+const DurationFormat = `(?i)^p?((?P<years>\d+)y)?((?P<months>\d{1,2})m)?((?P<days>\d{1,2})d)?(t((?P<hours>\d{1,2})h)?((?P<minutes>\d{1,2})m)?((?P<seconds>\d{1,2})s)?((?P<micros>\d{1,6})[μu]s?)?)?$`
 
 // DurationRE is the regular expression used to parse Durations
 var DurationRE *regexp.Regexp
