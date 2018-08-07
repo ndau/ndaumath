@@ -19,9 +19,9 @@ func TestTimestampFrom(t *testing.T) {
 		wantErr bool
 	}{
 		{"a", args{constants.Epoch}, 0, false},
-		{"b", args{time.Date(2018, time.January, 18, 14, 21, 0, 0, time.UTC)},
+		{"b", args{time.Date(2000, time.January, 18, 14, 21, 0, 0, time.UTC)},
 			1000000 * (24*60*60*17 + 14*60*60 + 21*60), false},
-		{"c", args{time.Date(2010, time.January, 18, 14, 21, 0, 0, time.UTC)}, 0, true},
+		{"c", args{time.Date(1992, time.January, 18, 14, 21, 0, 0, time.UTC)}, 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -47,9 +47,9 @@ func TestParseTimestamp(t *testing.T) {
 		want    Timestamp
 		wantErr bool
 	}{
-		{"a", args{"2018-01-01T00:00:00Z"}, 0, false},
-		{"b", args{"2018-01-18T14:21:00Z"}, 1000000 * (24*60*60*17 + 14*60*60 + 21*60), false},
-		{"c", args{"2010-01-01T00:00:00Z"}, 0, true},
+		{"a", args{"2000-01-01T00:00:00Z"}, 0, false},
+		{"b", args{"2000-01-18T14:21:00Z"}, 1000000 * (24*60*60*17 + 14*60*60 + 21*60), false},
+		{"c", args{"1992-01-01T00:00:00Z"}, 0, true},
 		{"d", args{"BLAH"}, 0, true},
 	}
 	for _, tt := range tests {
@@ -174,7 +174,7 @@ func TestTimestamp_String(t *testing.T) {
 		want string
 	}{
 		{"a", 0, constants.EpochStart},
-		{"b", 1000000 * (24*60*60*17 + 14*60*60 + 21*60), "2018-01-18T14:21:00Z"},
+		{"b", 1000000 * (24*60*60*17 + 14*60*60 + 21*60), "2000-01-18T14:21:00Z"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -221,5 +221,50 @@ func TestDuration_UpdateWeightedAverageAge(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestParseDuration(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    Duration
+		wantErr bool
+	}{
+		{"<blank>", args{""}, Duration(0), false},
+		{"t0s", args{"t0s"}, Duration(0), false},
+		{"t1s", args{"t1s"}, Duration(1 * Second), false},
+		{"1m", args{"1m"}, Duration(1 * Month), false},
+		{"t1m", args{"t1m"}, Duration(1 * Minute), false},
+		{"p1y2m3dt4h5m6s", args{"p1y2m3dt4h5m6s"}, Duration(36993906000000), false},
+		{"P1Y2M3DT4H5M6S", args{"P1Y2M3DT4H5M6S"}, Duration(36993906000000), false},
+		{"1h", args{"1h"}, Duration(0), true},               // needs t
+		{"100y", args{"100y"}, Duration(100 * Year), false}, // 3 digit year
+		{"100m", args{"100m"}, Duration(0), true},           // 3 digit anything else
+		{"100d", args{"100m"}, Duration(0), true},           // 3 digit anything else
+		{"t100h", args{"100m"}, Duration(0), true},          // 3 digit anything else
+		{"t100m", args{"100m"}, Duration(0), true},          // 3 digit anything else
+		{"t100s", args{"100m"}, Duration(0), true},          // 3 digit anything else
+		{"t1u", args{"t1u"}, Duration(1), false},
+		{"t1us", args{"t1us"}, Duration(1), false},
+		{"t1μ", args{"t1μ"}, Duration(1), false},
+		{"t1μs", args{"t1μs"}, Duration(1), false},
+		{"t999999μ", args{"t999999μ"}, Duration(999999), false},
+		{"t1000000μ", args{"t1000000μ"}, Duration(0), true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseDuration(tt.args.s)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseDuration() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ParseDuration() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
