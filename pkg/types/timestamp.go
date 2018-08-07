@@ -47,6 +47,13 @@ func TimestampFrom(t time.Time) (Timestamp, error) {
 	return Timestamp(int64(durationSinceEpoch / time.Microsecond)), nil
 }
 
+// AsTime converts a Timestamp into a time.Time object
+//
+// TODO: implement this in a way which ensures its monotonic properties
+func (t Timestamp) AsTime() time.Time {
+	return constants.Epoch.Add(time.Duration(int64(t)) * time.Microsecond)
+}
+
 // Compare implements comparison for Timestamp.
 // (useful in sorting)
 func (t Timestamp) Compare(o Timestamp) int {
