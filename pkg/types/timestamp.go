@@ -192,12 +192,29 @@ func ParseDuration(s string) (Duration, error) {
 
 // String represents a Duration as a human-readable string
 func (d Duration) String() string {
-	td := d.TimeDuration()
-	day := 24 * time.Hour
-	if td < day {
-		return td.String()
+	value := int64(d)
+	out := ""
+	divmod := func(divisor, dividend int64) (int64, int64) {
+		return divisor / dividend, divisor % dividend
 	}
-	return fmt.Sprintf("%dd%s", td/day, (td % day).String())
+	extract := func(symbol string, unit int64) {
+		var units int64
+		units, value = divmod(value, unit)
+		if units > 0 {
+			out += fmt.Sprintf("%d%s", units, symbol)
+		}
+	}
+	extract("y", Year)
+	extract("m", Month)
+	extract("d", Day)
+	if value > 0 {
+		out += "t"
+	}
+	extract("h", Hour)
+	extract("m", Minute)
+	extract("s", Second)
+	extract("μs", Microsecond)
+	return out
 }
 
 // UpdateWeightedAverageAge computes the weighted average age
