@@ -133,7 +133,8 @@ func (d Duration) TimeDuration() time.Duration {
 // Allowable durations broadly follow the RFC3339 duration
 // specification: `\dy\dm\dd(t\dh\dm\ds)`. Note that `m`
 // is used for both months and minutes: `1m` is one month,
-// and `t1m` is one minute. Leading `p` chars are allowed.
+// and `t1m` is one minute. Per RFC3339, leading `p` chars
+// are allowed.
 //
 // There is no `w` symbol for weeks; use multiples of days
 // or months instead.
@@ -143,7 +144,7 @@ func (d Duration) TimeDuration() time.Duration {
 func ParseDuration(s string) (Duration, error) {
 	match := constants.DurationRE.FindStringSubmatch(s)
 	if match == nil {
-		return Duration(0), fmt.Errorf("Invalid duration format")
+		return Duration(0), fmt.Errorf("invalid duration format")
 	}
 
 	// get match groups by name:
@@ -160,7 +161,7 @@ func ParseDuration(s string) (Duration, error) {
 		if result[name] != "" {
 			value, err := strconv.ParseUint(result[name], 10, 64)
 			if err != nil {
-				return fmt.Errorf("Invalid integer: %s", result[name])
+				return fmt.Errorf("invalid integer: %s", result[name])
 			}
 			duration += Duration(value * unit)
 		}
