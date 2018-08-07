@@ -21,7 +21,7 @@ func TestTimestampFrom(t *testing.T) {
 		{"a", args{constants.Epoch}, 0, false},
 		{"b", args{time.Date(2000, time.January, 18, 14, 21, 0, 0, time.UTC)},
 			1000000 * (24*60*60*17 + 14*60*60 + 21*60), false},
-		{"c", args{time.Date(2010, time.January, 18, 14, 21, 0, 0, time.UTC)}, 0, true},
+		{"c", args{time.Date(1992, time.January, 18, 14, 21, 0, 0, time.UTC)}, 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -49,7 +49,7 @@ func TestParseTimestamp(t *testing.T) {
 	}{
 		{"a", args{"2000-01-01T00:00:00Z"}, 0, false},
 		{"b", args{"2000-01-18T14:21:00Z"}, 1000000 * (24*60*60*17 + 14*60*60 + 21*60), false},
-		{"c", args{"2010-01-01T00:00:00Z"}, 0, true},
+		{"c", args{"1992-01-01T00:00:00Z"}, 0, true},
 		{"d", args{"BLAH"}, 0, true},
 	}
 	for _, tt := range tests {
