@@ -214,6 +214,12 @@ func (d Duration) String() string {
 	extract("m", Minute)
 	extract("s", Second)
 	extract("μs", Microsecond)
+
+	if out == "" {
+		// input duration was 0
+		out = "t0s" // seconds are the fundamental unit
+	}
+
 	return out
 }
 

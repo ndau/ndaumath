@@ -235,6 +235,7 @@ func TestParseDuration(t *testing.T) {
 		wantErr bool
 	}{
 		{"<blank>", args{""}, Duration(0), false},
+		{"t0s", args{"t0s"}, Duration(0), false},
 		{"t1s", args{"t1s"}, Duration(1 * Second), false},
 		{"1m", args{"1m"}, Duration(1 * Month), false},
 		{"t1m", args{"t1m"}, Duration(1 * Minute), false},
