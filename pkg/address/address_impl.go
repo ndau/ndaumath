@@ -11,8 +11,9 @@ import (
 // An ndau address is the result of a mathematical process over a public key. It
 // is a byte32 encoding, using a custom alphabet, of a portion of the SHA256
 // hash of the key, concatenated with some additional marker and checksum
-// information. The result is a key that always starts with the letters 'nd' and
-// one more character that specifies the type of address.
+// information. The result is a key that always starts with a specific 2-letter
+// prefix (nd for the main chain and tn for the testnet), plus one more
+// character that specifies the type of address.
 
 // Kind indicates the type of address in use; this is an external indication
 // designed to help users evaluate their own actions; it may or may not be
@@ -36,7 +37,8 @@ func newError(msg string) error {
 	return &Error{msg}
 }
 
-// we want the first letters of the address to be "nd?" where ? is the kind of
+// we want the first letters of the address to be "XX?" where XX is the code for the particular
+// type of network (mainnet==nd and testnet==tn). ? is the kind of
 // address. Valid address types are as follows:
 const (
 	KindUser      Kind = "a"
@@ -45,9 +47,12 @@ const (
 	KindExchange  Kind = "x"
 )
 
-// IsValidKind returns true if a is one of the currently-valid Kinds
+// IsValidKind returns true if the last letter of a is one of the currently-valid Kinds
 func IsValidKind(a Kind) bool {
-	switch a {
+	if len(a) == 0 {
+		return false
+	}
+	switch a[len(a)-1:] {
 	case KindUser,
 		KindNdau,
 		KindEndowment,
@@ -57,7 +62,8 @@ func IsValidKind(a Kind) bool {
 	return false
 }
 
-// NewKind constructs an address.Kind, given a string corresponding to the kind value (one of anex)
+// NewKind constructs an address.Kind, given a string corresponding to the kind value
+// The value used is the last letter of the kind string (one of anex)
 func NewKind(kind string) (Kind, error) {
 	kinds := map[string]Kind{
 		string(KindUser):      KindUser,
@@ -66,11 +72,28 @@ func NewKind(kind string) (Kind, error) {
 		string(KindEndowment): KindEndowment,
 	}
 
-	k, ok := kinds[kind]
+	if kind == "" {
+		return "", errors.New("kind must not be blank")
+	}
+	ltr := kind[len(kind)-1:]
+	k, ok := kinds[ltr]
 	if ok {
 		return k, nil
 	}
 	return k, errors.New("invalid kind character")
+}
+
+// splitKind returns the 2-letter prefix and the kind (as a string) for s, which should be a Kind
+// containing either 1 or 3 characters.
+func splitKind(s Kind) (string, string, error) {
+	switch len(s) {
+	case 1:
+		return "nd", string(s), nil
+	case 3:
+		return string(s)[0:2], string(s)[2:3], nil
+	default:
+		return "", "", errors.New("not a valid Kind")
+	}
 }
 
 // HashTrim is the number of bytes that we trim the input hash to.
@@ -113,7 +136,11 @@ func Generate(kind Kind, data []byte) (Address, error) {
 
 	// an ndau address always starts with nd and a "kind" character
 	// so we figure out what characters we want and build that into a header
-	prefix := b32.Index("n")<<11 + b32.Index("d")<<6 + b32.Index(string(kind))<<1
+	sprefix, skind, err := splitKind(kind)
+	if err != nil {
+		return emptyA(), newError("invalid kind")
+	}
+	prefix := b32.Index(sprefix[0:1])<<11 + b32.Index(sprefix[1:2])<<6 + b32.Index(skind)<<1
 	hdr := []byte{byte((prefix >> 8) & 0xFF), byte(prefix & 0xFF)}
 	h2 := append(hdr, h1...)
 	// then we checksum that result and append the checksum
@@ -124,12 +151,14 @@ func Generate(kind Kind, data []byte) (Address, error) {
 }
 
 // Validate tests if an address is valid on its face.
-// It checks the the nd prefix, the address kind, and the checksum.
+// It checks the address kind, and the checksum.
+// It does NOT test the nd prefix, as that may vary -- clients should test that
+// themselves.
 func Validate(addr string) (Address, error) {
 	addr = strings.ToLower(addr)
-	if !strings.HasPrefix(addr, "nd") {
-		return emptyA(), newError("not an ndau key")
-	}
+	// if !strings.HasPrefix(addr, "nd") {
+	// 	return emptyA(), newError("not an ndau key")
+	// }
 	if len(addr) != AddrLength {
 		return emptyA(), newError("not a valid address length")
 	}

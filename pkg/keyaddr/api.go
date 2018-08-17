@@ -171,13 +171,23 @@ func (k *Key) Sign(msgstr string) (*Signature, error) {
 // NdauAddress returns the ndau address associated with the given key.
 // Key can be either public or private; if it is private it will be
 // converted to a public key first.
-func (k *Key) NdauAddress() (*Address, error) {
+func (k *Key) NdauAddress(chainid string) (*Address, error) {
+	skind := string(address.KindUser)
+	switch chainid {
+	case "nd":
+		// we're good
+	case "tn":
+		skind = chainid + string(skind)
+	default:
+		return nil, errors.New("invalid chain id")
+	}
+
 	ekey, err := key.NewKeyFromString(k.Key)
 	if err != nil {
 		return nil, err
 	}
 
-	a, err := address.Generate(address.KindUser, ekey.PubKeyBytes())
+	a, err := address.Generate(address.Kind(skind), ekey.PubKeyBytes())
 	if err != nil {
 		return nil, err
 	}
