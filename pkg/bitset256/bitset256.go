@@ -135,14 +135,25 @@ func (b *Bitset256) Count() int {
 
 // Indices returns an []int where the values are the indices of all the 1 bits that are set,
 // in sorted order from 0. The length of the slice is equal to b.Count().
+// This is fairly heavily optimized.
 func (b *Bitset256) Indices() []int {
 	n := b.Count()
 	result := make([]int, n)
 	c := 0
-	for i := 0; c < n; i++ {
-		if b.Get(i) {
-			result[c] = i
+	for i := 0; i < 4; i++ {
+		x := b[i]
+		for x != 0 {
+			lowest := bits.TrailingZeros64(x)
+			if lowest == 64 {
+				continue
+			}
+			result[c] = (i * 64) + lowest
 			c++
+			if c == n {
+				return result
+			}
+			m := uint64(1) << uint(lowest)
+			x &= ^m
 		}
 	}
 	return result
