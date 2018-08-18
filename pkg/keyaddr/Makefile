@@ -17,7 +17,7 @@ Keyaddr.framework: api.go
 	gomobile bind -target ios -v
 
 keyaddr.zip: Keyaddr.framework
-	rm keyaddr.zip
+	rm -f keyaddr.zip
 	zip -ur keyaddr Keyaddr.framework/
 
 android: keyaddr.aar
@@ -27,5 +27,5 @@ keyaddr.aar: api.go
 
 clean:
 	rm -rf Keyaddr.framework
-	rm keyaddr.aar
-	rm keyaddr-sources.jar
+	rm -f keyaddr.aar
+	rm -f keyaddr-sources.jar

@@ -256,7 +256,8 @@ func TestKey_Sign(t *testing.T) {
 
 func TestKey_NdauAddress(t *testing.T) {
 	type fields struct {
-		Key string
+		Key   string
+		SKind string
 	}
 	tests := []struct {
 		name    string
@@ -265,18 +266,36 @@ func TestKey_NdauAddress(t *testing.T) {
 		wantErr bool
 	}{
 		{"addr from private key",
-			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			fields{
+				"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t",
+				"nd",
+			},
 			&Address{"ndad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6r7uj"}, false},
 		{"addr from corresponding public key is the same",
-			fields{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"},
+			fields{
+				"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5",
+				"nd",
+			},
 			&Address{"ndad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6r7uj"}, false},
+		{"addr from private key on testnet",
+			fields{
+				"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t",
+				"tn",
+			},
+			&Address{"tnad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6rkuf"}, false},
+		{"addr from corresponding public key on testnet is the same",
+			fields{
+				"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5",
+				"tn",
+			},
+			&Address{"tnad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6rkuf"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			k := &Key{
 				Key: tt.fields.Key,
 			}
-			got, err := k.NdauAddress()
+			got, err := k.NdauAddress(tt.fields.SKind)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Key.NdauAddress() error = %v, wantErr %v", err, tt.wantErr)
 				return
