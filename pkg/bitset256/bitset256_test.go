@@ -1,6 +1,7 @@
 package bitset256
 
 import (
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -169,12 +170,32 @@ func TestCompare(t *testing.T) {
 	b2 := New(2)
 	assert.True(t, b1.Less(b2))
 	assert.False(t, b2.Less(b1))
+	assert.False(t, b2.Equals(b1))
+	assert.False(t, b1.Equals(b2))
 	b1 = New(2)
 	b2 = New(2)
 	assert.False(t, b1.Less(b2))
 	assert.False(t, b2.Less(b1))
+	assert.True(t, b2.Equals(b1))
+	assert.True(t, b1.Equals(b2))
 	b1 = New(200, 5)
 	b2 = New(100, 9)
 	assert.False(t, b1.Less(b2))
 	assert.True(t, b2.Less(b1))
+	assert.False(t, b2.Equals(b1))
+	assert.False(t, b1.Equals(b2))
+}
+
+func TestIndices(t *testing.T) {
+	for i := 0; i < 10; i++ {
+		b1 := New()
+		for j := 0; j < i; j++ {
+			x := rand.Intn(256)
+			b1.Set(x)
+		}
+		ind := b1.Indices()
+		assert.Equal(t, b1.Count(), len(ind))
+		b2 := New(ind...)
+		assert.True(t, b1.Equals(b2))
+	}
 }

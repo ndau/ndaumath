@@ -133,6 +133,21 @@ func (b *Bitset256) Count() int {
 	return c
 }
 
+// Indices returns an []int where the values are the indices of all the 1 bits that are set,
+// in sorted order from 0. The length of the slice is equal to b.Count().
+func (b *Bitset256) Indices() []int {
+	n := b.Count()
+	result := make([]int, n)
+	c := 0
+	for i := 0; c < n; i++ {
+		if b.Get(i) {
+			result[c] = i
+			c++
+		}
+	}
+	return result
+}
+
 // AsBytes returns the bitset as a slice of 32 bytes, where the 0 bits in the bitset are in the
 // last element of the slice (basically, big-endian format). This is so that rendering the slice
 // to a visual format will show the bits in an expected order.
