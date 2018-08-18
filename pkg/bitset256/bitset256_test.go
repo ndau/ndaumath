@@ -163,3 +163,18 @@ func TestAsHexString(t *testing.T) {
 	assert.Equal(t, "fffffffffffffff7fffffffffffffffbfffffffffffffffdfffffffffffffffe", c.AsHex())
 	assert.Equal(t, c.String(), c.AsHex())
 }
+
+func TestCompare(t *testing.T) {
+	b1 := New(1)
+	b2 := New(2)
+	assert.True(t, b1.Less(b2))
+	assert.False(t, b2.Less(b1))
+	b1 = New(2)
+	b2 = New(2)
+	assert.False(t, b1.Less(b2))
+	assert.False(t, b2.Less(b1))
+	b1 = New(200, 5)
+	b2 = New(100, 9)
+	assert.False(t, b1.Less(b2))
+	assert.True(t, b2.Less(b1))
+}

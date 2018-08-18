@@ -83,6 +83,20 @@ func (b *Bitset256) Equals(other *Bitset256) bool {
 	return true
 }
 
+// Less returns true if, when expressed as a number,
+// b would be strictly less than other.
+func (b *Bitset256) Less(other *Bitset256) bool {
+	for i := 3; i >= 0; i-- {
+		// if they're equal, move along
+		if b[i] == other[i] {
+			continue
+		}
+		// otherwise return the result of the comparison
+		return b[i] < other[i]
+	}
+	return false
+}
+
 // Intersect returns a pointer to a new Bitset256 that is the intersection
 // of its two source bitsets (the only bits that are set are the ones where
 // both source sets had a 1 bit).
