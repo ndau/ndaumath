@@ -23,7 +23,7 @@ import (
 type Bitset256 [4]uint64
 
 // New creates a new bitset and allows setting some of its bits at the same time.
-func New(ixs ...int) *Bitset256 {
+func New(ixs ...byte) *Bitset256 {
 	b := &Bitset256{}
 	for _, i := range ixs {
 		b.Set(i)
@@ -40,34 +40,34 @@ func (b *Bitset256) Clone() *Bitset256 {
 // wmask is a helper function which, given an index,
 // returns the word to index into and the mask to use for selecting the given bit
 // The index is taken mod256.
-func wmask(ix int) (int, uint64) {
-	w := (ix & 0xFF) >> 6 // faster divide by 64
+func wmask(ix byte) (int, uint64) {
+	w := int(ix) >> 6 // faster divide by 64
 	mask := uint64(1) << byte(ix&0x3F)
 	return w, mask
 }
 
 // Get retrieves the value of a single bit at the given index.
-func (b *Bitset256) Get(ix int) bool {
+func (b *Bitset256) Get(ix byte) bool {
 	w, mask := wmask(ix)
 	return (b[w] & mask) != 0
 }
 
 // Set unconditionally forces a single bit at the index to 1 and returns the pointer to the bitset.
-func (b *Bitset256) Set(ix int) *Bitset256 {
+func (b *Bitset256) Set(ix byte) *Bitset256 {
 	w, mask := wmask(ix)
 	b[w] |= mask
 	return b
 }
 
 // Clear unconditionally forces a single bit to 0 and returns the pointer to the bitset.
-func (b *Bitset256) Clear(ix int) *Bitset256 {
+func (b *Bitset256) Clear(ix byte) *Bitset256 {
 	w, mask := wmask(ix)
 	b[w] &= ^mask
 	return b
 }
 
 // Toggle reverses the state of a single bit at the index and returns the pointer to the bitset.
-func (b *Bitset256) Toggle(ix int) *Bitset256 {
+func (b *Bitset256) Toggle(ix byte) *Bitset256 {
 	w, mask := wmask(ix)
 	b[w] ^= mask
 	return b
@@ -133,12 +133,12 @@ func (b *Bitset256) Count() int {
 	return c
 }
 
-// Indices returns an []int where the values are the indices of all the 1 bits that are set,
+// Indices returns an []byte where the values are the indices of all the 1 bits that are set,
 // in sorted order from 0. The length of the slice is equal to b.Count().
 // This is fairly heavily optimized.
-func (b *Bitset256) Indices() []int {
+func (b *Bitset256) Indices() []byte {
 	n := b.Count()
-	result := make([]int, n)
+	result := make([]byte, n)
 	c := 0
 	for i := 0; i < 4; i++ {
 		x := b[i]
@@ -147,7 +147,7 @@ func (b *Bitset256) Indices() []int {
 			if lowest == 64 {
 				continue
 			}
-			result[c] = (i * 64) + lowest
+			result[c] = byte((i * 64) + lowest)
 			c++
 			if c == n {
 				return result
