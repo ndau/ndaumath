@@ -83,6 +83,20 @@ func (b *Bitset256) Equals(other *Bitset256) bool {
 	return true
 }
 
+// Less returns true if, when expressed as a number,
+// b would be strictly less than other.
+func (b *Bitset256) Less(other *Bitset256) bool {
+	for i := 3; i >= 0; i-- {
+		// if they're equal, move along
+		if b[i] == other[i] {
+			continue
+		}
+		// otherwise return the result of the comparison
+		return b[i] < other[i]
+	}
+	return false
+}
+
 // Intersect returns a pointer to a new Bitset256 that is the intersection
 // of its two source bitsets (the only bits that are set are the ones where
 // both source sets had a 1 bit).
@@ -117,6 +131,32 @@ func (b *Bitset256) Count() int {
 		c += bits.OnesCount64(b[i])
 	}
 	return c
+}
+
+// Indices returns an []int where the values are the indices of all the 1 bits that are set,
+// in sorted order from 0. The length of the slice is equal to b.Count().
+// This is fairly heavily optimized.
+func (b *Bitset256) Indices() []int {
+	n := b.Count()
+	result := make([]int, n)
+	c := 0
+	for i := 0; i < 4; i++ {
+		x := b[i]
+		for x != 0 {
+			lowest := bits.TrailingZeros64(x)
+			if lowest == 64 {
+				continue
+			}
+			result[c] = (i * 64) + lowest
+			c++
+			if c == n {
+				return result
+			}
+			m := uint64(1) << uint(lowest)
+			x &= ^m
+		}
+	}
+	return result
 }
 
 // AsBytes returns the bitset as a slice of 32 bytes, where the 0 bits in the bitset are in the
