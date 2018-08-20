@@ -55,12 +55,12 @@ func TestAllBits(t *testing.T) {
 	// run through and check all indices
 	b := New()
 	for i := 0; i < 256; i++ {
-		assert.False(t, b.Get(i))
-		b.Set(i)
-		assert.True(t, b.Get(i))
-		b.Clear(i)
-		assert.False(t, b.Get(i))
-		b.Toggle(i)
+		assert.False(t, b.Get(byte(i)))
+		b.Set(byte(i))
+		assert.True(t, b.Get(byte(i)))
+		b.Clear(byte(i))
+		assert.False(t, b.Get(byte(i)))
+		b.Toggle(byte(i))
 		assert.Equal(t, int(i+1), b.Count())
 	}
 }
@@ -69,7 +69,7 @@ func TestAllBits(t *testing.T) {
 func setMultiples(n int) *Bitset256 {
 	b := New()
 	for i := 0; i < 256; i += n {
-		b.Set(i)
+		b.Set(byte(i))
 	}
 	return b
 }
@@ -159,7 +159,7 @@ func TestAsHexString(t *testing.T) {
 	c := New(0, 17, 34, 51)
 	assert.Equal(t, "0000000000000008000000000000000400000000000000020000000000000001", c.AsHex())
 	for i := 0; i < 256; i++ {
-		c.Toggle(i)
+		c.Toggle(byte(i))
 	}
 	assert.Equal(t, "fffffffffffffff7fffffffffffffffbfffffffffffffffdfffffffffffffffe", c.AsHex())
 	assert.Equal(t, c.String(), c.AsHex())
@@ -191,7 +191,7 @@ func TestIndices(t *testing.T) {
 		b1 := New()
 		for j := 0; j < i; j++ {
 			x := rand.Intn(256)
-			b1.Set(x)
+			b1.Set(byte(x))
 		}
 		ind := b1.Indices()
 		assert.Equal(t, b1.Count(), len(ind))
