@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -51,6 +52,12 @@ func (args) Description() string {
 	bytestream can be command line arguments (strings or hex with -x), or you can use
 	-i to read data from a named file; "-i -" reads from stdin.
 	`
+}
+
+// reads an input stream and extracts content that it assumes is base64
+func readAsBase64(in io.Reader) ([]byte, error) {
+	dec := base64.NewDecoder(base64.StdEncoding, in)
+	return ioutil.ReadAll(dec)
 }
 
 // reads an input stream and extracts anything that looks like pairs of hex characters (bytes)
@@ -129,8 +136,29 @@ func writePublicKey(filename string, pub signature.PublicKey, note string) error
 	_, err = fmt.Fprintf(f, "%s %s %s\n", keyType, enc, note)
 	return err
 }
+func readYubiPublicKey(filename string) (signature.PublicKey, error) {
+	empty := signature.PublicKey{}
+	f, err := os.Open(filename)
+	if err != nil {
+		return empty, err
+	}
+	defer f.Close()
+	data, err := readAsBase64(f)
+	if err != nil {
+		return empty, err
+	}
+	key, err := signature.RawPublicKey(signature.Ed25519, data)
+	return *key, err
+}
 
 func readPublicKey(filename string) (signature.PublicKey, error) {
+	// first try to read it as a yubikey file -- if it works, we're done
+	key, err := readYubiPublicKey(filename)
+	if err == nil {
+		return key, nil
+	}
+
+	// ok, instead try to read our file
 	sig := signature.PublicKey{}
 	f, err := os.Open(filename)
 	if err != nil {
@@ -172,8 +200,29 @@ func readPrivateKey(filename string) (signature.PrivateKey, error) {
 	return sig, err
 }
 
+func readYubiSignature(filename string) (signature.Signature, error) {
+	empty := signature.Signature{}
+	f, err := os.Open(filename)
+	if err != nil {
+		return empty, err
+	}
+	defer f.Close()
+	data, err := readAsBase64(f)
+	if err != nil {
+		return empty, err
+	}
+	sig, err := signature.RawSignature(signature.Ed25519, data)
+	return *sig, err
+}
+
 func readSignature(filename string) (signature.Signature, error) {
-	sig := signature.Signature{}
+	// first try to read it as a yubikey file -- if it works, we're done
+	sig, err := readYubiSignature(filename)
+	if err == nil {
+		return sig, nil
+	}
+
+	// ok, instead try to read our file
 	f, err := os.Open(filename)
 	if err != nil {
 		return sig, err
@@ -226,6 +275,9 @@ func main() {
 
 	switch {
 	case args.Generate:
+		if args.Verbose {
+			fmt.Println("Generating...")
+		}
 		// we're creating a keypair
 		var r io.Reader
 		if len(data) > 0 {
@@ -247,6 +299,9 @@ func main() {
 			os.Exit(1)
 		}
 	case args.Sign:
+		if args.Verbose {
+			fmt.Println("Signing...")
+		}
 		// we're generating a signature so we need the private key
 		if len(data) == 0 {
 			fmt.Fprintln(os.Stderr, "we need data to sign")
@@ -280,6 +335,9 @@ func main() {
 		fmt.Println(sig.Verify(data, pub))
 
 	case args.Verify:
+		if args.Verbose {
+			fmt.Println("Verifying...")
+		}
 		if len(data) == 0 {
 			fmt.Fprintln(os.Stderr, "we need data to verify a signature of it")
 			os.Exit(1)
@@ -294,6 +352,9 @@ func main() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s reading signature file '%s'\n", err, args.Keyfile)
 			os.Exit(1)
+		}
+		if args.Verbose {
+			fmt.Println("Sig:", sig)
 		}
 		if !sig.Verify(data, pub) {
 			if args.Verbose {
