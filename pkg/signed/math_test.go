@@ -228,8 +228,12 @@ func TestMulDiv(t *testing.T) {
 		wantErr bool
 	}{
 		{"simple with exact result", args{80, 2, 5}, 32, false},
-		{"simple with result rounded down", args{82, 2, 5}, 32, false},
-		{"simple with result rounded up", args{83, 2, 5}, 33, false},
+		{"truncation 1", args{82, 2, 5}, 32, false},
+		{"truncation 2", args{83, 2, 5}, 33, false},
+		{"positive truncated towards zero", args{100, 1, 3}, 33, false},
+		{"positive truncated toward zero 2", args{100, 2, 3}, 66, false},
+		{"negative truncated towards zero", args{-100, 1, 3}, -33, false},
+		{"negative truncated toward zero 2", args{-100, 2, 3}, -66, false},
 		{"zero for v", args{0, 2, 5}, 0, false},
 		{"zero for n", args{0, 2, 5}, 0, false},
 		{"simple with numbers > maxint32", args{80000000000, 2000000000, 5000000000}, 32000000000, false},
