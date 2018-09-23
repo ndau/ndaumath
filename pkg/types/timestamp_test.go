@@ -194,7 +194,9 @@ func TestDuration_UpdateWeightedAverageAge(t *testing.T) {
 		balance  int
 		waa      int
 	}{
-		{0, 100, 100, 0},   // create an account
+		{0, 0, 0, 0},       // dummy entry
+		{0, 0, 0, 0},       // create an empty account
+		{0, 100, 100, 0},   // give it a balance
 		{30, 0, 100, 30},   // eai calculations; no transfer
 		{30, 50, 150, 20},  // transfer in
 		{40, -50, 100, 30}, // withdraw

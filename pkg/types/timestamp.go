@@ -3,9 +3,10 @@ package types
 import (
 	"errors"
 	"fmt"
-	"math/big"
 	"strconv"
 	"time"
+
+	"github.com/oneiro-ndev/ndaumath/pkg/signed"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
 )
@@ -236,23 +237,23 @@ func (d *Duration) UpdateWeightedAverageAge(
 	transferQty Ndau,
 	previousBalance Ndau,
 ) error {
-	waa := new(big.Int)
-	if int64(transferQty) < 0 {
-		waa.Add(big.NewInt(int64(*d)), big.NewInt(int64(sinceLastUpdate)))
-	} else {
+	waa := int64(*d) + int64(sinceLastUpdate)
+	if int64(transferQty) >= 0 {
 		newBalance, err := previousBalance.Add(transferQty)
 		if err != nil {
 			return err
 		}
 		// we have to use bigints to prevent the multiplication from overflow
-		nb := big.NewInt(int64(newBalance))
-		pb := big.NewInt(int64(previousBalance))
-		dur := big.NewInt(int64(*d + sinceLastUpdate))
-		waa.Div(waa.Mul(dur, pb), nb)
+		nb := int64(newBalance)
+		pb := int64(previousBalance)
+		dur := int64(*d + sinceLastUpdate)
+		if nb > 0 {
+			waa, err = signed.MulDiv(dur, pb, nb)
+			if err != nil {
+				return errors.New("Duration overflow in UpdateWeightedAverageAge")
+			}
+		}
 	}
-	if !waa.IsInt64() {
-		return errors.New("Duration overflow in UpdateWeightedAverageAge")
-	}
-	*d = Duration(waa.Int64())
+	*d = Duration(waa)
 	return nil
 }
