@@ -306,3 +306,34 @@ func TestKey_NdauAddress(t *testing.T) {
 		})
 	}
 }
+
+func TestKey_IsPrivate(t *testing.T) {
+	type fields struct {
+		Key string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    bool
+		wantErr bool
+	}{
+		{"private", fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"}, true, false},
+		{"public", fields{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"}, false, false},
+		{"bad key", fields{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7xx"}, false, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			k := &Key{
+				Key: tt.fields.Key,
+			}
+			got, err := k.IsPrivate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Key.IsPrivate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Key.IsPrivate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

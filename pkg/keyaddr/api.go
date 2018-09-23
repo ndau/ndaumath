@@ -194,3 +194,11 @@ func (k *Key) NdauAddress(chainid string) (*Address, error) {
 
 	return &Address{a.String()}, nil
 }
+
+func (k *Key) IsPrivate() (bool, error) {
+	ekey, err := key.NewKeyFromString(k.Key)
+	if err != nil {
+		return false, err
+	}
+	return ekey.IsPrivate(), nil
+}
