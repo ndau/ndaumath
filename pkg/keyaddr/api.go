@@ -194,3 +194,13 @@ func (k *Key) NdauAddress(chainid string) (*Address, error) {
 
 	return &Address{a.String()}, nil
 }
+
+// IsPrivate tests if a given key is a private key; will return non-nil
+// error if the key is invalid.
+func (k *Key) IsPrivate() (bool, error) {
+	ekey, err := key.NewKeyFromString(k.Key)
+	if err != nil {
+		return false, err
+	}
+	return ekey.IsPrivate(), nil
+}
