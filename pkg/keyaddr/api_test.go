@@ -379,7 +379,7 @@ func TestFromString(t *testing.T) {
 		wantErr bool
 	}{
 		{"private", args{privateKey}, &Key{privateKey}, false},
-		{"public", args{publicKey}, &Key{privateKey}, false},
+		{"public", args{publicKey}, &Key{publicKey}, false},
 		{"bad key", args{badKey}, nil, true},
 	}
 	for _, tt := range tests {
