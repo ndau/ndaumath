@@ -4,7 +4,7 @@ ANDROID_HOME ?= $(HOME)/Library/Android/sdk/
 
 default: all
 
-all: clean test build ios android
+all: test build ios android keyaddr.zip
 
 test:
 	go test
