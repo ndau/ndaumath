@@ -93,6 +93,16 @@ func NewKey(seedstr string) (*Key, error) {
 	return &Key{Key: mk.String()}, nil
 }
 
+// FromString acts like a constructor so that the wallet can build a Key object
+// from a string representation of it.
+func FromString(s string) (*Key, error) {
+	ekey, err := key.NewKeyFromString(s)
+	if err != nil {
+		return nil, err
+	}
+	return &Key{ekey.String()}, nil
+}
+
 // ToPublic returns an extended public key from any other extended key.
 // If the key is an extended private key, it generates the matching public key.
 // If the key is already a public key, it just returns itself.
