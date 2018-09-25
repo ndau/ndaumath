@@ -138,11 +138,34 @@ func calculateEAIFactor(
 
 		// multiply by rate and exponentiate
 		qty.Mul(qty, rate)
+		f, _ := qty.Float64()
+		fmt.Println("Qty before exp: ", f)
 		dmath.Exp(qty, qty)
+		f, _ = qty.Float64()
+		fmt.Println("Qty after exp:  ", f)
 
 		// multiply into the current factor
 		factor.Mul(factor, qty)
 	}
 
 	return factor, nil
+}
+
+// CalculateEAIRate accepts a WAA and a lock, plus rate tables,
+// and looks up the current EAI rate from that info.
+func CalculateEAIRate(
+	weightedAverageAge math.Duration,
+	lock Lock,
+	unlockedTable, lockBonusTable RateTable,
+) int64 {
+	rate := unlockedTable.RateAt(weightedAverageAge)
+	f, _ := rate.Float64()
+	i, _ := rate.Int64()
+	fmt.Println(rate, f, i)
+	if lock != nil {
+		bonus := lockBonusTable.RateAt(lock.GetNoticePeriod())
+		rate.Add(&rate.Big, &bonus.Big)
+	}
+	r, _ := rate.Big.Int64()
+	return r
 }

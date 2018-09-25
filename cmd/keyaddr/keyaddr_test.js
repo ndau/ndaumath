@@ -5,7 +5,7 @@ console.log(mk);
 mk
   .then((k) => {
     console.log(k);
-    pubkey = k.Neuter();
+    pubkey = k.Public();
     console.log(pubkey);
   })
   .catch((e) => {
@@ -19,7 +19,7 @@ mk
       .Sign(msg)
       .then((sig) => {
         console.log(sig);
-        pubkey = k.Neuter();
+        pubkey = k.Public();
         sig
           .Verify(msg, k.key)
           .then((b) => {

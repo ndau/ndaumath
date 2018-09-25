@@ -182,7 +182,7 @@ type ExtendedKey struct {
 // fields.  No error checking is performed here as it's only intended to be a
 // convenience method used to create a populated struct. This function should
 // only by used by applications that need to create custom ExtendedKeys. All
-// other applications should just use NewMaster, Child, or Neuter.
+// other applications should just use NewMaster, Child, or Public.
 func NewExtendedKey(version, key, chainCode, parentFP []byte, depth uint8,
 	childNum uint32, isPrivate bool) *ExtendedKey {
 
@@ -394,7 +394,7 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 		k.depth+1, i, isPrivate), nil
 }
 
-// Neuter returns a new extended public key from this extended private key.  The
+// Public returns a new extended public key from this extended private key.  The
 // same extended key will be returned unaltered if it is already an extended
 // public key.
 //
@@ -402,7 +402,7 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 // private key, so it is not capable of signing transactions or deriving
 // child extended private keys.  However, it is capable of deriving further
 // child extended public keys.
-func (k *ExtendedKey) Neuter() (*ExtendedKey, error) {
+func (k *ExtendedKey) Public() (*ExtendedKey, error) {
 	// Already an extended public key.
 	if !k.isPrivate {
 		return k, nil
