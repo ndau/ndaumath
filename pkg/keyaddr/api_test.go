@@ -364,3 +364,34 @@ func TestKey_IsPrivate(t *testing.T) {
 		})
 	}
 }
+
+func TestFromString(t *testing.T) {
+	privateKey := "npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"
+	publicKey := "npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"
+	badKey := "npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7xx"
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *Key
+		wantErr bool
+	}{
+		{"private", args{privateKey}, &Key{privateKey}, false},
+		{"public", args{publicKey}, &Key{privateKey}, false},
+		{"bad key", args{badKey}, nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := FromString(tt.args.s)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FromString() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("FromString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
