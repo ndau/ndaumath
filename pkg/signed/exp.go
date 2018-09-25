@@ -17,7 +17,7 @@ import (
 // We can collapse the first two terms for convenience to 1+x.
 // In addition, we make use of the fact that (a/b)^2 = a^2/b^2 so we can use muldiv
 // and we require that b <= maxint32, and that a < b.
-// Basically, we compute (b + a/b + a^2/2b + a^3/6b^2 ...) which is b times our desired result
+// Basically, we compute (b + a + a^2/2b + a^3/6b^2 ...) which is b times our desired result
 // (so that we have the implied denominator of b).
 //
 // The return value is the numerator for the fraction; the denominator is still b.
