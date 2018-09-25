@@ -17,7 +17,7 @@ import (
 // We can collapse the first two terms for convenience to 1+x.
 // In addition, we make use of the fact that (a/b)^2 = a^2/b^2 so we can use muldiv
 // and we require that b <= maxint32, and that a < b.
-// Basically, we compute (b + a/b + a^2/2b + a^3/6b) which is b times our desired result
+// Basically, we compute (b + a/b + a^2/2b + a^3/6b^2 ...) which is b times our desired result
 // (so that we have the implied denominator of b).
 //
 // The return value is the numerator for the fraction; the denominator is still b.
@@ -26,7 +26,7 @@ import (
 // Therefore, what we do is scale the input fraction by multiplying both numerator and denominator by
 // a scaling value and then divide by it again at the end.
 // This means that the practical limit for b is maxint32 / 10, which is still larger than our
-// napu multiplication factor of 100,000,000.
+// napu multiplication factor of 100,000,000 (which is also the value we use for percentages).
 func ExpFrac(a, b int64) (int64, error) {
 	rounder := int64(10)
 	a *= rounder
