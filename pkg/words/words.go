@@ -199,3 +199,31 @@ func ToBytes(lang string, s []string) ([]byte, error) {
 
 	return nil, errors.New("checksum failed; word list not valid or not created by this app")
 }
+
+// FromPrefix accepts a language and a prefix string and returns a sorted, space-separated list
+// of words that match the given prefix. max can be used to limit the size of the returned list
+// (if max <= 0 then all matches are returned, which could be up to 2K if the prefix is empty).
+func FromPrefix(lang string, prefix string, max int) string {
+	wordlist, ok := wordlists[lang]
+	if !ok {
+		return ""
+	}
+	words := make([]string, 0)
+	for _, w := range wordlist {
+		// the wordlist is sorted, so if we are examining a word whose first letter is
+		// not the first letter of the prefix, then we're done -- no more words need
+		// to be inspected.
+		if prefix != "" && w[0] > prefix[0] {
+			break
+		}
+		if strings.HasPrefix(w, prefix) {
+			words = append(words, w)
+		}
+		// if we've reached our limit, we're also done
+		if max > 0 && len(words) == max {
+			break
+		}
+	}
+	result := strings.Join(words, " ")
+	return result
+}

@@ -12,7 +12,7 @@ package main
 //  NewPrivateMaster(seed:string) : key -- creates and returns a new private master key using the given seed.
 //  NewKey(string) : key -- creates a key from its text representation (if it was valid)
 //  NewAddress(string) : address -- creates an address object from the string representing it (if valid)
-//  key.Neuter() : key -- returns a public key that cannot be used for signing but may be used to generate child public keys.
+//  key.Public() : key -- returns a public key that cannot be used for signing but may be used to generate child public keys.
 //  key.Child(index) : key -- returns a child key at the given index; if the parent was private, so is the child.
 //  key.HardenedChild(index) : key -- creates a child public key at the index that cannot be used to generate more children.
 //  key.Sign(message) : signature -- signs a message and returns a signature
@@ -39,7 +39,7 @@ import (
 type Key struct {
 	*js.Object
 	Key           string                          `js:"key"`
-	Neuter        func(...interface{}) *js.Object `js:"Neuter"`
+	Public        func(...interface{}) *js.Object `js:"Public"`
 	Child         func(...interface{}) *js.Object `js:"Child"`
 	HardenedChild func(...interface{}) *js.Object `js:"HardenedChild"`
 	Sign          func(...interface{}) *js.Object `js:"Sign"`
@@ -48,7 +48,7 @@ type Key struct {
 
 func (k *Key) build(s string) *js.Object {
 	k.Key = s
-	k.Neuter = jopher.Promisify(k.neuter)
+	k.Public = jopher.Promisify(k.public)
 	k.Child = jopher.Promisify(k.child)
 	k.HardenedChild = jopher.Promisify(k.hardenedChild)
 	k.Sign = jopher.Promisify(k.sign)
@@ -118,12 +118,12 @@ func newPrivateMaster(seed string) (*js.Object, error) {
 	return k.build(km.String()), nil
 }
 
-func (k *Key) neuter() (*js.Object, error) {
+func (k *Key) public() (*js.Object, error) {
 	ekey, err := key.NewKeyFromString(k.Key)
 	if err != nil {
 		return nil, err
 	}
-	nk, err := ekey.Neuter()
+	nk, err := ekey.Public()
 	if err != nil {
 		return nil, err
 	}

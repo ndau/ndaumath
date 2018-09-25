@@ -486,3 +486,27 @@ func TestCalculate(t *testing.T) {
 
 	require.Equal(t, expected, actual)
 }
+
+func TestCalculateEAIRate(t *testing.T) {
+	type args struct {
+		weightedAverageAge math.Duration
+		lock               Lock
+		unlockedTable      RateTable
+		lockBonusTable     RateTable
+	}
+	tests := []struct {
+		name string
+		args args
+		want int64
+	}{
+		{"zero", args{0, nil, DefaultUnlockedEAI, DefaultLockBonusEAI}, 0},
+		{"65 days unlocked", args{65 * math.Day, nil, DefaultUnlockedEAI, DefaultLockBonusEAI}, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CalculateEAIRate(tt.args.weightedAverageAge, tt.args.lock, tt.args.unlockedTable, tt.args.lockBonusTable); got != tt.want {
+				t.Errorf("CalculateEAIRate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

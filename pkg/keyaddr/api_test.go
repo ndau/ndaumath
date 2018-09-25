@@ -71,6 +71,33 @@ func TestWordsToBytes(t *testing.T) {
 	}
 }
 
+func TestWordsFromPrefix(t *testing.T) {
+	type args struct {
+		lang   string
+		prefix string
+		max    int
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"two", args{"en", "riv", 0}, "rival river"},
+		{"one", args{"en", "oxy", 0}, "oxygen"},
+		{"five", args{"en", "dri", 0}, "drift drill drink drip drive"},
+		{"five limit 3", args{"en", "dri", 3}, "drift drill drink"},
+		{"none", args{"en", "zpj", 0}, ""},
+		{"bad lang", args{"xx", "act", 0}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := WordsFromPrefix(tt.args.lang, tt.args.prefix, tt.args.max); got != tt.want {
+				t.Errorf("WordsFromPrefix() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestNewKey(t *testing.T) {
 	type args struct {
 		seed string
@@ -100,7 +127,7 @@ func TestNewKey(t *testing.T) {
 	}
 }
 
-func TestKey_Neuter(t *testing.T) {
+func TestKey_Public(t *testing.T) {
 	type fields struct {
 		Key string
 	}
@@ -110,7 +137,7 @@ func TestKey_Neuter(t *testing.T) {
 		want    *Key
 		wantErr bool
 	}{
-		{"simple neuter", fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+		{"simple public", fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
 			&Key{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"}, false},
 	}
 	for _, tt := range tests {
@@ -118,13 +145,13 @@ func TestKey_Neuter(t *testing.T) {
 			k := &Key{
 				Key: tt.fields.Key,
 			}
-			got, err := k.Neuter()
+			got, err := k.Public()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Key.Neuter() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Key.Public() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Key.Neuter() = %v, want %v", got, tt.want)
+				t.Errorf("Key.Public() = %v, want %v", got, tt.want)
 			}
 		})
 	}

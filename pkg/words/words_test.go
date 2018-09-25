@@ -346,3 +346,30 @@ func Test_nextMultipleOf(t *testing.T) {
 		})
 	}
 }
+
+func TestFromPrefix(t *testing.T) {
+	type args struct {
+		lang   string
+		prefix string
+		max    int
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"two", args{"en", "riv", 0}, "rival river"},
+		{"one", args{"en", "oxy", 0}, "oxygen"},
+		{"five", args{"en", "dri", 0}, "drift drill drink drip drive"},
+		{"five limit 3", args{"en", "dri", 3}, "drift drill drink"},
+		{"none", args{"en", "zpj", 0}, ""},
+		{"bad lang", args{"xx", "act", 0}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := FromPrefix(tt.args.lang, tt.args.prefix, tt.args.max); got != tt.want {
+				t.Errorf("FromPrefix() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

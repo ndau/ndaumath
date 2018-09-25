@@ -17,7 +17,7 @@ The master key is a private key.
 
 ### To generate a public key from a master key:
 
-`publickey = key.Neuter()`
+`publickey = key.Public()`
 
 ### To generate a child at index N from any kind of key (public or private):
 
@@ -27,7 +27,7 @@ Note that the child is of the same type (public or private) as the parent.
 
 Public child N is paired with Private child N, no matter how they are derived. So:
 
-`private.Child(27).Neuter()` is the same key as `private.Neuter().Child(27)`, and both are the public keys associated with the private key called `private.Child(27)`.
+`private.Child(27).Public()` is the same key as `private.Public().Child(27)`, and both are the public keys associated with the private key called `private.Child(27)`.
 
 ### To generate a hardened child:
 

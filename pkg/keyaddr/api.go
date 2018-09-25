@@ -56,6 +56,13 @@ func WordsToBytes(lang string, w string) (string, error) {
 	return base64.StdEncoding.EncodeToString(b), nil
 }
 
+// WordsFromPrefix accepts a language and a prefix string and returns a sorted, space-separated list
+// of words that match the given prefix. max can be used to limit the size of the returned list
+// (if max is 0 then all matches are returned, which could be up to 2K if the prefix is empty).
+func WordsFromPrefix(lang string, prefix string, max int) string {
+	return words.FromPrefix(lang, prefix, max)
+}
+
 // Key is the object that contains a public or private key
 type Key struct {
 	Key string
@@ -86,16 +93,16 @@ func NewKey(seedstr string) (*Key, error) {
 	return &Key{Key: mk.String()}, nil
 }
 
-// Neuter returns an extended public key from any other extended key.
+// Public returns an extended public key from any other extended key.
 // If the key is an extended private key, it generates the matching public key.
 // If the key is already a public key, it just returns itself.
 // It is an error if the key is hardened.
-func (k *Key) Neuter() (*Key, error) {
+func (k *Key) Public() (*Key, error) {
 	ekey, err := key.NewKeyFromString(k.Key)
 	if err != nil {
 		return nil, err
 	}
-	nk, err := ekey.Neuter()
+	nk, err := ekey.Public()
 	if err != nil {
 		return nil, err
 	}

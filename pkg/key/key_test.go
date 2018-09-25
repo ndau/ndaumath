@@ -40,7 +40,7 @@ func checkKeys(t *testing.T, pvt, pub *ExtendedKey) {
 func TestGenPublicBasic(t *testing.T) {
 	pvt, err := NewMaster([]byte("abcdefghijklmnopqrstuvwxyz123456"), NdauPrivateKeyID)
 	assert.Nil(t, err)
-	pub, err := pvt.Neuter()
+	pub, err := pvt.Public()
 	assert.Nil(t, err)
 	checkKeys(t, pvt, pub)
 }
@@ -52,7 +52,7 @@ func TestGenPublicChild(t *testing.T) {
 	assert.Nil(t, err)
 	pvt, err := pvtmaster.Child(0)
 	assert.Nil(t, err)
-	pub, err := pvt.Neuter()
+	pub, err := pvt.Public()
 	assert.Nil(t, err)
 	checkKeys(t, pvt, pub)
 }
@@ -64,7 +64,7 @@ func TestGenPublicChild2(t *testing.T) {
 	assert.Nil(t, err)
 	pvt, err := pvtmaster.Child(400)
 	assert.Nil(t, err)
-	pub, err := pvt.Neuter()
+	pub, err := pvt.Public()
 	assert.Nil(t, err)
 	checkKeys(t, pvt, pub)
 }
@@ -77,7 +77,7 @@ func TestGenPublicChild3(t *testing.T) {
 	assert.Nil(t, err)
 	pvt, err := pvtmaster.Child(4)
 	assert.Nil(t, err)
-	pubmaster, err := pvtmaster.Neuter()
+	pubmaster, err := pvtmaster.Public()
 	assert.Nil(t, err)
 	pub, err := pubmaster.Child(4)
 	assert.Nil(t, err)
