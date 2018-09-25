@@ -145,7 +145,7 @@ func TestKey_Public(t *testing.T) {
 			k := &Key{
 				Key: tt.fields.Key,
 			}
-			got, err := k.Public()
+			got, err := k.ToPublic()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Key.Public() error = %v, wantErr %v", err, tt.wantErr)
 				return

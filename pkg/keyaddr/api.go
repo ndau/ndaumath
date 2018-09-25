@@ -93,11 +93,11 @@ func NewKey(seedstr string) (*Key, error) {
 	return &Key{Key: mk.String()}, nil
 }
 
-// Public returns an extended public key from any other extended key.
+// ToPublic returns an extended public key from any other extended key.
 // If the key is an extended private key, it generates the matching public key.
 // If the key is already a public key, it just returns itself.
 // It is an error if the key is hardened.
-func (k *Key) Public() (*Key, error) {
+func (k *Key) ToPublic() (*Key, error) {
 	ekey, err := key.NewKeyFromString(k.Key)
 	if err != nil {
 		return nil, err
