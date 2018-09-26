@@ -159,9 +159,6 @@ func CalculateEAIRate(
 	unlockedTable, lockBonusTable RateTable,
 ) int64 {
 	rate := unlockedTable.RateAt(weightedAverageAge)
-	f, _ := rate.Float64()
-	i, _ := rate.Int64()
-	fmt.Println(rate, f, i)
 	if lock != nil {
 		bonus := lockBonusTable.RateAt(lock.GetNoticePeriod())
 		rate.Add(&rate.Big, &bonus.Big)
