@@ -490,7 +490,7 @@ func TestCalculate(t *testing.T) {
 func TestCalculateEAIRate(t *testing.T) {
 	type args struct {
 		weightedAverageAge math.Duration
-		lock               Lock
+		lock               *testLock
 		unlockedTable      RateTable
 		lockBonusTable     RateTable
 	}
@@ -500,7 +500,12 @@ func TestCalculateEAIRate(t *testing.T) {
 		want int64
 	}{
 		{"zero", args{0, nil, DefaultUnlockedEAI, DefaultLockBonusEAI}, 0},
-		{"65 days unlocked", args{65 * math.Day, nil, DefaultUnlockedEAI, DefaultLockBonusEAI}, 0},
+		{"65 days unlocked", args{65 * math.Day, nil, DefaultUnlockedEAI, DefaultLockBonusEAI}, 3000000},
+		{"90 days unlocked", args{90 * math.Day, nil, DefaultUnlockedEAI, DefaultLockBonusEAI}, 4000000},
+		{"65 days locked 90", args{65 * math.Day, &testLock{NoticePeriod: 90 * math.Day}, DefaultUnlockedEAI, DefaultLockBonusEAI}, 4000000},
+		{"90 days locked 90", args{90 * math.Day, &testLock{NoticePeriod: 90 * math.Day}, DefaultUnlockedEAI, DefaultLockBonusEAI}, 5000000},
+		{"0 days locked 90", args{0 * math.Day, &testLock{NoticePeriod: 90 * math.Day}, DefaultUnlockedEAI, DefaultLockBonusEAI}, 1000000},
+		{"0 days locked 1000", args{0 * math.Day, &testLock{NoticePeriod: 1000 * math.Day}, DefaultUnlockedEAI, DefaultLockBonusEAI}, 4000000},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

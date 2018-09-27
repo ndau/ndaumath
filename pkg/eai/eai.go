@@ -153,6 +153,7 @@ func calculateEAIFactor(
 
 // CalculateEAIRate accepts a WAA and a lock, plus rate tables,
 // and looks up the current EAI rate from that info.
+// The rate is returned as an int64 -- the floating point rate is scaled up by a factor of 100000000.
 func CalculateEAIRate(
 	weightedAverageAge math.Duration,
 	lock Lock,
@@ -163,6 +164,7 @@ func CalculateEAIRate(
 		bonus := lockBonusTable.RateAt(lock.GetNoticePeriod())
 		rate.Add(&rate.Big, &bonus.Big)
 	}
+	rate.Mul(&rate.Big, decimal.New(100000000, 0))
 	r, _ := rate.Big.Int64()
 	return r
 }
