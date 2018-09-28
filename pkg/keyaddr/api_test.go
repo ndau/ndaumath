@@ -1,6 +1,7 @@
 package keyaddr
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -127,7 +128,9 @@ func TestNewKey(t *testing.T) {
 	}
 }
 
-func TestKey_Public(t *testing.T) {
+func TestKey_ToPublic(t *testing.T) {
+	pvtkey := "npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"
+	pubkey := "npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"
 	type fields struct {
 		Key string
 	}
@@ -137,8 +140,9 @@ func TestKey_Public(t *testing.T) {
 		want    *Key
 		wantErr bool
 	}{
-		{"simple public", fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
-			&Key{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"}, false},
+		{"pub from pvt", fields{pvtkey}, &Key{pubkey}, false},
+		{"pub from pub returns itself", fields{pubkey}, &Key{pubkey}, false},
+		{"pub from bad key fails", fields{pvtkey + "xxx"}, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -171,16 +175,37 @@ func TestKey_Child(t *testing.T) {
 		want    *Key
 		wantErr bool
 	}{
-		{"simple private child",
+		{"simple private child /1",
 			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
 			args{1},
 			&Key{"npvt8ap98fgsaaaaagts2dwuzsn3dsv9mwqm3zsbrwrsxbwavxw36zwsyik47scskjtguaf8bxi9eqyqmsenuub3z62364hy2vb5u95uqr8n5j87rzudbt253kvnjj7w"},
 			false},
-		{"simple public child",
+		{"simple public child /1",
 			fields{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"},
 			args{1},
 			&Key{"npubaap98fgsaaaaagts2dwuzsn3dsv9mwqm3zsbrwrsxbwavxw36zwsyik47scskjtguax8c6mqspjegkytd98ksuaqp4txapxyy34ibvr7f7iy4taihk3qmn3yu7dj"},
 			false},
+		{"private child diff index",
+			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			args{2},
+			&Key{"npvt8ap98fgsaaaaaj8igvzve4kvt94g5pvf2t3ikeqaqgea35p9gwtjrwqyn5ip6ru7aaar6bgxhruhdueez2r4i6a2bb4ywbeyut75hx7qrtuczne5mpiv38k5znqz"},
+			false},
+		{"private grandchild /1/1",
+			fields{"npvt8ap98fgsaaaaagts2dwuzsn3dsv9mwqm3zsbrwrsxbwavxw36zwsyik47scskjtguaf8bxi9eqyqmsenuub3z62364hy2vb5u95uqr8n5j87rzudbt253kvnjj7w"},
+			args{1},
+			&Key{"npvt8aup36ysaaaaaf3affifpc6x3xh2zs86fnetuta7kqsnyfecana3zzgf9miuv4shnac8vkyat6itnxtb3dnpe7jk6cye8e7e7ixa7hzivm7xnq4z87svnyhc46im"},
+			false},
+		{"public grandchild /1/1",
+			fields{"npubaap98fgsaaaaagts2dwuzsn3dsv9mwqm3zsbrwrsxbwavxw36zwsyik47scskjtguax8c6mqspjegkytd98ksuaqp4txapxyy34ibvr7f7iy4taihk3qmn3yu7dj"},
+			args{1},
+			&Key{"npubaaup36ysaaaaaf3affifpc6x3xh2zs86fnetuta7kqsnyfecana3zzgf9miuv4shnavx37btuurcrsiab445gh9e4t2xrnnphyzza3wtmihfsi8wef7v2jk7nkqp"},
+			false},
+		{"bad index",
+			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			args{-1}, nil, true},
+		{"bad key",
+			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99xxxmg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			args{11}, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -221,6 +246,12 @@ func TestKey_HardenedChild(t *testing.T) {
 		{"attempt to create hardened child from a public key should fail",
 			fields{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"},
 			args{1}, nil, true},
+		{"bad key should fail",
+			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdxxxk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			args{1}, nil, true},
+		{"bad index should fail",
+			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			args{-11}, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -261,6 +292,21 @@ func TestKey_Sign(t *testing.T) {
 		{"public key should error",
 			fields{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"},
 			args{"AQIDBA=="},
+			nil,
+			true},
+		{"bad key should error",
+			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufxxxiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			args{"AQIDBA=="},
+			nil,
+			true},
+		{"different key should gen diff sig",
+			fields{"npvt8ap98fg2aaaaaenphqxyh7nh2zhjfugk3a9xvqwkcarfau8239ykec4h69kzkcs8cacj7bkdfhkeyr3mjv5jeaz7ptczqaeqhq6rtwyqvn9wvy5kprj9ubsk7wza"},
+			args{"AQIDBA=="},
+			&Signature{"gbcaeiapsjv4ry5qtjya4exuyue2fv4a7ju7ytbr563ka4hhjvm9qzvyv2bcau5d9a5qd7gs5i6ynjx92aan2d3crcwr6jd87fqaz4atd85vuv74"},
+			false},
+		{"bad decode should error",
+			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			args{"AQIDxBA=="},
 			nil,
 			true},
 	}
@@ -316,6 +362,18 @@ func TestKey_NdauAddress(t *testing.T) {
 				"tn",
 			},
 			&Address{"tnad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6rkuf"}, false},
+		{"addr from bad key fails",
+			fields{
+				"npvt8aaaaaaaaaaaadmt69zefwxr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t",
+				"nd",
+			},
+			nil, true},
+		{"addr from bad chain fails",
+			fields{
+				"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t",
+				"qz",
+			},
+			nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -391,6 +449,123 @@ func TestFromString(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("FromString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_newPath(t *testing.T) {
+	tests := []struct {
+		name    string
+		s       string
+		want    path
+		wantErr bool
+	}{
+		{"root", "/", path{}, false},
+		{"1 level", "/123", path{pathElement{123, false}}, false},
+		{"1 level hardened", "/123'", path{pathElement{123, true}}, false},
+		{"3 levels", "/123/4/567890", path{
+			pathElement{123, false},
+			pathElement{4, false},
+			pathElement{567890, false},
+		}, false},
+		{"3 levels w/hardened", "/123'/4'/567890", path{
+			pathElement{123, true},
+			pathElement{4, true},
+			pathElement{567890, false},
+		}, false},
+		{"bad path 1", "/foo", nil, true},
+		{"bad path 2", "/'", nil, true},
+		{"bad path 3", "/123/123749327234979", nil, true},
+		{"bad path 4", "/foo//bar", nil, true},
+		{"bad path 5", "//", nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := newPath(tt.s)
+			fmt.Println("got", got)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("newPath() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("newPath() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func ch(s string, n int32) string {
+	pk, _ := FromString(s)
+	ch, err := pk.Child(n)
+	if err != nil {
+		panic(err)
+	}
+	return ch.Key
+}
+
+func hch(s string, n int32) string {
+	pk, _ := FromString(s)
+	ch, err := pk.HardenedChild(n)
+	if err != nil {
+		panic(err)
+	}
+	return ch.Key
+}
+
+func pub(s string) string {
+	pk, _ := FromString(s)
+	ch, err := pk.ToPublic()
+	if err != nil {
+		panic(err)
+	}
+	return ch.Key
+}
+
+func TestDeriveFrom(t *testing.T) {
+	// let's make sure that DeriveFrom creates keys with the right sequence of derivations
+	privateKey1 := "npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"
+	privateKey2 := ch(privateKey1, 456)
+	privateKey3 := ch(privateKey2, 789)
+	privateKey4 := ch(privateKey2, 1)
+	publicKey1 := pub(privateKey1)
+	publicKey2 := pub(privateKey2)
+	hprivateKey1 := hch(privateKey1, 456)
+	badKey := "npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7xx"
+	type args struct {
+		parentKey  string
+		parentPath string
+		childPath  string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *Key
+		wantErr bool
+	}{
+		{"private one level", args{privateKey1, "/123", "/123/456"}, &Key{privateKey2}, false},
+		{"private next level", args{privateKey2, "/123/456", "/123/456/789"}, &Key{privateKey3}, false},
+		{"private next level diff", args{privateKey2, "/123/456", "/123/456/1"}, &Key{privateKey4}, false},
+		{"private two levels", args{privateKey1, "/123", "/123/456/789"}, &Key{privateKey3}, false},
+		{"private two levels diff", args{privateKey1, "/123", "/123/456/1"}, &Key{privateKey4}, false},
+		{"public one level", args{publicKey1, "/123", "/123/456"}, &Key{publicKey2}, false},
+		{"hardened private one level", args{privateKey1, "/123", "/123/456'"}, &Key{hprivateKey1}, false},
+		{"attempt to create hardened from pubkey fails", args{publicKey1, "/123", "/123/456'"}, nil, true},
+		{"bad key fails", args{badKey, "/123", "/123/456"}, nil, true},
+		{"unrelated paths fails", args{privateKey1, "/123", "/456/789"}, nil, true},
+		{"same path fails", args{privateKey1, "/123", "/123"}, nil, true},
+		{"bad path fails", args{privateKey1, "/123x", "/123/456"}, nil, true},
+		{"bad path fails", args{privateKey1, "/123", "/123/456x"}, nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DeriveFrom(tt.args.parentKey, tt.args.parentPath, tt.args.childPath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DeriveFrom() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("DeriveFrom() = %v, want %v", got, tt.want)
 			}
 		})
 	}

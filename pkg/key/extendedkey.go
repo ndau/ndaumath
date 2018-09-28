@@ -37,7 +37,7 @@ const (
 	// to a master node.
 	RecommendedSeedLen = 32 // 256 bits
 
-	// HardenedKeyStart is the index at which a hardended key starts.  Each
+	// HardenedKeyStart is the index at which a hardened key starts.  Each
 	// extended key has 2^31 normal child keys and 2^31 hardned child keys.
 	// Thus the range for normal child keys is [0, 2^31 - 1] and the range
 	// for hardened child keys is [2^31, 2^32 - 1].
