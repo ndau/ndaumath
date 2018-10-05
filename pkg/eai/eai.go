@@ -5,6 +5,7 @@ import (
 
 	"github.com/ericlagergren/decimal"
 	dmath "github.com/ericlagergren/decimal/math"
+	"github.com/oneiro-ndev/ndaumath/pkg/constants"
 	"github.com/oneiro-ndev/ndaumath/pkg/ndauerr"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 )
@@ -40,12 +41,12 @@ func Calculate(
 	blockTime, lastEAICalc math.Timestamp,
 	weightedAverageAge math.Duration,
 	lock Lock,
-	ageTable, lockTable RateTable,
+	ageTable RateTable,
 ) (math.Ndau, error) {
 	factor, err := calculateEAIFactor(
 		blockTime,
 		lastEAICalc, weightedAverageAge, lock,
-		ageTable, lockTable,
+		ageTable,
 	)
 	if err != nil {
 		return 0, err
@@ -94,7 +95,7 @@ func calculateEAIFactor(
 	blockTime, lastEAICalc math.Timestamp,
 	weightedAverageAge math.Duration,
 	lock Lock,
-	unlockedTable, lockBonusTable RateTable,
+	unlockedTable RateTable,
 ) (*decimal.Big, error) {
 	factor := decimal.WithContext(decimal.Context128)
 	factor.SetUint64(1)
@@ -132,7 +133,7 @@ func calculateEAIFactor(
 		// the lock bonus
 		rate.Copy(&row.Rate.Big)
 		if lock != nil {
-			bonus := lockBonusTable.RateAt(lock.GetNoticePeriod())
+			bonus := lock.GetBonusRate()
 			rate.Add(rate, &bonus.Big)
 		}
 
@@ -151,20 +152,21 @@ func calculateEAIFactor(
 	return factor, nil
 }
 
-// CalculateEAIRate accepts a WAA and a lock, plus rate tables,
+// CalculateEAIRate accepts a WAA and a lock, plus rate table,
 // and looks up the current EAI rate from that info.
-// The rate is returned as an int64 -- the floating point rate is scaled up by a factor of 100000000.
+// The rate is returned as an int64 -- the floating point rate is scaled up by a factor of constants.QuantaPerUnit.
+// This gives the rate expressed in napu per ndau.
 func CalculateEAIRate(
 	weightedAverageAge math.Duration,
 	lock Lock,
-	unlockedTable, lockBonusTable RateTable,
+	unlockedTable RateTable,
 ) int64 {
 	rate := unlockedTable.RateAt(weightedAverageAge)
 	if lock != nil {
-		bonus := lockBonusTable.RateAt(lock.GetNoticePeriod())
+		bonus := lock.GetBonusRate()
 		rate.Add(&rate.Big, &bonus.Big)
 	}
-	rate.Mul(&rate.Big, decimal.New(100000000, 0))
+	rate.Mul(&rate.Big, decimal.New(constants.QuantaPerUnit, 0))
 	r, _ := rate.Big.Int64()
 	return r
 }

@@ -14,6 +14,14 @@ import (
 type testLock struct {
 	NoticePeriod math.Duration
 	UnlocksOn    *math.Timestamp
+	Rate         Rate
+}
+
+func newTestLock(period math.Duration, bonusRateTable RateTable) *testLock {
+	return &testLock{
+		NoticePeriod: period,
+		Rate:         bonusRateTable.RateAt(period),
+	}
 }
 
 func (l *testLock) GetNoticePeriod() math.Duration {
@@ -30,6 +38,13 @@ func (l *testLock) GetUnlocksOn() *math.Timestamp {
 	return nil
 }
 
+func (l *testLock) GetBonusRate() Rate {
+	if l != nil {
+		return l.Rate
+	}
+	return Rate{}
+}
+
 var _ Lock = (*testLock)(nil)
 
 func TestEAIFactorUnlocked(t *testing.T) {
@@ -43,7 +58,7 @@ func TestEAIFactorUnlocked(t *testing.T) {
 	weightedAverageAge := math.Duration(2 * math.Day)
 	zero, err := calculateEAIFactor(
 		blockTime, lastEAICalc, weightedAverageAge, nil,
-		DefaultUnlockedEAI, DefaultLockBonusEAI,
+		DefaultUnlockedEAI,
 	)
 	t.Run("one", func(t *testing.T) {
 		require.NoError(t, err)
@@ -78,7 +93,7 @@ func TestEAIFactorUnlocked(t *testing.T) {
 
 			factor, err := calculateEAIFactor(
 				blockTime, lastEAICalc, weightedAverageAge, nil,
-				DefaultUnlockedEAI, DefaultLockBonusEAI,
+				DefaultUnlockedEAI,
 			)
 			require.NoError(t, err)
 			require.Equal(t, decimal.Condition(0), factor.Context.Conditions)
@@ -118,7 +133,7 @@ func TestEAIFactorLocked(t *testing.T) {
 	oneDay.Quo(oneDay, decimal.New(math.Year, 0))
 
 	// special case for 0 lock rate
-	lock := testLock{NoticePeriod: DefaultLockBonusEAI[0].From - math.Day}
+	lock := newTestLock(DefaultLockBonusEAI[0].From-math.Day, DefaultLockBonusEAI)
 	t.Run("no lock bonus", func(t *testing.T) {
 		expect.Copy(&baseRate.Big)
 		expect.Mul(expect, oneDay)
@@ -129,8 +144,8 @@ func TestEAIFactorLocked(t *testing.T) {
 		expect.Context.Conditions = 0
 
 		factor, err := calculateEAIFactor(
-			blockTime, lastEAICalc, weightedAverageAge, &lock,
-			DefaultUnlockedEAI, DefaultLockBonusEAI,
+			blockTime, lastEAICalc, weightedAverageAge, lock,
+			DefaultUnlockedEAI,
 		)
 		require.NoError(t, err)
 		factor.Reduce()
@@ -149,10 +164,10 @@ func TestEAIFactorLocked(t *testing.T) {
 			t.Log("expect conditions:", expect.Context.Conditions.Error())
 			expect.Context.Conditions = 0
 
-			lock = testLock{NoticePeriod: lockRate.From}
+			lock = newTestLock(lockRate.From, DefaultLockBonusEAI)
 			factor, err := calculateEAIFactor(
-				blockTime, lastEAICalc, weightedAverageAge, &lock,
-				DefaultUnlockedEAI, DefaultLockBonusEAI,
+				blockTime, lastEAICalc, weightedAverageAge, lock,
+				DefaultUnlockedEAI,
 			)
 			require.NoError(t, err)
 			factor.Reduce()
@@ -425,7 +440,7 @@ func TestEAIFactorSoundness(t *testing.T) {
 			weightedAverageAge := math.Duration(123 * math.Day)
 			var lock *testLock
 			if scase.lockPeriod != nil {
-				lock = &testLock{NoticePeriod: *scase.lockPeriod}
+				lock = newTestLock(*scase.lockPeriod, DefaultLockBonusEAI)
 				if scase.lockNotifyOffset != nil {
 					uo := blockTime.Add(*scase.lockNotifyOffset)
 					lock.UnlocksOn = &uo
@@ -435,7 +450,7 @@ func TestEAIFactorSoundness(t *testing.T) {
 				blockTime,
 				lastEAICalc, weightedAverageAge,
 				lock,
-				DefaultUnlockedEAI, DefaultLockBonusEAI,
+				DefaultUnlockedEAI,
 			)
 			require.NoError(t, err)
 
@@ -477,10 +492,8 @@ func TestCalculate(t *testing.T) {
 	actual, err := Calculate(
 		1*constants.QuantaPerUnit,
 		blockTime, lastEAICalc, weightedAverageAge,
-		&testLock{
-			NoticePeriod: 90 * math.Day,
-		},
-		DefaultUnlockedEAI, DefaultLockBonusEAI,
+		newTestLock(90*math.Day, DefaultLockBonusEAI),
+		DefaultUnlockedEAI,
 	)
 	require.NoError(t, err)
 
@@ -492,24 +505,23 @@ func TestCalculateEAIRate(t *testing.T) {
 		weightedAverageAge math.Duration
 		lock               *testLock
 		unlockedTable      RateTable
-		lockBonusTable     RateTable
 	}
 	tests := []struct {
 		name string
 		args args
 		want int64
 	}{
-		{"zero", args{0, nil, DefaultUnlockedEAI, DefaultLockBonusEAI}, 0},
-		{"65 days unlocked", args{65 * math.Day, nil, DefaultUnlockedEAI, DefaultLockBonusEAI}, 3000000},
-		{"90 days unlocked", args{90 * math.Day, nil, DefaultUnlockedEAI, DefaultLockBonusEAI}, 4000000},
-		{"65 days locked 90", args{65 * math.Day, &testLock{NoticePeriod: 90 * math.Day}, DefaultUnlockedEAI, DefaultLockBonusEAI}, 4000000},
-		{"90 days locked 90", args{90 * math.Day, &testLock{NoticePeriod: 90 * math.Day}, DefaultUnlockedEAI, DefaultLockBonusEAI}, 5000000},
-		{"0 days locked 90", args{0 * math.Day, &testLock{NoticePeriod: 90 * math.Day}, DefaultUnlockedEAI, DefaultLockBonusEAI}, 1000000},
-		{"0 days locked 1000", args{0 * math.Day, &testLock{NoticePeriod: 1000 * math.Day}, DefaultUnlockedEAI, DefaultLockBonusEAI}, 4000000},
+		{"zero", args{0, nil, DefaultUnlockedEAI}, 0},
+		{"65 days unlocked", args{65 * math.Day, nil, DefaultUnlockedEAI}, 3000000},
+		{"90 days unlocked", args{90 * math.Day, nil, DefaultUnlockedEAI}, 4000000},
+		{"65 days locked 90", args{65 * math.Day, newTestLock(90*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI}, 4000000},
+		{"90 days locked 90", args{90 * math.Day, newTestLock(90*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI}, 5000000},
+		{"0 days locked 90", args{0 * math.Day, newTestLock(90*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI}, 1000000},
+		{"0 days locked 1000", args{0 * math.Day, newTestLock(1000*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI}, 4000000},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := CalculateEAIRate(tt.args.weightedAverageAge, tt.args.lock, tt.args.unlockedTable, tt.args.lockBonusTable); got != tt.want {
+			if got := CalculateEAIRate(tt.args.weightedAverageAge, tt.args.lock, tt.args.unlockedTable); got != tt.want {
 				t.Errorf("CalculateEAIRate() = %v, want %v", got, tt.want)
 			}
 		})
