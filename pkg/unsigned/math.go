@@ -1,21 +1,12 @@
 package unsigned
 
 import (
-	"math"
-
 	"github.com/ericlagergren/decimal"
 	"github.com/oneiro-ndev/ndaumath/pkg/ndauerr"
 )
 
-// makeDecimal constructs a decimal object from a uint64 and avoids a bug in the decimal package
-// where the value is exactly equal to MaxUint64.
+// makeDecimal constructs a decimal object from a uint64
 func makeDecimal(n uint64) *decimal.Big {
-	if n == math.MaxUint64 {
-		x := decimal.WithContext(decimal.Context128).SetUint64(n - 1)
-		i := decimal.WithContext(decimal.Context128).SetUint64(1)
-		x.Add(x, i)
-		return x
-	}
 	return decimal.WithContext(decimal.Context128).SetUint64(n)
 }
 

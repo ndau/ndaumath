@@ -291,9 +291,10 @@ func TestConversion(t *testing.T) {
 	if !ok {
 		t.Error("failed to convert back")
 	}
-	// if this test "fails" then the decimal library has been fixed, and the makeDecimal function
-	// should probably be removed.
+
 	if y == math.MaxUint64 {
-		t.Errorf("the bug in the decimal library (https://github.com/ericlagergren/decimal/issues/104) has been fixed")
+		t.Logf("the bug in the decimal library (https://github.com/ericlagergren/decimal/issues/104) has been fixed")
+	} else {
+		t.Error("bug in decimal library (https://github.com/ericlagergren/decimal/issues/104) remains but makeDecimal has already been nerfed")
 	}
 }
