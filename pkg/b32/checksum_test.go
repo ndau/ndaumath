@@ -43,7 +43,7 @@ func TestChecksum(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Checksum(tt.b); !reflect.DeepEqual(got, tt.want) {
+			if got := Checksum16(tt.b); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Checksum() = %v, want %v", got, tt.want)
 			}
 		})
