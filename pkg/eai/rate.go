@@ -51,7 +51,7 @@ func (r Rate) toString() string {
 //
 // i.e. to express 1%, `nPercent` should equal `1.0`
 func RateFromPercent(nPercent float64) Rate {
-	r := Rate{Big: decimal.Big{}}
+	r := Rate{Big: *decimal.WithContext(decimal.Context128)}
 	r.SetFloat64(nPercent)
 	// we set the rate in percentage points, so let's get the actual rate now
 	r.Quo(&r.Big, decimal.New(100, 0))
