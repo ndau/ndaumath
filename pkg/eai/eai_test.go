@@ -11,6 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// we accumulate errors faster than a proper bignum implementation does,
+// and there's not much we can do about it. All we can do is test that
+// our error values are relatively low
+const epsilon = 1.0 / 1000000
+
 type testLock struct {
 	NoticePeriod math.Duration
 	UnlocksOn    *math.Timestamp
@@ -42,7 +47,7 @@ func (l *testLock) GetBonusRate() Rate {
 	if l != nil {
 		return l.Rate
 	}
-	return Rate{}
+	return Rate(0)
 }
 
 var _ Lock = (*testLock)(nil)
@@ -52,26 +57,56 @@ func TestEAIFactorUnlocked(t *testing.T) {
 	// there is no period in the rate table shorter than a month, so using a few days
 	// should be fine.
 
+	// use decimal library to compute the expected values to double-check
+	// ourselves.
+	//
+	// time is set at a constant 1 day, because that's what's used in this test.
+	expect := func(t *testing.T, rate Rate) uint64 {
+		time := 1 * math.Day
+		// get the applicable rate
+		// compute time as fraction of year
+		ti := decimal.WithContext(decimal.Context128)
+		ti.SetUint64(uint64(time))
+		ti.Quo(ti, decimal.New(1*math.Year, 0))
+
+		// big representation of rate denominator
+		rd := decimal.New(constants.RateDenominator, 0)
+
+		e := decimal.WithContext(decimal.Context128)
+		e.SetUint64(uint64(rate))
+		// divide by rd to get the proper fractional rate
+		e.Quo(e, rd)
+		e.Mul(e, ti)
+		dmath.Exp(e, e)
+		// multiply by rd to get the integer style again
+		e.Mul(e, rd)
+		// truncate dust
+		e.RoundToInt()
+
+		// generating expect in this way raises condition flags
+		t.Log("expect conditions:", e.Context.Conditions.Error())
+		e.Context.Conditions = 0
+
+		// compute and return the expected value
+		v, ok := e.Uint64()
+		require.True(t, ok)
+		return v
+	}
+
 	// special case for 0 rate
 	blockTime := math.Timestamp(DefaultUnlockedEAI[0].From - 1)
 	lastEAICalc := blockTime.Sub(1 * math.Day)
 	weightedAverageAge := math.Duration(2 * math.Day)
-	zero, err := calculateEAIFactor(
-		blockTime, lastEAICalc, weightedAverageAge, nil,
-		DefaultUnlockedEAI,
-	)
-	t.Run("one", func(t *testing.T) {
+	t.Run("0 rate", func(t *testing.T) {
+		zero, err := calculateEAIFactor(
+			blockTime, lastEAICalc, weightedAverageAge, nil,
+			DefaultUnlockedEAI,
+		)
 		require.NoError(t, err)
-		d := decimal.WithContext(decimal.Context128)
-		d.SetUint64(1)
-		require.Equal(t, d, zero.Reduce())
+		require.InEpsilon(t, expect(t, 0), zero, epsilon)
 	})
 
 	// now test each particular rate
-	var expect *decimal.Big
-	time := decimal.WithContext(decimal.Context128)
-	time.SetUint64(1 * math.Day)
-	time.Quo(time, decimal.New(1*math.Year, 0))
 	for idx, rate := range DefaultUnlockedEAI {
 		blockTime := math.Timestamp(rate.From + (2 * math.Day))
 		weightedAverageAge = math.Duration(blockTime)
@@ -81,30 +116,19 @@ func TestEAIFactorUnlocked(t *testing.T) {
 			t.Logf("block time: %s", blockTime.String())
 			t.Logf("last eai:   %s", lastEAICalc.String())
 			t.Logf("WAA:        %s", weightedAverageAge.String())
-			t.Logf("rate:       %s", rate.Rate.String())
-			expect = decimal.WithContext(decimal.Context128)
-			expect.Copy(&rate.Rate.Big)
-			expect.Mul(expect, time)
-			dmath.Exp(expect, expect)
-
-			// generating expect in this way raises condition flags
-			t.Log("expect conditions:", expect.Context.Conditions.Error())
-			expect.Context.Conditions = 0
+			t.Logf("rate:       %d", rate.Rate)
 
 			factor, err := calculateEAIFactor(
 				blockTime, lastEAICalc, weightedAverageAge, nil,
 				DefaultUnlockedEAI,
 			)
 			require.NoError(t, err)
-			require.Equal(t, decimal.Condition(0), factor.Context.Conditions)
+			expectValue := expect(t, rate.Rate)
 
-			expect.Reduce()
-			factor.Reduce()
+			t.Logf("expect:     %d", expectValue)
+			t.Logf("actual:     %d", factor)
 
-			t.Logf("expect:     %s", expect)
-			t.Logf("actual:     %s", factor)
-
-			require.Equal(t, expect, factor)
+			require.InEpsilon(t, expectValue, factor, epsilon)
 		})
 	}
 }
@@ -125,53 +149,70 @@ func TestEAIFactorLocked(t *testing.T) {
 	)
 	lastEAICalc := blockTime.Sub(1 * math.Day)
 	weightedAverageAge := blockTime.Since(createdAt)
+	rate := DefaultUnlockedEAI[len(DefaultUnlockedEAI)-1].Rate
 
-	baseRate := DefaultUnlockedEAI[len(DefaultUnlockedEAI)-1].Rate
-	expect := decimal.WithContext(decimal.Context128)
-	oneDay := decimal.WithContext(decimal.Context128)
-	oneDay.SetUint64(math.Day)
-	oneDay.Quo(oneDay, decimal.New(math.Year, 0))
+	// use decimal library to compute the expected values to double-check
+	// ourselves.
+	//
+	// time is set at a constant 1 day, because that's what's used in this test.
+	expect := func(lock Lock) uint64 {
+		time := 1 * math.Day
+		// get the applicable rate
+		// compute time as fraction of year
+		ti := decimal.WithContext(decimal.Context128)
+		ti.SetUint64(uint64(time))
+		ti.Quo(ti, decimal.New(1*math.Year, 0))
+
+		// big representation of rate denominator
+		rd := decimal.New(constants.RateDenominator, 0)
+
+		e := decimal.WithContext(decimal.Context128)
+		e.SetUint64(uint64(rate))
+		e.Add(
+			e,
+			decimal.WithContext(decimal.Context128).SetUint64(uint64(lock.GetBonusRate())),
+		)
+
+		// divide by rd to get the proper fractional rate
+		e.Quo(e, rd)
+		e.Mul(e, ti)
+		dmath.Exp(e, e)
+		// multiply by rd to get the integer style again
+		e.Mul(e, rd)
+		// truncate dust
+		e.RoundToInt()
+
+		// generating expect in this way raises condition flags
+		t.Log("expect conditions:", e.Context.Conditions.Error())
+		e.Context.Conditions = 0
+
+		// compute and return the expected value
+		v, ok := e.Uint64()
+		require.True(t, ok)
+		return v
+	}
 
 	// special case for 0 lock rate
 	lock := newTestLock(DefaultLockBonusEAI[0].From-math.Day, DefaultLockBonusEAI)
 	t.Run("no lock bonus", func(t *testing.T) {
-		expect.Copy(&baseRate.Big)
-		expect.Mul(expect, oneDay)
-		dmath.Exp(expect, expect)
-		expect.Reduce()
-		// generating expect in this way raises condition flags
-		t.Log("expect conditions:", expect.Context.Conditions.Error())
-		expect.Context.Conditions = 0
-
 		factor, err := calculateEAIFactor(
 			blockTime, lastEAICalc, weightedAverageAge, lock,
 			DefaultUnlockedEAI,
 		)
 		require.NoError(t, err)
-		factor.Reduce()
-		require.Equal(t, expect, factor)
+		require.InEpsilon(t, expect(lock), factor, epsilon)
 	})
 
 	// now test each particular lock bonus rate
 	for idx, lockRate := range DefaultLockBonusEAI {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			expect.Copy(&baseRate.Big)
-			expect.Add(expect, &lockRate.Rate.Big)
-			expect.Mul(expect, oneDay)
-			dmath.Exp(expect, expect)
-			expect.Reduce()
-			// generating expect in this way raises condition flags
-			t.Log("expect conditions:", expect.Context.Conditions.Error())
-			expect.Context.Conditions = 0
-
 			lock = newTestLock(lockRate.From, DefaultLockBonusEAI)
 			factor, err := calculateEAIFactor(
 				blockTime, lastEAICalc, weightedAverageAge, lock,
 				DefaultUnlockedEAI,
 			)
 			require.NoError(t, err)
-			factor.Reduce()
-			require.Equal(t, expect, factor)
+			require.InEpsilon(t, expect(lock), factor, epsilon)
 		})
 	}
 }
@@ -183,7 +224,7 @@ func TestEAIFactorSoundness(t *testing.T) {
 	days180 := math.Duration(180 * math.Day)
 
 	type ec struct {
-		rate float64
+		rate uint64
 		days uint64
 	}
 	type soundnessCase struct {
@@ -414,14 +455,17 @@ func TestEAIFactorSoundness(t *testing.T) {
 			expected.SetUint64(1)
 
 			var period int
-			calc := func(rate float64, days uint64) {
+			calc := func(rate uint64, days uint64) {
 				t.Logf("Period %d:", period)
 				period++
 				time.SetUint64(days * math.Day)
 				time.Quo(time, decimal.New(1*math.Year, 0))
 				t.Logf(" Duration: %s (%d days)", time, days)
-				rfp := RateFromPercent(rate)
-				percent.Copy(&rfp.Big)
+				percent.SetUint64(rate)
+				percent.Quo(
+					percent,
+					decimal.WithContext(decimal.Context128).SetUint64(100),
+				)
 				t.Logf(" Rate: %s", percent)
 				percent.Mul(percent, time)
 				dmath.Exp(percent, percent)
@@ -454,14 +498,12 @@ func TestEAIFactorSoundness(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			// simplify
-			expected.Reduce()
-			actual.Reduce()
+			// convert to same format as actual
+			expected.Mul(expected, decimal.New(constants.RateDenominator, 0))
+			expectedValue, ok := expected.Uint64()
+			require.True(t, ok)
 
-			// we require equal contexts here so that if the test fails in the
-			// subsequent line, we know that it's not a context mismatch, but a value
-			require.Equal(t, expected.Context, actual.Context)
-			require.Equal(t, expected, actual)
+			require.InEpsilon(t, expectedValue, actual, epsilon)
 		})
 	}
 }
@@ -497,7 +539,7 @@ func TestCalculate(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	require.Equal(t, expected, actual)
+	require.InEpsilon(t, uint64(expected), uint64(actual), epsilon)
 }
 
 func TestCalculateEAIRate(t *testing.T) {
@@ -509,15 +551,15 @@ func TestCalculateEAIRate(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want int64
+		want Rate
 	}{
 		{"zero", args{0, nil, DefaultUnlockedEAI}, 0},
-		{"65 days unlocked", args{65 * math.Day, nil, DefaultUnlockedEAI}, 3000000},
-		{"90 days unlocked", args{90 * math.Day, nil, DefaultUnlockedEAI}, 4000000},
-		{"65 days locked 90", args{65 * math.Day, newTestLock(90*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI}, 4000000},
-		{"90 days locked 90", args{90 * math.Day, newTestLock(90*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI}, 5000000},
-		{"0 days locked 90", args{0 * math.Day, newTestLock(90*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI}, 1000000},
-		{"0 days locked 1000", args{0 * math.Day, newTestLock(1000*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI}, 4000000},
+		{"65 days unlocked", args{65 * math.Day, nil, DefaultUnlockedEAI}, RateFromPercent(3)},
+		{"90 days unlocked", args{90 * math.Day, nil, DefaultUnlockedEAI}, RateFromPercent(4)},
+		{"65 days locked 90", args{65 * math.Day, newTestLock(90*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI}, RateFromPercent(4)},
+		{"90 days locked 90", args{90 * math.Day, newTestLock(90*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI}, RateFromPercent(5)},
+		{"0 days locked 90", args{0 * math.Day, newTestLock(90*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI}, RateFromPercent(1)},
+		{"0 days locked 1000", args{0 * math.Day, newTestLock(1000*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI}, RateFromPercent(4)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -28,9 +28,18 @@ const (
 	// expect non-integer rates. We square this circle by treating them
 	// as rationals using an implied denominator, specified here.
 	//
-	// It is coincidence, not required for correct functioning, that the
-	// rate denominator is equal to QuantaPerUnit.
-	RateDenominator = QuantaPerUnit
+	// RateDenominator must be tuned to preserve precision. Because of
+	// technical details of EAI calculation, it cannot be greater than
+	// half of a uint64: approximately 10**18. At the same time, the effective
+	// precision of an EAI factor is the precision of the RateDenominator
+	// reduced by the fraction of the year over which the EAI is calculated.
+	//
+	// One hour, as a fraction of a year, is a little more than 1/10000.
+	// Therefore, by making the precision of the RateDenominator 10000 times
+	// the QuantaPerUnit, we ensure that we don't lose too much precision
+	// in EAI calculations. However, EAI calculations much more frequent than
+	// an hour can be expected to lose some EAI to dust truncation.
+	RateDenominator = QuantaPerUnit * 10000
 
 	// MaxQuantaPerAddress is the number of quanta that
 	// can be tracked in a single address.
