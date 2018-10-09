@@ -1,4 +1,4 @@
-package signed
+package unsigned
 
 import (
 	"errors"
@@ -27,8 +27,8 @@ import (
 // a scaling value and then divide by it again at the end.
 // This means that the practical limit for denominator is maxint32 / 10, which is still larger than our
 // napu multiplication factor of 100,000,000 (which is also the value we use for percentages).
-func ExpFrac(numerator, denominator int64) (int64, error) {
-	rounder := int64(10)
+func ExpFrac(numerator, denominator uint64) (uint64, error) {
+	rounder := uint64(10)
 	numerator *= rounder
 	denominator *= rounder
 	if denominator > math.MaxInt32 {
@@ -48,9 +48,9 @@ func ExpFrac(numerator, denominator int64) (int64, error) {
 	// the result is 144/10000 which is correct.
 	// This converges at a rate of approximately one decimal digit per loop.
 	product := numerator
-	fact := int64(1)
+	fact := uint64(1)
 	var err error
-	for i := int64(2); product != 0; i++ {
+	for i := uint64(2); product != 0; i++ {
 		product, err = MulDiv(product, numerator, denominator)
 		if err != nil {
 			return 0, err
