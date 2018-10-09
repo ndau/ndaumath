@@ -31,7 +31,7 @@ func ExpFrac(numerator, denominator int64) (int64, error) {
 	rounder := int64(10)
 	numerator *= rounder
 	denominator *= rounder
-	if denominator > math.MaxInt32 {
+	if denominator > (math.MaxInt64 / 2) {
 		return 0, errors.New("denominator too large")
 	}
 	if numerator > denominator || numerator < 0 || denominator < 0 {

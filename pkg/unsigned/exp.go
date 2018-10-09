@@ -31,10 +31,10 @@ func ExpFrac(numerator, denominator uint64) (uint64, error) {
 	rounder := uint64(10)
 	numerator *= rounder
 	denominator *= rounder
-	if denominator > math.MaxInt32 {
+	if denominator > (math.MaxUint64 / 2) {
 		return 0, errors.New("denominator too large")
 	}
-	if numerator > denominator || numerator < 0 || denominator < 0 {
+	if numerator > denominator {
 		return 0, errors.New("fraction must be between 0 and 1")
 	}
 	// start the sum at 1 + x, which is b/b + a/b, and we only care about the
