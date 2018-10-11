@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/oneiro-ndev/signature/pkg/signature"
+	"github.com/oneiro-ndev/ndaumath/pkg/signature"
 
 	arg "github.com/alexflint/go-arg"
 )
