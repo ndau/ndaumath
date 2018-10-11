@@ -1,7 +1,7 @@
 package eai
 
 import (
-	"github.com/ericlagergren/decimal"
+	"github.com/oneiro-ndev/ndaumath/pkg/constants"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 )
 
@@ -28,34 +28,13 @@ import (
 // Continuously compounded interest avoids that issue: both accounts will
 // see the same rate of return; the benefit of the one registered to the
 // frequent node is that it sees the increase more often.
-type Rate struct {
-	decimal.Big
-}
-
-//msgp:shim Rate as:string using:(Rate).toString/parseRateString
-
-// shim to assist rate deserialization
-func parseRateString(s string) Rate {
-	d := decimal.WithContext(decimal.Context128)
-	r := Rate{Big: *d}
-	r.SetString(s)
-	return r
-}
-
-// shim to assist rate serialization
-func (r Rate) toString() string {
-	return r.String()
-}
+type Rate uint64
 
 // RateFromPercent returns a Rate whose value is that of the input, as percent.
 //
-// i.e. to express 1%, `nPercent` should equal `1.0`
-func RateFromPercent(nPercent float64) Rate {
-	r := Rate{Big: decimal.Big{}}
-	r.SetFloat64(nPercent)
-	// we set the rate in percentage points, so let's get the actual rate now
-	r.Quo(&r.Big, decimal.New(100, 0))
-	return r
+// i.e. to express 1%, `nPercent` should equal `1`
+func RateFromPercent(nPercent uint64) Rate {
+	return Rate(nPercent * constants.RateDenominator / 100)
 }
 
 //msgp:tuple RTRow
@@ -75,7 +54,7 @@ type RateTable []RTRow
 
 // RateAt returns the rate in a RateTable for a given point
 func (rt RateTable) RateAt(point math.Duration) Rate {
-	rate := Rate{} // 0
+	rate := Rate(0)
 	// the nature of rate tables is that we want the smallest rate
 	// for which point >= row.From. The obvious way would be to iterate
 	// in reverse, and return the first time that the point >= the row's
@@ -211,7 +190,7 @@ func (rt RateTable) SliceF(from, to, offset, freeze math.Duration) RateSlice {
 
 	rateFor := func(idx int) Rate {
 		if idx == -1 {
-			return Rate{} // 0
+			return Rate(0)
 		}
 		return rt[idx].Rate
 	}
@@ -294,7 +273,7 @@ var (
 func init() {
 	for i := 1; i < 10; i++ {
 		DefaultUnlockedEAI = append(DefaultUnlockedEAI, RTRow{
-			Rate: RateFromPercent(float64(i + 1)),
+			Rate: RateFromPercent(uint64(i + 1)),
 			From: math.Duration(i * 30 * math.Day),
 		})
 	}
@@ -302,23 +281,23 @@ func init() {
 	DefaultLockBonusEAI = RateTable{
 		RTRow{
 			From: math.Duration(3 * 30 * math.Day),
-			Rate: RateFromPercent(float64(1)),
+			Rate: RateFromPercent(1),
 		},
 		RTRow{
 			From: math.Duration(6 * 30 * math.Day),
-			Rate: RateFromPercent(float64(2)),
+			Rate: RateFromPercent(2),
 		},
 		RTRow{
 			From: math.Duration(1 * math.Year),
-			Rate: RateFromPercent(float64(3)),
+			Rate: RateFromPercent(3),
 		},
 		RTRow{
 			From: math.Duration(2 * math.Year),
-			Rate: RateFromPercent(float64(4)),
+			Rate: RateFromPercent(4),
 		},
 		RTRow{
 			From: math.Duration(3 * math.Year),
-			Rate: RateFromPercent(float64(5)),
+			Rate: RateFromPercent(5),
 		},
 	}
 }

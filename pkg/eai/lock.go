@@ -15,4 +15,5 @@ import math "github.com/oneiro-ndev/ndaumath/pkg/types"
 type Lock interface {
 	GetNoticePeriod() math.Duration
 	GetUnlocksOn() *math.Timestamp
+	GetBonusRate() Rate
 }

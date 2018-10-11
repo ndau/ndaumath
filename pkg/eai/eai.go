@@ -3,10 +3,9 @@ package eai
 import (
 	"fmt"
 
-	"github.com/ericlagergren/decimal"
-	dmath "github.com/ericlagergren/decimal/math"
-	"github.com/oneiro-ndev/ndaumath/pkg/ndauerr"
+	"github.com/oneiro-ndev/ndaumath/pkg/constants"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
+	"github.com/oneiro-ndev/ndaumath/pkg/unsigned"
 )
 
 // Calculate the EAI due for a given account
@@ -40,32 +39,23 @@ func Calculate(
 	blockTime, lastEAICalc math.Timestamp,
 	weightedAverageAge math.Duration,
 	lock Lock,
-	ageTable, lockTable RateTable,
+	ageTable RateTable,
 ) (math.Ndau, error) {
 	factor, err := calculateEAIFactor(
 		blockTime,
 		lastEAICalc, weightedAverageAge, lock,
-		ageTable, lockTable,
+		ageTable,
 	)
 	if err != nil {
 		return 0, err
 	}
 
 	// subtract 1 from the factor: we want just the EAI, not the new balance
-	qty := decimal.WithContext(decimal.Context128)
-	qty.SetUint64(1)
-	factor.Sub(factor, qty)
-
-	// multiply by the ndau balance
-	qty.SetUint64(uint64(balance))
-	qty.Mul(qty, factor)
-
-	// discard dust
-	qty.RoundToInt()
-
-	eai, couldConvert := qty.Uint64()
-	if !couldConvert {
-		return 0, ndauerr.ErrOverflow
+	// remember that the factor has an implied divisor of RateDivisor
+	factor -= constants.RateDenominator
+	eai, err := unsigned.MulDiv(uint64(balance), factor, constants.RateDenominator)
+	if err != nil {
+		return 0, err
 	}
 	return math.Ndau(eai), nil
 }
@@ -94,10 +84,9 @@ func calculateEAIFactor(
 	blockTime, lastEAICalc math.Timestamp,
 	weightedAverageAge math.Duration,
 	lock Lock,
-	unlockedTable, lockBonusTable RateTable,
-) (*decimal.Big, error) {
-	factor := decimal.WithContext(decimal.Context128)
-	factor.SetUint64(1)
+	unlockedTable RateTable,
+) (uint64, error) {
+	factor := uint64(constants.RateDenominator) // 1.0, effectively
 
 	lastEAICalcAge := blockTime.Since(lastEAICalc)
 	var offset math.Duration
@@ -105,12 +94,10 @@ func calculateEAIFactor(
 		offset = lock.GetNoticePeriod()
 	}
 	from := weightedAverageAge - lastEAICalcAge
-	qty := decimal.WithContext(decimal.Context128)
-	rate := decimal.WithContext(decimal.Context128)
 	var rateSlice RateSlice
 	if lock != nil && lock.GetUnlocksOn() != nil {
 		if *lock.GetUnlocksOn() < blockTime {
-			return nil, fmt.Errorf("*lock.UnlocksOn (%s) < blockTime (%s)",
+			return 0, fmt.Errorf("*lock.UnlocksOn (%s) < blockTime (%s)",
 				lock.GetUnlocksOn().String(), blockTime.String(),
 			)
 		}
@@ -123,48 +110,57 @@ func calculateEAIFactor(
 	for _, row := range rateSlice {
 		// fmt.Printf("%s @ %s\n", row.Duration.String(), row.Rate.String())
 
-		// new balance = balance * e ^ (rate * time)
-		// first: what's the time? It's the fraction of a year used
-		qty.SetUint64(uint64(row.Duration))
-		qty.Quo(qty, decimal.New(math.Year, 0))
+		// factor = e ^ (rate * time)
+		// however, we're operating on rational numbers with implied
+		// divisors:
+		//              (      rate        duration)       (   rate * duration    )
+		// factor = e ^ (--------------- * --------) = e ^ (----------------------)
+		//              (RateDenominator     Year  )       (RateDenominator * Year)
+		//
+		// Computed naively, given that Year = (1_000_000 * 60 * 60 * 24 * 365),
+		// any value of RateDenominator > 584_942 will cause the denominator product
+		// to overflow uint64.
+		//
+		// At the same time, we want a big RateDenominator to minimize precision loss,
+		// so we calculate in two stages:
+		//
+		//              ( (rate * duration)                   )
+		// factor = e ^ ( ----------------- / RateDenominator )
+		//              (        Year                         )
 
-		// next: what's the actual rate? It's the slice rate plus
-		// the lock bonus
-		rate.Copy(&row.Rate.Big)
+		effectiveRate := row.Rate
 		if lock != nil {
-			bonus := lockBonusTable.RateAt(lock.GetNoticePeriod())
-			rate.Add(rate, &bonus.Big)
+			effectiveRate += lock.GetBonusRate()
 		}
-
-		// multiply by rate and exponentiate
-		qty.Mul(qty, rate)
-		f, _ := qty.Float64()
-		fmt.Println("Qty before exp: ", f)
-		dmath.Exp(qty, qty)
-		f, _ = qty.Float64()
-		fmt.Println("Qty after exp:  ", f)
-
-		// multiply into the current factor
-		factor.Mul(factor, qty)
+		divisor, err := unsigned.MulDiv(uint64(effectiveRate), uint64(row.Duration), math.Year)
+		if err != nil {
+			return 0, err
+		}
+		rowFactor, err := unsigned.ExpFrac(divisor, constants.RateDenominator)
+		if err != nil {
+			return 0, err
+		}
+		factor, err = unsigned.MulDiv(factor, rowFactor, constants.RateDenominator)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	return factor, nil
 }
 
-// CalculateEAIRate accepts a WAA and a lock, plus rate tables,
+// CalculateEAIRate accepts a WAA and a lock, plus rate table,
 // and looks up the current EAI rate from that info.
-// The rate is returned as an int64 -- the floating point rate is scaled up by a factor of 100000000.
+// The rate is returned as a Rate: a newtype wrapping a uint64,
+// with an implied denominator of constants.RateDenominator.
 func CalculateEAIRate(
 	weightedAverageAge math.Duration,
 	lock Lock,
-	unlockedTable, lockBonusTable RateTable,
-) int64 {
-	rate := unlockedTable.RateAt(weightedAverageAge)
+	unlockedTable RateTable,
+) Rate {
+	effectiveRate := unlockedTable.RateAt(weightedAverageAge)
 	if lock != nil {
-		bonus := lockBonusTable.RateAt(lock.GetNoticePeriod())
-		rate.Add(&rate.Big, &bonus.Big)
+		effectiveRate += lock.GetBonusRate()
 	}
-	rate.Mul(&rate.Big, decimal.New(100000000, 0))
-	r, _ := rate.Big.Int64()
-	return r
+	return effectiveRate
 }
