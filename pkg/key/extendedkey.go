@@ -17,7 +17,6 @@ package key
 //   https://github.com/btcsuite/btcd
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -27,9 +26,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/b32"
-
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/oneiro-ndev/ndaumath/pkg/b32"
 )
 
 const (
@@ -50,12 +48,6 @@ const (
 	// MaxSeedBytes is the maximum number of bytes allowed for a seed to
 	// a master node.
 	MaxSeedBytes = 64 // 512 bits
-
-	// serializedKeyLen is the length of a serialized public or private
-	// extended key.  It consists of 4 bytes version, 1 byte depth, 4 bytes
-	// fingerprint, 4 bytes child number, 32 bytes chain code, and 33 bytes
-	// public/private key data.
-	serializedKeyLen = 3 + 1 + 3 + 4 + 32 + 33 // 76 bytes
 
 	// maxUint8 is the max positive integer which can be serialized in a uint8
 	maxUint8 = 1<<8 - 1
@@ -121,30 +113,7 @@ var (
 	TestPrivateKeyID = [3]byte{139, 103, 31} // tpvt
 	// TestPublicKeyID is another special prefix
 	TestPublicKeyID = [3]byte{139, 100, 16} // tpub
-
-	hdPrivToPubKeyIDs = map[[3]byte][]byte{
-		NdauPrivateKeyID: NdauPublicKeyID[:],
-		TestPrivateKeyID: TestPublicKeyID[:],
-	}
 )
-
-// HDPrivateKeyToPublicKeyID accepts a private hierarchical deterministic
-// extended key id and returns the associated public key id.  When the provided
-// id is not registered, the ErrUnknownHDKeyID error will be returned.
-func HDPrivateKeyToPublicKeyID(id []byte) ([]byte, error) {
-	if len(id) != 3 {
-		return nil, ErrUnknownHDKeyID
-	}
-
-	var key [3]byte
-	copy(key[:], id)
-	pubBytes, ok := hdPrivToPubKeyIDs[key]
-	if !ok {
-		return nil, ErrUnknownHDKeyID
-	}
-
-	return pubBytes, nil
-}
 
 // fingerprint calculates the checksum of sha256(b).
 func fingerprint(buf []byte) []byte {
@@ -174,7 +143,6 @@ type ExtendedKey struct {
 	depth     uint8
 	parentFP  []byte
 	childNum  uint32
-	version   []byte
 	isPrivate bool
 }
 
@@ -183,7 +151,7 @@ type ExtendedKey struct {
 // convenience method used to create a populated struct. This function should
 // only by used by applications that need to create custom ExtendedKeys. All
 // other applications should just use NewMaster, Child, or Public.
-func NewExtendedKey(version, key, chainCode, parentFP []byte, depth uint8,
+func NewExtendedKey(key, chainCode, parentFP []byte, depth uint8,
 	childNum uint32, isPrivate bool) *ExtendedKey {
 
 	// NOTE: The pubKey field is intentionally left nil so it is only
@@ -194,7 +162,6 @@ func NewExtendedKey(version, key, chainCode, parentFP []byte, depth uint8,
 		depth:     depth,
 		parentFP:  parentFP,
 		childNum:  childNum,
-		version:   version,
 		isPrivate: isPrivate,
 	}
 }
@@ -390,7 +357,7 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 	// The fingerprint of the parent for the derived child is the checksum24
 	// of the SHA256(parentPubKey).
 	parentFP := fingerprint(k.PubKeyBytes())
-	return NewExtendedKey(k.version, childKey, childChainCode, parentFP,
+	return NewExtendedKey(childKey, childChainCode, parentFP,
 		k.depth+1, i, isPrivate), nil
 }
 
@@ -408,17 +375,11 @@ func (k *ExtendedKey) Public() (*ExtendedKey, error) {
 		return k, nil
 	}
 
-	// Get the associated public extended key version bytes.
-	version, err := HDPrivateKeyToPublicKeyID(k.version)
-	if err != nil {
-		return nil, err
-	}
-
 	// Convert it to an extended public key.  The key for the new extended
 	// key will simply be the pubkey of the current extended private key.
 	//
 	// This is the function N((k,c)) -> (K, c) from [BIP32].
-	return NewExtendedKey(version, k.PubKeyBytes(), k.chainCode, k.parentFP,
+	return NewExtendedKey(k.PubKeyBytes(), k.chainCode, k.parentFP,
 		k.depth, k.childNum, false), nil
 }
 
@@ -450,53 +411,6 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 	return append(dst, src...)
 }
 
-// String returns the extended key as a human-readable base32-encoded string.
-func (k *ExtendedKey) String() string {
-	if len(k.key) == 0 {
-		return "zeroed extended key"
-	}
-
-	var childNumBytes [4]byte
-	binary.BigEndian.PutUint32(childNumBytes[:], k.childNum)
-
-	// The serialized format is:
-	//   version (3) || depth (1) || parent fingerprint (3)) ||
-	//   child num (4) || chain code (32) || key data (33) || checksum (4)
-	serializedBytes := make([]byte, 0, serializedKeyLen+4)
-	serializedBytes = append(serializedBytes, k.version...)
-	serializedBytes = append(serializedBytes, k.depth)
-	serializedBytes = append(serializedBytes, k.parentFP...)
-	serializedBytes = append(serializedBytes, childNumBytes[:]...)
-	serializedBytes = append(serializedBytes, k.chainCode...)
-	if k.isPrivate {
-		serializedBytes = append(serializedBytes, 0x00)
-		serializedBytes = paddedAppend(32, serializedBytes, k.key)
-	} else {
-		serializedBytes = append(serializedBytes, k.PubKeyBytes()...)
-	}
-
-	checkSum := doubleHashB(serializedBytes)[:4]
-	serializedBytes = append(serializedBytes, checkSum...)
-	return b32.Encode(serializedBytes)
-}
-
-// // IsForNet returns whether or not the extended key is associated with the
-// // passed bitcoin network.
-// func (k *ExtendedKey) IsForNet(net *chaincfg.Params) bool {
-// 	return bytes.Equal(k.version, net.HDPrivateKeyID[:]) ||
-// 		bytes.Equal(k.version, net.HDPublicKeyID[:])
-// }
-
-// // SetNet associates the extended key, and any child keys yet to be derived from
-// // it, with the passed network.
-// func (k *ExtendedKey) SetNet(net *chaincfg.Params) {
-// 	if k.isPrivate {
-// 		k.version = net.HDPrivateKeyID[:]
-// 	} else {
-// 		k.version = net.HDPublicKeyID[:]
-// 	}
-// }
-
 // zero sets all bytes in the passed slice to zero.  This is used to
 // explicitly clear private key material from memory.
 func zero(b []byte) {
@@ -515,7 +429,6 @@ func (k *ExtendedKey) Zero() {
 	zero(k.pubKey)
 	zero(k.chainCode)
 	zero(k.parentFP)
-	k.version = nil
 	k.key = nil
 	k.depth = 0
 	k.childNum = 0
@@ -530,7 +443,7 @@ func (k *ExtendedKey) Zero() {
 // will derive to an unusable secret key.  The ErrUnusable error will be
 // returned if this should occur, so the caller must check for it and generate a
 // new seed accordingly.
-func NewMaster(seed []byte, privateKeyID [3]byte) (*ExtendedKey, error) {
+func NewMaster(seed []byte) (*ExtendedKey, error) {
 	// Per [BIP32], the seed must be in range [MinSeedBytes, MaxSeedBytes].
 	if len(seed) < MinSeedBytes || len(seed) > MaxSeedBytes {
 		return nil, ErrInvalidSeedLen
@@ -555,65 +468,7 @@ func NewMaster(seed []byte, privateKeyID [3]byte) (*ExtendedKey, error) {
 	}
 
 	parentFP := []byte{0x00, 0x00, 0x00}
-	return NewExtendedKey(privateKeyID[:], secretKey, chainCode,
-		parentFP, 0, 0, true), nil
-}
-
-// NewKeyFromString returns a new extended key instance from a base32-encoded
-// extended key.
-func NewKeyFromString(key string) (*ExtendedKey, error) {
-	// The base32-decoded extended key must consist of a serialized payload
-	// plus an additional 4 bytes for the checksum.
-	decoded, err := b32.Decode(key)
-	if err != nil {
-		return nil, ErrInvalidKeyEncoding
-	}
-	if len(decoded) != serializedKeyLen+4 {
-		return nil, ErrInvalidKeyLen
-	}
-
-	// The serialized format is:
-	//   version (3) || depth (1) || parent fingerprint (3)) ||
-	//   child num (4) || chain code (32) || key data (33) || checksum (4)
-
-	// Split the payload and checksum up and ensure the checksum matches.
-	payload := decoded[:len(decoded)-4]
-	checkSum := decoded[len(decoded)-4:]
-	expectedCheckSum := doubleHashB(payload)[:4]
-	if !bytes.Equal(checkSum, expectedCheckSum) {
-		return nil, ErrBadChecksum
-	}
-
-	// Deserialize each of the payload fields.
-	version := payload[:3]
-	depth := payload[3:4][0]
-	parentFP := payload[4:7]
-	childNum := binary.BigEndian.Uint32(payload[7:11])
-	chainCode := payload[11:43]
-	keyData := payload[43:76]
-
-	// The key data is a private key if it starts with 0x00.  Serialized
-	// compressed pubkeys either start with 0x02 or 0x03.
-	isPrivate := keyData[0] == 0x00
-	if isPrivate {
-		// Ensure the private key is valid.  It must be within the range
-		// of the order of the secp256k1 curve and not be 0.
-		keyData = keyData[1:]
-		keyNum := new(big.Int).SetBytes(keyData)
-		if keyNum.Cmp(btcec.S256().N) >= 0 || keyNum.Sign() == 0 {
-			return nil, ErrUnusableSeed
-		}
-	} else {
-		// Ensure the public key parses correctly and is actually on the
-		// secp256k1 curve.
-		_, err := btcec.ParsePubKey(keyData, btcec.S256())
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return NewExtendedKey(version, keyData, chainCode, parentFP, depth,
-		childNum, isPrivate), nil
+	return NewExtendedKey(secretKey, chainCode, parentFP, 0, 0, true), nil
 }
 
 // GenerateSeed returns a cryptographically secure random seed that can be used
