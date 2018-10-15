@@ -491,3 +491,8 @@ func GenerateSeed(length uint8) ([]byte, error) {
 
 	return buf, nil
 }
+
+// Bytes returns the bytes of the key
+func (k *ExtendedKey) Bytes() []byte {
+	return k.key
+}
