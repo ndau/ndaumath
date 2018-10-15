@@ -12,7 +12,8 @@ var idNameMap map[string]AlgorithmID
 
 func init() {
 	idMap = map[AlgorithmID]Algorithm{
-		AlgorithmID(1): ed25519{},
+		AlgorithmID(1): Ed25519,
+		AlgorithmID(2): Secp256k1,
 	}
 	buildNameMap()
 }
