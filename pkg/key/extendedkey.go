@@ -9,6 +9,9 @@
 // and extracted only those portions that we actually need. The license information
 // above is from the original licensing terms for btcsuite.
 
+// For package composability reasons, certain functionality originally located
+// in this package was moved to the sibling package `bip32`.
+
 package key
 
 // References:
@@ -18,36 +21,23 @@ package key
 
 import (
 	"crypto/hmac"
-	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/oneiro-ndev/ndaumath/pkg/b32"
+	"github.com/oneiro-ndev/ndaumath/pkg/bip32"
 )
 
+// bip32 constants are described in bip32 documentation
 const (
-	// RecommendedSeedLen is the recommended length in bytes for a seed
-	// to a master node.
-	RecommendedSeedLen = 32 // 256 bits
-
-	// HardenedKeyStart is the index at which a hardened key starts.  Each
-	// extended key has 2^31 normal child keys and 2^31 hardned child keys.
-	// Thus the range for normal child keys is [0, 2^31 - 1] and the range
-	// for hardened child keys is [2^31, 2^32 - 1].
-	HardenedKeyStart = 0x80000000 // 2^31
-
-	// MinSeedBytes is the minimum number of bytes allowed for a seed to
-	// a master node.
-	MinSeedBytes = 16 // 128 bits
-
-	// MaxSeedBytes is the maximum number of bytes allowed for a seed to
-	// a master node.
-	MaxSeedBytes = 64 // 512 bits
+	RecommendedSeedLen = bip32.RecommendedSeedLen
+	HardenedKeyStart   = bip32.HardenedKeyStart
+	MinSeedBytes       = bip32.MinSeedBytes
+	MaxSeedBytes       = bip32.MaxSeedBytes
 
 	// maxUint8 is the max positive integer which can be serialized in a uint8
 	maxUint8 = 1<<8 - 1
@@ -80,12 +70,11 @@ var (
 	// usable due to the derived key falling outside of the valid range for
 	// secp256k1 private keys.  This error indicates the caller must choose
 	// another seed.
-	ErrUnusableSeed = errors.New("unusable seed")
+	ErrUnusableSeed = bip32.ErrUnusableSeed
 
 	// ErrInvalidSeedLen describes an error in which the provided seed or
 	// seed length is not in the allowed range.
-	ErrInvalidSeedLen = fmt.Errorf("seed length must be between %d and %d "+
-		"bits", MinSeedBytes*8, MaxSeedBytes*8)
+	ErrInvalidSeedLen = bip32.ErrInvalidSeedLen
 
 	// ErrBadChecksum describes an error in which the checksum encoded with
 	// a serialized extended key does not match the calculated value.
@@ -128,10 +117,6 @@ func doubleHashB(b []byte) []byte {
 	second := sha256.Sum256(first[:])
 	return second[:]
 }
-
-// masterKey is the master key used along with a random seed used to generate
-// the master node in the hierarchical tree.
-var masterKey = []byte("ndau seed")
 
 // ExtendedKey houses all the information needed to support a hierarchical
 // deterministic extended key.  See the package overview documentation for
@@ -183,9 +168,7 @@ func (k *ExtendedKey) PubKeyBytes() []byte {
 	// This is a private extended key, so calculate and memoize the public
 	// key if needed.
 	if len(k.pubKey) == 0 {
-		pkx, pky := btcec.S256().ScalarBaseMult(k.key)
-		pubKey := btcec.PublicKey{Curve: btcec.S256(), X: pkx, Y: pky}
-		k.pubKey = pubKey.SerializeCompressed()
+		k.pubKey = bip32.PrivateToPublic(k.key)
 	}
 
 	return k.pubKey
@@ -444,31 +427,13 @@ func (k *ExtendedKey) Zero() {
 // returned if this should occur, so the caller must check for it and generate a
 // new seed accordingly.
 func NewMaster(seed []byte) (*ExtendedKey, error) {
-	// Per [BIP32], the seed must be in range [MinSeedBytes, MaxSeedBytes].
-	if len(seed) < MinSeedBytes || len(seed) > MaxSeedBytes {
-		return nil, ErrInvalidSeedLen
-	}
-
-	// First take the HMAC-SHA512 of the master key and the seed data:
-	//   I = HMAC-SHA512(Key = "ndau seed", Data = S)
-	hmac512 := hmac.New(sha512.New, masterKey)
-	hmac512.Write(seed)
-	lr := hmac512.Sum(nil)
-
-	// Split "I" into two 32-byte sequences Il and Ir where:
-	//   Il = master secret key
-	//   Ir = master chain code
-	secretKey := lr[:len(lr)/2]
-	chainCode := lr[len(lr)/2:]
-
-	// Ensure the key in usable.
-	secretKeyNum := new(big.Int).SetBytes(secretKey)
-	if secretKeyNum.Cmp(btcec.S256().N) >= 0 || secretKeyNum.Sign() == 0 {
-		return nil, ErrUnusableSeed
+	secretKey, chainCode, err := bip32.NewMaster(seed)
+	if err != nil {
+		return nil, err
 	}
 
 	parentFP := []byte{0x00, 0x00, 0x00}
-	return NewExtendedKey(secretKey, chainCode, parentFP, 0, 0, true), nil
+	return NewExtendedKey(secretKey[:], chainCode[:], parentFP, 0, 0, true), nil
 }
 
 // GenerateSeed returns a cryptographically secure random seed that can be used
@@ -478,18 +443,7 @@ func NewMaster(seed []byte) (*ExtendedKey, error) {
 // The recommended length is 32 (256 bits) as defined by the RecommendedSeedLen
 // constant.
 func GenerateSeed(length uint8) ([]byte, error) {
-	// Per [BIP32], the seed must be in range [MinSeedBytes, MaxSeedBytes].
-	if length < MinSeedBytes || length > MaxSeedBytes {
-		return nil, ErrInvalidSeedLen
-	}
-
-	buf := make([]byte, length)
-	_, err := rand.Read(buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf, nil
+	return bip32.GenerateSeed(length, nil)
 }
 
 // Bytes returns the bytes of the key

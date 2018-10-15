@@ -1,15 +1,14 @@
 package secp256k1
 
 import (
-	randP "crypto/rand"
 	"crypto/sha256"
 	"io"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/oneiro-ndev/ndaumath/pkg/key"
+	"github.com/oneiro-ndev/ndaumath/pkg/bip32"
 )
 
-// Secp256k1 is the HD Key type defined in [ek].
+// Secp256k1 is the algorithm of the HD Key type defined in [ek].
 //
 // Never edit this; it would be a const if go were smarter
 //
@@ -40,25 +39,15 @@ func (secp256k1) SignatureSize() int {
 
 // Generate creates a new keypair
 func (secp256k1) Generate(rand io.Reader) (public, private []byte, err error) {
-	// first thing: if rand is not set, set it
-	if rand == nil {
-		rand = randP.Reader
-	}
 	// generate a seed of the recommended size
-	seed := make([]byte, key.RecommendedSeedLen)
-	_, err = io.ReadFull(rand, seed)
+	seed, err := bip32.GenerateSeed(bip32.RecommendedSeedLen, nil)
 	if err != nil {
 		return
 	}
 
-	var privateEK *key.ExtendedKey
-	privateEK, err = key.NewMaster(seed)
-	if err != nil {
-		return
-	}
-
-	private = privateEK.Bytes()
-	public = privateEK.PubKeyBytes()
+	prv, _, err := bip32.NewMaster(seed)
+	private = prv[:]
+	public = bip32.PrivateToPublic(private)
 
 	return
 }
