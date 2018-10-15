@@ -1,11 +1,19 @@
 package signature
 
 import (
+	"bytes"
 	"encoding"
-	"encoding/base64"
 	"fmt"
 
+	"github.com/oneiro-ndev/ndaumath/pkg/b32"
+	"github.com/pkg/errors"
 	"github.com/tinylib/msgp/msgp"
+)
+
+// ndau keys use prefixes in text serialization to aid in usability
+const (
+	PublicKeyPrefix  = "npub"
+	PrivateKeyPrefix = "npvt"
 )
 
 // ensure that types here implement msgp marshal types
@@ -82,19 +90,30 @@ func (key *Key) Msgsize() (s int) {
 }
 
 // MarshalText implements encoding.TextMarshaler
+//
+// This marshaller uses a custom b32 encoding which is case-insensitive and
+// lacks certain confusing pairs, for ease of human-friendly handling.
+// For the same reason, it embeds a checksum, so it's easy to tell whether
+// or not it was received correctly.
 func (key Key) MarshalText() ([]byte, error) {
 	bytes, err := key.Marshal()
 	if err != nil {
 		return nil, err
 	}
-	return []byte(base64.StdEncoding.EncodeToString(bytes)), nil
+	bytes = AddChecksum(bytes)
+	return []byte(b32.Encode(bytes)), nil
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler
 func (key *Key) UnmarshalText(text []byte) error {
-	bytes, err := base64.StdEncoding.DecodeString(string(text))
+	bytes, err := b32.Decode(string(text))
 	if err != nil {
 		return err
+	}
+	var checksumOk bool
+	bytes, checksumOk = CheckChecksum(bytes)
+	if !checksumOk {
+		return errors.New("key unmarshal failure: bad checksum")
 	}
 	return key.Unmarshal(bytes)
 }
@@ -178,17 +197,27 @@ func (key *PublicKey) Msgsize() (s int) {
 	return
 }
 
-// MarshalText implements encoding.TextMarshaler
+// MarshalText implements encoding.TextMarshaler.
+//
+// PublicKeys encode like Keys, with the addition of a human-readable prefix
+// for easy identification.
 func (key PublicKey) MarshalText() ([]byte, error) {
-	return Key(key).MarshalText()
+	bytes, err := Key(key).MarshalText()
+	bytes = append([]byte(PublicKeyPrefix), bytes...)
+	return bytes, err
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler
 func (key *PublicKey) UnmarshalText(text []byte) error {
-	err := (*Key)(key).UnmarshalText(text)
+	expectPrefix := []byte(PublicKeyPrefix)
+	lep := len(expectPrefix)
+	if !bytes.Equal(expectPrefix, text[:lep]) {
+		return fmt.Errorf("public key must begin with %q; got %q", PublicKeyPrefix, text[:lep])
+	}
+	err := (*Key)(key).UnmarshalText(text[lep:])
 	if err == nil {
 		if len(key.data) != key.Size() {
-			err = fmt.Errorf("Wrong size signature: expect len %d, have %d", key.Size(), len(key.data))
+			err = fmt.Errorf("Wrong size public key: expect len %d, have %d", key.Size(), len(key.data))
 		}
 	}
 	return err
@@ -274,14 +303,24 @@ func (key *PrivateKey) Msgsize() (s int) {
 	return
 }
 
-// MarshalText implements encoding.TextMarshaler
+// MarshalText implements encoding.TextMarshaler.
+//
+// PublicKeys encode like Keys, with the addition of a human-readable prefix
+// for easy identification.
 func (key PrivateKey) MarshalText() ([]byte, error) {
-	return Key(key).MarshalText()
+	bytes, err := Key(key).MarshalText()
+	bytes = append([]byte(PrivateKeyPrefix), bytes...)
+	return bytes, err
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler
 func (key *PrivateKey) UnmarshalText(text []byte) error {
-	err := (*Key)(key).UnmarshalText(text)
+	expectPrefix := []byte(PrivateKeyPrefix)
+	lep := len(expectPrefix)
+	if !bytes.Equal(expectPrefix, text[:lep]) {
+		return fmt.Errorf("public key must begin with %q; got %q", PublicKeyPrefix, text[:lep])
+	}
+	err := (*Key)(key).UnmarshalText(text[lep:])
 	if err == nil {
 		if len(key.data) != key.Size() {
 			err = fmt.Errorf("Wrong size signature: expect len %d, have %d", key.Size(), len(key.data))
