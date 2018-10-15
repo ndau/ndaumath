@@ -1,4 +1,4 @@
-package signature
+package secp256k1
 
 import (
 	randP "crypto/rand"
@@ -17,9 +17,6 @@ import (
 var Secp256k1 = secp256k1{}
 
 type secp256k1 struct{}
-
-// static assert that secp256k1 is an Algorithm
-var _ Algorithm = (*secp256k1)(nil)
 
 // PublicKeySize is the size in bytes of this algorithm's public keys
 func (secp256k1) PublicKeySize() int {

@@ -4,7 +4,15 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/oneiro-ndev/ndaumath/pkg/signature/algorithms/ed25519"
+	"github.com/oneiro-ndev/ndaumath/pkg/signature/algorithms/secp256k1"
 	"github.com/pkg/errors"
+)
+
+// re-export package-native algorithms
+var (
+	Ed25519   = ed25519.Ed25519
+	Secp256k1 = secp256k1.Secp256k1
 )
 
 var idMap map[AlgorithmID]Algorithm
