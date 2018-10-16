@@ -402,6 +402,49 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 	return append(dst, src...)
 }
 
+const extraLen = 1 + 3 + 4 + 32
+
+// extra serializes all extra data associated with this key
+func (k *ExtendedKey) extra() []byte {
+	var childNumBytes [4]byte
+	binary.BigEndian.PutUint32(childNumBytes[:], k.childNum)
+
+	// The serialized format is:
+	//   field | width (bytes) | notes
+	//   ------|-------
+	//   depth | 1
+	//   parent fingerprint | 3
+	//   child num | 4 | serialized as big-endian uint32
+	//   chain code | 32
+	serializedBytes := make([]byte, 0, extraLen)
+	serializedBytes = append(serializedBytes, k.depth)
+	serializedBytes = append(serializedBytes, k.parentFP...)
+	serializedBytes = append(serializedBytes, childNumBytes[:]...)
+	serializedBytes = append(serializedBytes, k.chainCode...)
+
+	return serializedBytes
+}
+
+// parseExtra parses extra data associated with this key
+func (k *ExtendedKey) parseExtra(data []byte) error {
+	// The serialized format is:
+	//   field | width (bytes) | notes
+	//   ------|-------
+	//   depth | 1
+	//   parent fingerprint | 3
+	//   child num | 4 | serialized as big-endian uint32
+	//   chain code | 32
+	if len(data) < extraLen {
+		return errors.New("cannot parseExtra: too few bytes in data")
+	}
+	k.depth = data[0]
+	k.parentFP = data[1:4]
+	k.childNum = binary.BigEndian.Uint32(data[4:8])
+	k.chainCode = data[8:40]
+
+	return nil
+}
+
 // zero sets all bytes in the passed slice to zero.  This is used to
 // explicitly clear private key material from memory.
 func zero(b []byte) {
@@ -461,10 +504,10 @@ func (k *ExtendedKey) Bytes() []byte {
 
 func (k ExtendedKey) asSignatureKey() (signature.Key, error) {
 	if k.isPrivate {
-		priv, err := signature.RawPrivateKey(signature.Secp256k1, k.key)
+		priv, err := signature.RawPrivateKey(signature.Secp256k1, k.key, k.extra())
 		return signature.Key(*priv), err
 	}
-	pub, err := signature.RawPublicKey(signature.Secp256k1, k.key)
+	pub, err := signature.RawPublicKey(signature.Secp256k1, k.key, k.extra())
 	return signature.Key(*pub), err
 }
 
@@ -502,9 +545,21 @@ func (k *ExtendedKey) UnmarshalText(text []byte) (err error) {
 			break
 		}
 		k.isPrivate = true
-		k.key = priv.Bytes()
+		k.key = priv.KeyBytes()
+		err = k.parseExtra(priv.ExtraBytes())
 	case signature.MaybePublic(s):
-
+		pub := new(signature.PublicKey)
+		err = pub.UnmarshalText(text)
+		if err != nil {
+			break
+		}
+		if signature.NameOf(pub.Algorithm()) != signature.NameOf(signature.Secp256k1) {
+			err = errors.New("encoded ExtendedKey must use secp256k1 algorithm")
+			break
+		}
+		k.isPrivate = false
+		k.key = pub.KeyBytes()
+		err = k.parseExtra(pub.ExtraBytes())
 	default:
 		err = errors.New("text does not appear to be an ndau key")
 	}
