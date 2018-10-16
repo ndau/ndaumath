@@ -50,3 +50,13 @@ func cmdHDChild(cmd *cli.Cmd) {
 		fmt.Println(hdstr(*key))
 	}
 }
+
+func cmdHDConvert(cmd *cli.Cmd) {
+	keyS := cmd.StringArg("KEY", "", "old-format key to convert")
+
+	cmd.Action = func() {
+		k, err := key.FromOldSerialization(*keyS)
+		check(err)
+		fmt.Println(hdstr(*k))
+	}
+}
