@@ -134,6 +134,9 @@ func DeriveFrom(parentKey string, parentPath, childPath string) (*Key, error) {
 		return nil, err
 	}
 	e, err = e.DeriveFrom(parentPath, childPath)
+	if err != nil {
+		return nil, err
+	}
 	return asKey(e)
 }
 
