@@ -20,4 +20,5 @@ func hd(cmd *cli.Cmd) {
 	cmd.Command("public", "create a public key from supplied key", cmdHDPublic)
 	cmd.Command("child", "create a child key derived from the supplied key", cmdHDChild)
 	cmd.Command("convert", "convert an old-format key into the new format", cmdHDConvert)
+	cmd.Command("truncate", "remove HD portions from an HD key leaving only the key itself", cmdHDTruncate)
 }

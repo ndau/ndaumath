@@ -168,3 +168,11 @@ func (key PublicKey) Algorithm() Algorithm {
 func (key PublicKey) String() string {
 	return Key(key).String()
 }
+
+// Truncate removes all extra data from this key.
+//
+// This is a destructive operation which cannot be undone; make copies
+// first if you need to.
+func (key *PublicKey) Truncate() {
+	key.extra = nil
+}

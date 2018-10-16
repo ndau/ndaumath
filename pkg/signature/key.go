@@ -13,6 +13,7 @@ type keyer interface {
 	KeyBytes() []byte
 	ExtraBytes() []byte
 	Algorithm() Algorithm
+	Truncate()
 }
 
 // ensure that Key implements msgp marshal types
@@ -203,4 +204,12 @@ func (key Key) String() string {
 		return string(text)
 	}
 	return fmt.Sprintf("%s...%s", text[:8], text[len(text)-4:])
+}
+
+// Truncate removes all extra data from this key.
+//
+// This is a destructive operation which cannot be undone; make copies
+// first if you need to.
+func (key *Key) Truncate() {
+	key.extra = nil
 }

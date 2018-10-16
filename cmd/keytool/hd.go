@@ -60,3 +60,26 @@ func cmdHDConvert(cmd *cli.Cmd) {
 		fmt.Println(hdstr(*k))
 	}
 }
+
+func cmdHDTruncate(cmd *cli.Cmd) {
+	keyS := cmd.StringArg("KEY", "", "key to truncate")
+
+	cmd.Action = func() {
+		key := hdparse(*keyS)
+		var keyB []byte
+		var err error
+		if key.IsPrivate() {
+			skey, err := key.SPrivKey()
+			check(err)
+			skey.Truncate()
+			keyB, err = skey.MarshalText()
+		} else {
+			skey, err := key.SPubKey()
+			check(err)
+			skey.Truncate()
+			keyB, err = skey.MarshalText()
+		}
+		check(err)
+		fmt.Println(string(keyB))
+	}
+}
