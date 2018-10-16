@@ -23,9 +23,13 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/sha512"
+	"encoding"
 	"encoding/binary"
 	"errors"
 	"math/big"
+	"unicode/utf8"
+
+	"github.com/oneiro-ndev/ndaumath/pkg/signature"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/oneiro-ndev/ndaumath/pkg/b32"
@@ -130,6 +134,10 @@ type ExtendedKey struct {
 	childNum  uint32
 	isPrivate bool
 }
+
+// ensure ExtendedKey implements Text(Un)Marshaller
+var _ encoding.TextMarshaler = (*ExtendedKey)(nil)
+var _ encoding.TextUnmarshaler = (*ExtendedKey)(nil)
 
 // NewExtendedKey returns a new instance of an extended key with the given
 // fields.  No error checking is performed here as it's only intended to be a
@@ -449,4 +457,56 @@ func GenerateSeed(length uint8) ([]byte, error) {
 // Bytes returns the bytes of the key
 func (k *ExtendedKey) Bytes() []byte {
 	return k.key
+}
+
+func (k ExtendedKey) asSignatureKey() (signature.Key, error) {
+	if k.isPrivate {
+		priv, err := signature.RawPrivateKey(signature.Secp256k1, k.key)
+		return signature.Key(*priv), err
+	}
+	pub, err := signature.RawPublicKey(signature.Secp256k1, k.key)
+	return signature.Key(*pub), err
+}
+
+// MarshalText implements encoding.TextMarshaler
+func (k ExtendedKey) MarshalText() ([]byte, error) {
+	key, err := k.asSignatureKey()
+	if err != nil {
+		return nil, err
+	}
+	if k.isPrivate {
+		priv := signature.PrivateKey(key)
+		return priv.MarshalText()
+	}
+	pub := signature.PublicKey(key)
+	return pub.MarshalText()
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler
+func (k *ExtendedKey) UnmarshalText(text []byte) (err error) {
+	if !utf8.Valid(text) {
+		return errors.New("text not valid utf-8")
+	}
+	s := string(text)
+
+	k.Zero()
+	switch {
+	case signature.MaybePrivate(s):
+		priv := new(signature.PrivateKey)
+		err = priv.UnmarshalText(text)
+		if err != nil {
+			break
+		}
+		if signature.NameOf(priv.Algorithm()) != signature.NameOf(signature.Secp256k1) {
+			err = errors.New("encoded ExtendedKey must use secp256k1 algorithm")
+			break
+		}
+		k.isPrivate = true
+		k.key = priv.Bytes()
+	case signature.MaybePublic(s):
+
+	default:
+		err = errors.New("text does not appear to be an ndau key")
+	}
+	return
 }

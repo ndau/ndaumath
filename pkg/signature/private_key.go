@@ -4,9 +4,27 @@ import (
 	"bytes"
 	"encoding"
 	"fmt"
+	"strings"
 
 	"github.com/tinylib/msgp/msgp"
 )
+
+// PrivateKeyPrefix always prefixes Ndau private keys in text serialization
+const PrivateKeyPrefix = "npvt"
+
+// MaybePrivate provides a fast way to check whether a string looks like
+// it might be an ndau private key.
+//
+// To get a definitive answer as to whether something is a private key, one
+// must attempt to deserialize it using UnmarshalText and check the error
+// value. That takes some work; it's faster to use this to get a first impression.
+//
+// This function will allow some false positives, but no false negatives:
+// some values for which it returns `true` may not be actual valid keys,
+// but no values for which it returns `false` will return actual valid keys.
+func MaybePrivate(s string) bool {
+	return strings.HasPrefix(s, PrivateKeyPrefix)
+}
 
 // ensure that PrivateKey implements msgp marshal types
 var _ msgp.Marshaler = (*PrivateKey)(nil)
@@ -20,8 +38,8 @@ var _ encoding.TextUnmarshaler = (*PrivateKey)(nil)
 // ensure that PrivateKey implements string shorthand interfaces
 var _ fmt.Stringer = (*PrivateKey)(nil)
 
-// ensure that PrivateKey implements byte export interfaces
-var _ byteser = (*PrivateKey)(nil)
+// ensure that PrivateKey implements export interfaces
+var _ keyer = (*PrivateKey)(nil)
 
 // A PrivateKey is the private half of a keypair
 type PrivateKey Key
@@ -30,12 +48,13 @@ type PrivateKey Key
 //
 // This is unsafe and subject to only minimal type-checking; it should
 // normally be avoided.
-func RawPrivateKey(al Algorithm, data []byte) (*PrivateKey, error) {
+func RawPrivateKey(al Algorithm, key, extra []byte) (*PrivateKey, error) {
 	pk := PrivateKey{
 		algorithm: al,
-		data:      data,
+		key:       key,
+		extra:     extra,
 	}
-	if len(data) != pk.Size() {
+	if len(key) != pk.Size() {
 		return nil, fmt.Errorf("Wrong private key length")
 	}
 	return &pk, nil
@@ -51,7 +70,7 @@ func (key PrivateKey) Sign(message []byte) Signature {
 	al := Key(key).algorithm
 	return Signature{
 		algorithm: al,
-		data:      al.Sign(key.data, message),
+		data:      al.Sign(key.key, message),
 	}
 }
 
@@ -64,8 +83,8 @@ func (key PrivateKey) Marshal() ([]byte, error) {
 func (key *PrivateKey) Unmarshal(serialized []byte) error {
 	err := (*Key)(key).Unmarshal(serialized)
 	if err == nil {
-		if len(key.data) != key.Size() {
-			err = fmt.Errorf("Wrong size private key: expect len %d, have %d", key.Size(), len(key.data))
+		if len(key.key) != key.Size() {
+			err = fmt.Errorf("Wrong size private key: expect len %d, have %d", key.Size(), len(key.key))
 		}
 	}
 	return err
@@ -80,8 +99,8 @@ func (key PrivateKey) MarshalMsg(in []byte) (out []byte, err error) {
 func (key *PrivateKey) UnmarshalMsg(in []byte) (leftover []byte, err error) {
 	leftover, err = (*Key)(key).UnmarshalMsg(in)
 	if err == nil {
-		if len(key.data) != key.Size() {
-			err = fmt.Errorf("Wrong size signature: expect len %d, have %d", key.Size(), len(key.data))
+		if len(key.key) != key.Size() {
+			err = fmt.Errorf("Wrong size signature: expect len %d, have %d", key.Size(), len(key.key))
 		}
 	}
 	return leftover, err
@@ -94,7 +113,7 @@ func (key *PrivateKey) UnmarshalMsg(in []byte) (leftover []byte, err error) {
 // as fundamentally a PrivateKey gets serialized as an IdentifiedData, and so should
 // have the same size.
 func (key *PrivateKey) Msgsize() (s int) {
-	s = 1 + msgp.Uint8Size + msgp.BytesPrefixSize + len(key.data)
+	s = 1 + msgp.Uint8Size + msgp.BytesPrefixSize + len(key.key)
 	return
 }
 
@@ -117,16 +136,26 @@ func (key *PrivateKey) UnmarshalText(text []byte) error {
 	}
 	err := (*Key)(key).UnmarshalText(text[lep:])
 	if err == nil {
-		if len(key.data) != key.Size() {
-			err = fmt.Errorf("Wrong size signature: expect len %d, have %d", key.Size(), len(key.data))
+		if len(key.key) != key.Size() {
+			err = fmt.Errorf("Wrong size signature: expect len %d, have %d", key.Size(), len(key.key))
 		}
 	}
 	return err
 }
 
-// Bytes returns the key's data
-func (key *PrivateKey) Bytes() []byte {
-	return key.data
+// KeyBytes returns the key's data
+func (key PrivateKey) KeyBytes() []byte {
+	return key.key
+}
+
+// ExtraBytes returns the key's extra data
+func (key PrivateKey) ExtraBytes() []byte {
+	return key.extra
+}
+
+// Algorithm returns the key's algorithm
+func (key PrivateKey) Algorithm() Algorithm {
+	return Key(key).Algorithm()
 }
 
 // String returns a shorthand for the key's data

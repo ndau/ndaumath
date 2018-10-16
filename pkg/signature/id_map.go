@@ -35,8 +35,8 @@ func RegisterAlgorithm(id AlgorithmID, al Algorithm) error {
 		return fmt.Errorf("Reserved algorithm id %d < 128", id)
 	}
 	if existing, exists := idMap[id]; exists {
-		existingName := nameOf(existing)
-		if existingName != nameOf(al) {
+		existingName := NameOf(existing)
+		if existingName != NameOf(al) {
 			return fmt.Errorf("ID %d already in use by %s", id, existingName)
 		}
 	}
@@ -56,8 +56,8 @@ func buildNameMap() {
 	}
 }
 
-// get the name of an Algorithm
-func nameOf(al Algorithm) string {
+// NameOf returns the name of an Algorithm
+func NameOf(al Algorithm) string {
 	ty := reflect.TypeOf(al)
 	// arbitrary-depth dereference
 	for ty.Kind() == reflect.Interface || ty.Kind() == reflect.Ptr {
@@ -68,7 +68,7 @@ func nameOf(al Algorithm) string {
 
 // Get the ID associated with an Algorithm type
 func idOf(al Algorithm) (AlgorithmID, error) {
-	alName := nameOf(al)
+	alName := NameOf(al)
 	if len(alName) == 0 {
 		return 0, errors.New("anonymous types are not Algorithms")
 	}

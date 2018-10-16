@@ -88,7 +88,7 @@ func NewKey(seedstr string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	mk, err := key.NewMaster([]byte(seed), key.NdauPrivateKeyID)
+	mk, err := key.NewMaster([]byte(seed))
 	if err != nil {
 		return nil, err
 	}

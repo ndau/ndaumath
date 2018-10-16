@@ -4,9 +4,27 @@ import (
 	"bytes"
 	"encoding"
 	"fmt"
+	"strings"
 
 	"github.com/tinylib/msgp/msgp"
 )
+
+// PublicKeyPrefix always prefixes Ndau public keys in text serialization
+const PublicKeyPrefix = "npub"
+
+// MaybePublic provides a fast way to check whether a string looks like
+// it might be an ndau public key.
+//
+// To get a definitive answer as to whether something is a public key, one
+// must attempt to deserialize it using UnmarshalText and check the error
+// value. That takes some work; it's faster to use this to get a first impression.
+//
+// This function will allow some false positives, but no false negatives:
+// some values for which it returns `true` may not be actual valid keys,
+// but no values for which it returns `false` will return actual valid keys.
+func MaybePublic(s string) bool {
+	return strings.HasPrefix(s, PublicKeyPrefix)
+}
 
 // ensure that PublicKey implements msgp marshal types
 var _ msgp.Marshaler = (*PublicKey)(nil)
@@ -20,8 +38,8 @@ var _ encoding.TextUnmarshaler = (*PublicKey)(nil)
 // ensure that PublicKey implements string shorthand interfaces
 var _ fmt.Stringer = (*PublicKey)(nil)
 
-// ensure that PublicKey implements byte export interfaces
-var _ byteser = (*PublicKey)(nil)
+// ensure that PublicKey implements export interfaces
+var _ keyer = (*PublicKey)(nil)
 
 // A PublicKey is the public half of a keypair
 type PublicKey Key
@@ -30,12 +48,13 @@ type PublicKey Key
 //
 // This is unsafe and subject to only minimal type-checking; it should
 // normally be avoided.
-func RawPublicKey(al Algorithm, data []byte) (*PublicKey, error) {
+func RawPublicKey(al Algorithm, key, extra []byte) (*PublicKey, error) {
 	pk := PublicKey{
 		algorithm: al,
-		data:      data,
+		key:       key,
+		extra:     extra,
 	}
-	if len(data) != pk.Size() {
+	if len(key) != pk.Size() {
 		return nil, fmt.Errorf("Wrong public key length")
 	}
 	return &pk, nil
@@ -48,10 +67,10 @@ func (key PublicKey) Size() int {
 
 // Verify the supplied message with the given signature
 func (key PublicKey) Verify(message []byte, sig Signature) bool {
-	if nameOf(key.algorithm) != nameOf(sig.algorithm) {
+	if NameOf(key.algorithm) != NameOf(sig.algorithm) {
 		return false
 	}
-	return key.algorithm.Verify(Key(key).data, message, sig.data)
+	return key.algorithm.Verify(Key(key).key, message, sig.data)
 }
 
 // Marshal marshals the PublicKey into a serialized binary format
@@ -63,8 +82,8 @@ func (key PublicKey) Marshal() ([]byte, error) {
 func (key *PublicKey) Unmarshal(serialized []byte) error {
 	err := (*Key)(key).Unmarshal(serialized)
 	if err == nil {
-		if len(key.data) != key.Size() {
-			err = fmt.Errorf("Wrong size public key: expect len %d, have %d", key.Size(), len(key.data))
+		if len(key.key) != key.Size() {
+			err = fmt.Errorf("Wrong size public key: expect len %d, have %d", key.Size(), len(key.key))
 		}
 	}
 	return err
@@ -79,8 +98,8 @@ func (key PublicKey) MarshalMsg(in []byte) (out []byte, err error) {
 func (key *PublicKey) UnmarshalMsg(in []byte) (leftover []byte, err error) {
 	leftover, err = (*Key)(key).UnmarshalMsg(in)
 	if err == nil {
-		if len(key.data) != key.Size() {
-			err = fmt.Errorf("Wrong size public key: expect len %d, have %d", key.Size(), len(key.data))
+		if len(key.key) != key.Size() {
+			err = fmt.Errorf("Wrong size public key: expect len %d, have %d", key.Size(), len(key.key))
 		}
 	}
 	return leftover, err
@@ -93,7 +112,7 @@ func (key *PublicKey) UnmarshalMsg(in []byte) (leftover []byte, err error) {
 // as fundamentally a PublicKey gets serialized as an IdentifiedData, and so should
 // have the same size.
 func (key *PublicKey) Msgsize() (s int) {
-	s = 1 + msgp.Uint8Size + msgp.BytesPrefixSize + len(key.data)
+	s = 1 + msgp.Uint8Size + msgp.BytesPrefixSize + len(key.key)
 	return
 }
 
@@ -116,16 +135,26 @@ func (key *PublicKey) UnmarshalText(text []byte) error {
 	}
 	err := (*Key)(key).UnmarshalText(text[lep:])
 	if err == nil {
-		if len(key.data) != key.Size() {
-			err = fmt.Errorf("Wrong size public key: expect len %d, have %d", key.Size(), len(key.data))
+		if len(key.key) != key.Size() {
+			err = fmt.Errorf("Wrong size public key: expect len %d, have %d", key.Size(), len(key.key))
 		}
 	}
 	return err
 }
 
-// Bytes returns the key's data
-func (key PublicKey) Bytes() []byte {
-	return key.data
+// KeyBytes returns the key's data
+func (key PublicKey) KeyBytes() []byte {
+	return key.key
+}
+
+// ExtraBytes returns the key's extra data
+func (key PublicKey) ExtraBytes() []byte {
+	return key.extra
+}
+
+// Algorithm returns the key's algorithm
+func (key PublicKey) Algorithm() Algorithm {
+	return Key(key).Algorithm()
 }
 
 // String returns a shorthand for the key's data
