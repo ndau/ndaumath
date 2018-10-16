@@ -374,12 +374,24 @@ func (k *ExtendedKey) Public() (*ExtendedKey, error) {
 		k.depth, k.childNum, false), nil
 }
 
+// HardenedChild returns the n'th hardened child of the given extended key.
+//
+// The parent key must be a private key.
+// A HardenedChild is guaranteed to have been derived from a private key.
+// It is an error if the given key is already a hardened key.
+func (k *ExtendedKey) HardenedChild(n uint32) (*ExtendedKey, error) {
+	ndx := n + HardenedKeyStart
+	nk, err := k.Child(ndx)
+	return nk, err
+}
+
 // ECPubKey converts the extended key to a btcec public key and returns it.
 func (k *ExtendedKey) ECPubKey() (*btcec.PublicKey, error) {
 	return btcec.ParsePubKey(k.PubKeyBytes(), btcec.S256())
 }
 
 // ECPrivKey converts the extended key to a btcec private key and returns it.
+//
 // As you might imagine this is only possible if the extended key is a private
 // extended key (as determined by the IsPrivate function).  The ErrNotPrivExtKey
 // error will be returned if this function is called on a public extended key.
@@ -390,6 +402,38 @@ func (k *ExtendedKey) ECPrivKey() (*btcec.PrivateKey, error) {
 
 	privKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), k.key)
 	return privKey, nil
+}
+
+// SPubKey converts the extended key to a signature.PublicKey and returns it.
+func (k *ExtendedKey) SPubKey() (*signature.PublicKey, error) {
+	pub, err := k.Public()
+	if err != nil {
+		return nil, err
+	}
+	sk, err := pub.asSignatureKey()
+	if err != nil {
+		return nil, err
+	}
+	spk := signature.PublicKey(sk)
+	return &spk, err
+}
+
+// SPrivKey converts the extended key to a signature.PrivateKey and returns it.
+//
+// As you might imagine this is only possible if the extended key is a private
+// extended key (as determined by the IsPrivate function).  The ErrNotPrivExtKey
+// error will be returned if this function is called on a public extended key.
+func (k *ExtendedKey) SPrivKey() (*signature.PrivateKey, error) {
+	if !k.isPrivate {
+		return nil, ErrNotPrivExtKey
+	}
+
+	sk, err := k.asSignatureKey()
+	if err != nil {
+		return nil, err
+	}
+	spk := signature.PrivateKey(sk)
+	return &spk, err
 }
 
 const extraLen = 1 + 3 + 4 + 32
