@@ -120,6 +120,18 @@ func FromString(s string) (*Key, error) {
 	return asKey(ekey)
 }
 
+// FromOldString is FromString, but it operates on the old key serialization format.
+//
+// The returned object will be serialized in the new format, so future calls
+// to FromString will succeed.
+func FromOldString(s string) (*Key, error) {
+	ekey, err := key.FromOldSerialization(s)
+	if err != nil {
+		return nil, err
+	}
+	return asKey(ekey)
+}
+
 // DeriveFrom accepts a parent key and its known path, plus a desired child path
 // and derives the child key from the parent according to the path info.
 // Note that the parent's known path is simply believed -- we have no mechanism to
