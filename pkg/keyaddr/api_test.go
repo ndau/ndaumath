@@ -349,28 +349,10 @@ func TestKey_NdauAddress(t *testing.T) {
 				"nd",
 			},
 			&Address{"ndad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6r7uj"}, false},
-		{"addr from private key on testnet",
-			fields{
-				"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf",
-				"tn",
-			},
-			&Address{"tnad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6rkuf"}, false},
-		{"addr from corresponding public key on testnet is the same",
-			fields{
-				"npuba4jaftckeebzgm7usrcx9jxve8rhst5uejqqtzdtjvhdeswdyzvhn22k98kq25iaaaaaaaaaaaapqhv86syt9pwwpm97n5dgixcmr3sc7ai4km65t9r4wt4s4kywai6fkiae5jkc",
-				"tn",
-			},
-			&Address{"tnad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6rkuf"}, false},
 		{"addr from bad key fails",
 			fields{
 				"npvt8aaaaaaaaaaaadmt69zefwxr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t",
 				"nd",
-			},
-			nil, true},
-		{"addr from bad chain fails",
-			fields{
-				"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf",
-				"qz",
 			},
 			nil, true},
 	}
