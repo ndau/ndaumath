@@ -144,12 +144,12 @@ func (key *PublicKey) UnmarshalText(text []byte) error {
 
 // KeyBytes returns the key's data
 func (key PublicKey) KeyBytes() []byte {
-	return key.key
+	return Key(key).KeyBytes()
 }
 
 // ExtraBytes returns the key's extra data
 func (key PublicKey) ExtraBytes() []byte {
-	return key.extra
+	return Key(key).ExtraBytes()
 }
 
 // Algorithm returns the key's algorithm

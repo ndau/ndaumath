@@ -165,11 +165,17 @@ func (key *Key) UnmarshalText(text []byte) error {
 
 // KeyBytes returns the key's data
 func (key Key) KeyBytes() []byte {
+	if len(key.key) == 0 {
+		return []byte{}
+	}
 	return key.key
 }
 
 // ExtraBytes returns any extra data
 func (key Key) ExtraBytes() []byte {
+	if len(key.extra) == 0 {
+		return []byte{}
+	}
 	return key.extra
 }
 
