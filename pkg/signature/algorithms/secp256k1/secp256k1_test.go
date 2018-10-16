@@ -31,7 +31,7 @@ func TestEncode(t *testing.T) {
 }
 
 func TestRoundtrip(t *testing.T) {
-	// normally we'd call Generate with the byte literal, but deserialization
+	// normally we'd call Generate with the algorithm literal, but deserialization
 	// inserts a pointer to the type instead, and require.Equal doesn't think
 	// that a value and a pointer to that value are equal, which causes the
 	// roundtrip to fail. It's easier to fix by generating with a pointer to
@@ -54,6 +54,47 @@ func TestRoundtrip(t *testing.T) {
 
 	require.Equal(t, public, rtPub)
 	require.Equal(t, private, rtPriv)
+}
+
+func TestRoundtripExtra(t *testing.T) {
+	// test that extra data gets de/serialized properly
+	// normally we'd call Generate with the algorithm literal, but deserialization
+	// inserts a pointer to the type instead, and require.Equal doesn't think
+	// that a value and a pointer to that value are equal, which causes the
+	// roundtrip to fail. It's easier to fix by generating with a pointer to
+	// the algorithm here than to change the algorithm serialization code.
+	public0, private0, err := signature.Generate(&signature.Secp256k1, nil)
+	require.NoError(t, err)
+
+	extra := make([]byte, 40)
+	for i := 1; i < 40; i++ {
+		extra[i] = byte(i)
+	}
+
+	public, err := signature.RawPublicKey(public0.Algorithm(), public0.KeyBytes(), extra)
+	require.NoError(t, err)
+	private, err := signature.RawPrivateKey(private0.Algorithm(), private0.KeyBytes(), extra)
+	require.NoError(t, err)
+
+	// from here, it's just a matter of running the rest of the normal de/serialization test
+	pubTextB, err := public.MarshalText()
+	require.NoError(t, err)
+	privTextB, err := private.MarshalText()
+	require.NoError(t, err)
+
+	rtPub := signature.PublicKey{}
+	rtPriv := signature.PrivateKey{}
+
+	err = rtPub.UnmarshalText(pubTextB)
+	require.NoError(t, err)
+	err = rtPriv.UnmarshalText(privTextB)
+	require.NoError(t, err)
+
+	require.Equal(t, *public, rtPub)
+	require.Equal(t, *private, rtPriv)
+
+	require.Equal(t, extra, rtPub.ExtraBytes())
+	require.Equal(t, extra, rtPriv.ExtraBytes())
 }
 
 func TestChecksum(t *testing.T) {
