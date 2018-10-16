@@ -9,7 +9,7 @@ import (
 // The CRC16 polynomial used is AUG_CCITT: `0x1021`
 var ndauTable = crc16.MakeTable(crc16.CRC16_AUG_CCITT)
 
-// Checksum generates a 2-byte checksum of b.
+// Checksum16 generates a 2-byte checksum of b.
 func Checksum16(b []byte) []byte {
 	ck := crc16.Checksum(b, ndauTable)
 	return []byte{byte((ck >> 8) & 0xFF), byte(ck & 0xFF)}
