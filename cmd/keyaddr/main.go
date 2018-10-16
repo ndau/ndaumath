@@ -111,15 +111,20 @@ func main() {
 func newPrivateMaster(seed string) (*js.Object, error) {
 	k := Key{Object: js.Global.Get("Object").New()}
 
-	km, err := key.NewMaster([]byte(seed), key.NdauPrivateKeyID)
+	km, err := key.NewMaster([]byte(seed))
 	if err != nil {
 		return nil, err
 	}
-	return k.build(km.String()), nil
+	kb, err := km.MarshalText()
+	if err != nil {
+		return nil, err
+	}
+	return k.build(string(kb)), nil
 }
 
 func (k *Key) public() (*js.Object, error) {
-	ekey, err := key.NewKeyFromString(k.Key)
+	ekey := new(key.ExtendedKey)
+	err := ekey.UnmarshalText([]byte(k.Key))
 	if err != nil {
 		return nil, err
 	}
@@ -127,12 +132,17 @@ func (k *Key) public() (*js.Object, error) {
 	if err != nil {
 		return nil, err
 	}
+	nb, err := nk.MarshalText()
+	if err != nil {
+		return nil, err
+	}
 	r := Key{Object: js.Global.Get("Object").New()}
-	return r.build(nk.String()), nil
+	return r.build(string(nb)), nil
 }
 
 func (k *Key) child(n float64) (*js.Object, error) {
-	ekey, err := key.NewKeyFromString(k.Key)
+	ekey := new(key.ExtendedKey)
+	err := ekey.UnmarshalText([]byte(k.Key))
 	if err != nil {
 		return nil, err
 	}
@@ -141,12 +151,17 @@ func (k *Key) child(n float64) (*js.Object, error) {
 	if err != nil {
 		return nil, err
 	}
+	nb, err := nk.MarshalText()
+	if err != nil {
+		return nil, err
+	}
 	r := Key{Object: js.Global.Get("Object").New()}
-	return r.build(nk.String()), nil
+	return r.build(string(nb)), nil
 }
 
 func (k *Key) hardenedChild(n float64) (*js.Object, error) {
-	ekey, err := key.NewKeyFromString(k.Key)
+	ekey := new(key.ExtendedKey)
+	err := ekey.UnmarshalText([]byte(k.Key))
 	if err != nil {
 		return nil, err
 	}
@@ -155,12 +170,17 @@ func (k *Key) hardenedChild(n float64) (*js.Object, error) {
 	if err != nil {
 		return nil, err
 	}
+	nb, err := nk.MarshalText()
+	if err != nil {
+		return nil, err
+	}
 	r := Key{Object: js.Global.Get("Object").New()}
-	return r.build(nk.String()), nil
+	return r.build(string(nb)), nil
 }
 
 func (k *Key) sign(msg string) (*js.Object, error) {
-	ekey, err := key.NewKeyFromString(k.Key)
+	ekey := new(key.ExtendedKey)
+	err := ekey.UnmarshalText([]byte(k.Key))
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +201,8 @@ func (k *Key) sign(msg string) (*js.Object, error) {
 }
 
 func (k *Key) addr() (*js.Object, error) {
-	ekey, err := key.NewKeyFromString(k.Key)
+	ekey := new(key.ExtendedKey)
+	err := ekey.UnmarshalText([]byte(k.Key))
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +217,8 @@ func (k *Key) addr() (*js.Object, error) {
 }
 
 func (s *Signature) verify(msg, k string) (bool, error) {
-	ekey, err := key.NewKeyFromString(k)
+	ekey := new(key.ExtendedKey)
+	err := ekey.UnmarshalText([]byte(k))
 	if err != nil {
 		return false, err
 	}
