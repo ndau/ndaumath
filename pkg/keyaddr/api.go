@@ -113,6 +113,10 @@ func FromString(s string) (*Key, error) {
 	ekey := new(key.ExtendedKey)
 	err := ekey.UnmarshalText([]byte(s))
 	if err != nil {
+		key, nerr := FromOldString(s)
+		if nerr == nil {
+			return key, nerr
+		}
 		return nil, err
 	}
 
