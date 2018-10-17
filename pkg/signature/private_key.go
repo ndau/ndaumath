@@ -177,3 +177,13 @@ func (key PrivateKey) String() string {
 func (key *PrivateKey) Truncate() {
 	key.extra = nil
 }
+
+// Zeroize removes all data from this key
+//
+// This is a destructive operation which cannot be undone; make copies
+// first if you need to.
+func (key *PrivateKey) Zeroize() {
+	kkey := Key(*key)
+	kkey.Zeroize()
+	*key = PrivateKey(kkey)
+}
