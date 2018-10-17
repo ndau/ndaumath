@@ -38,7 +38,7 @@ func TestEncode(t *testing.T) {
 	require.False(t, strings.HasSuffix(privText, "="))
 }
 
-func TestRoundtrip(t *testing.T) {
+func TestRoundtripText(t *testing.T) {
 	// normally we'd call Generate with the byte literal, but deserialization
 	// inserts a pointer to the type instead, and require.Equal doesn't think
 	// that a value and a pointer to that value are equal, which causes the
@@ -58,6 +58,60 @@ func TestRoundtrip(t *testing.T) {
 	err = rtPub.UnmarshalText(pubTextB)
 	require.NoError(t, err)
 	err = rtPriv.UnmarshalText(privTextB)
+	require.NoError(t, err)
+
+	require.Equal(t, public, rtPub)
+	require.Equal(t, private, rtPriv)
+}
+
+func TestRoundtripMsg(t *testing.T) {
+	// normally we'd call Generate with the byte literal, but deserialization
+	// inserts a pointer to the type instead, and require.Equal doesn't think
+	// that a value and a pointer to that value are equal, which causes the
+	// roundtrip to fail. It's easier to fix by generating with a pointer to
+	// the algorithm here than to change the algorithm serialization code.
+	public, private, err := signature.Generate(&signature.Ed25519, nil)
+	require.NoError(t, err)
+
+	pubTextB, err := public.MarshalMsg(nil)
+	require.NoError(t, err)
+	privTextB, err := private.MarshalMsg(nil)
+	require.NoError(t, err)
+
+	rtPub := signature.PublicKey{}
+	rtPriv := signature.PrivateKey{}
+
+	leftover, err := rtPub.UnmarshalMsg(pubTextB)
+	require.NoError(t, err)
+	require.Empty(t, leftover)
+	leftover, err = rtPriv.UnmarshalMsg(privTextB)
+	require.NoError(t, err)
+	require.Empty(t, leftover)
+
+	require.Equal(t, public, rtPub)
+	require.Equal(t, private, rtPriv)
+}
+
+func TestRoundtripBare(t *testing.T) {
+	// normally we'd call Generate with the byte literal, but deserialization
+	// inserts a pointer to the type instead, and require.Equal doesn't think
+	// that a value and a pointer to that value are equal, which causes the
+	// roundtrip to fail. It's easier to fix by generating with a pointer to
+	// the algorithm here than to change the algorithm serialization code.
+	public, private, err := signature.Generate(&signature.Ed25519, nil)
+	require.NoError(t, err)
+
+	pubTextB, err := public.Marshal()
+	require.NoError(t, err)
+	privTextB, err := private.Marshal()
+	require.NoError(t, err)
+
+	rtPub := signature.PublicKey{}
+	rtPriv := signature.PrivateKey{}
+
+	err = rtPub.Unmarshal(pubTextB)
+	require.NoError(t, err)
+	err = rtPriv.Unmarshal(privTextB)
 	require.NoError(t, err)
 
 	require.Equal(t, public, rtPub)

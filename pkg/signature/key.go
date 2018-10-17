@@ -115,12 +115,14 @@ func (key Key) MarshalMsg(in []byte) (out []byte, err error) {
 // UnmarshalMsg implements msgp.Unmarshaler
 func (key *Key) UnmarshalMsg(in []byte) (leftover []byte, err error) {
 	var al Algorithm
-	var kb []byte
-	al, kb, leftover, err = unmarshalWithLeftovers(in)
-	if err == nil {
-		key.algorithm = al
-		key.key = kb
+	var db []byte
+	al, db, leftover, err = unmarshalWithLeftovers(in)
+	if err != nil {
+		return
 	}
+	key.algorithm = al
+	key.unpack(db)
+
 	return
 }
 
