@@ -116,13 +116,14 @@ func (key Key) MarshalMsg(in []byte) (out []byte, err error) {
 func (key *Key) UnmarshalMsg(in []byte) (leftover []byte, err error) {
 	var al Algorithm
 	var db []byte
+
 	al, db, leftover, err = unmarshalWithLeftovers(in)
 	if err != nil {
 		return
 	}
-	key.algorithm = al
-	key.unpack(db)
 
+	key.algorithm = al
+	err = key.unpack(db)
 	return
 }
 
