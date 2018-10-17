@@ -1,4 +1,4 @@
-package signature
+package ed25519
 
 import (
 	"io"
@@ -12,9 +12,6 @@ import (
 var Ed25519 = ed25519{}
 
 type ed25519 struct{}
-
-// static assert that ed25519 is an Algorithm
-var _ Algorithm = (*ed25519)(nil)
 
 // PublicKeySize implements Algorithm
 func (ed25519) PublicKeySize() int {

@@ -4,7 +4,15 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/oneiro-ndev/ndaumath/pkg/signature/algorithms/ed25519"
+	"github.com/oneiro-ndev/ndaumath/pkg/signature/algorithms/secp256k1"
 	"github.com/pkg/errors"
+)
+
+// re-export package-native algorithms
+var (
+	Ed25519   = ed25519.Ed25519
+	Secp256k1 = secp256k1.Secp256k1
 )
 
 var idMap map[AlgorithmID]Algorithm
@@ -12,7 +20,8 @@ var idNameMap map[string]AlgorithmID
 
 func init() {
 	idMap = map[AlgorithmID]Algorithm{
-		AlgorithmID(1): ed25519{},
+		AlgorithmID(1): Ed25519,
+		AlgorithmID(2): Secp256k1,
 	}
 	buildNameMap()
 }
@@ -26,8 +35,8 @@ func RegisterAlgorithm(id AlgorithmID, al Algorithm) error {
 		return fmt.Errorf("Reserved algorithm id %d < 128", id)
 	}
 	if existing, exists := idMap[id]; exists {
-		existingName := nameOf(existing)
-		if existingName != nameOf(al) {
+		existingName := NameOf(existing)
+		if existingName != NameOf(al) {
 			return fmt.Errorf("ID %d already in use by %s", id, existingName)
 		}
 	}
@@ -47,8 +56,8 @@ func buildNameMap() {
 	}
 }
 
-// get the name of an Algorithm
-func nameOf(al Algorithm) string {
+// NameOf returns the name of an Algorithm
+func NameOf(al Algorithm) string {
 	ty := reflect.TypeOf(al)
 	// arbitrary-depth dereference
 	for ty.Kind() == reflect.Interface || ty.Kind() == reflect.Ptr {
@@ -59,7 +68,7 @@ func nameOf(al Algorithm) string {
 
 // Get the ID associated with an Algorithm type
 func idOf(al Algorithm) (AlgorithmID, error) {
-	alName := nameOf(al)
+	alName := NameOf(al)
 	if len(alName) == 0 {
 		return 0, errors.New("anonymous types are not Algorithms")
 	}

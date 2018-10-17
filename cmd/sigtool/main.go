@@ -147,7 +147,7 @@ func readYubiPublicKey(filename string) (signature.PublicKey, error) {
 	if err != nil {
 		return empty, err
 	}
-	key, err := signature.RawPublicKey(signature.Ed25519, data)
+	key, err := signature.RawPublicKey(signature.Ed25519, data, nil)
 	return *key, err
 }
 

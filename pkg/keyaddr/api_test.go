@@ -109,7 +109,7 @@ func TestNewKey(t *testing.T) {
 		wantErr bool
 	}{
 		{"generates a known key", args{"AAECAwQFBgcICQoLDA0ODw=="},
-			&Key{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"}, false},
+			&Key{"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"}, false},
 		{"fails for bad encoding", args{"AAAwQFBgcICQoLDA0ODw=="}, nil, true},
 		{"fails for too-short key", args{"AQIDBA=="}, nil, true},
 	}
@@ -128,8 +128,8 @@ func TestNewKey(t *testing.T) {
 }
 
 func TestKey_ToPublic(t *testing.T) {
-	pvtkey := "npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"
-	pubkey := "npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"
+	pvtkey := "npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"
+	pubkey := "npuba4jaftckeebzgm7usrcx9jxve8rhst5uejqqtzdtjvhdeswdyzvhn22k98kq25iaaaaaaaaaaaapqhv86syt9pwwpm97n5dgixcmr3sc7ai4km65t9r4wt4s4kywai6fkiae5jkc"
 	type fields struct {
 		Key string
 	}
@@ -175,32 +175,32 @@ func TestKey_Child(t *testing.T) {
 		wantErr bool
 	}{
 		{"simple private child /1",
-			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			fields{"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"},
 			args{1},
-			&Key{"npvt8ap98fgsaaaaagts2dwuzsn3dsv9mwqm3zsbrwrsxbwavxw36zwsyik47scskjtguaf8bxi9eqyqmsenuub3z62364hy2vb5u95uqr8n5j87rzudbt253kvnjj7w"},
+			&Key{"npvta8jaftcjec9a4wruhmhf2cgjja658nn8pd5njs73r73hh9gpw9qz53bs26p6wap98fgsaaaaagts2dwuzsn3dsv9mwqm3zsbrwrsxbwavxw36zwsyik47scskjtguawdzw2haetn"},
 			false},
 		{"simple public child /1",
-			fields{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"},
+			fields{"npuba4jaftckeebzgm7usrcx9jxve8rhst5uejqqtzdtjvhdeswdyzvhn22k98kq25iaaaaaaaaaaaapqhv86syt9pwwpm97n5dgixcmr3sc7ai4km65t9r4wt4s4kywai6fkiae5jkc"},
 			args{1},
-			&Key{"npubaap98fgsaaaaagts2dwuzsn3dsv9mwqm3zsbrwrsxbwavxw36zwsyik47scskjtguax8c6mqspjegkytd98ksuaqp4txapxyy34ibvr7f7iy4taihk3qmn3yu7dj"},
+			&Key{"npuba4jaftckeebm6f2y7a4uinxpch96xbea65xdka5mppvwsdg94m4tpxcasqxu6y2bz92w4aaaaaa4gdaquk8bveqcr7qt3rg8af8t8cwgscqyvhu8uc3bmmyakbjge4iibhabh8s7"},
 			false},
 		{"private child diff index",
-			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			fields{"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"},
 			args{2},
-			&Key{"npvt8ap98fgsaaaaaj8igvzve4kvt94g5pvf2t3ikeqaqgea35p9gwtjrwqyn5ip6ru7aaar6bgxhruhdueez2r4i6a2bb4ywbeyut75hx7qrtuczne5mpiv38k5znqz"},
+			&Key{"npvta8jaftcjeah8avkvz3dt3ccm6h7eqanas7mkaumji87v48zh23bmycpxywj68ap98fgsaaaaaj8igvzve4kvt94g5pvf2t3ikeqaqgea35p9gwtjrwqyn5ip6ru7atiq7w8stysn"},
 			false},
 		{"private grandchild /1/1",
-			fields{"npvt8ap98fgsaaaaagts2dwuzsn3dsv9mwqm3zsbrwrsxbwavxw36zwsyik47scskjtguaf8bxi9eqyqmsenuub3z62364hy2vb5u95uqr8n5j87rzudbt253kvnjj7w"},
+			fields{"npvta8jaftcjec9a4wruhmhf2cgjja658nn8pd5njs73r73hh9gpw9qz53bs26p6wap98fgsaaaaagts2dwuzsn3dsv9mwqm3zsbrwrsxbwavxw36zwsyik47scskjtguawdzw2haetn"},
 			args{1},
-			&Key{"npvt8aup36ysaaaaaf3affifpc6x3xh2zs86fnetuta7kqsnyfecana3zzgf9miuv4shnac8vkyat6itnxtb3dnpe7jk6cye8e7e7ixa7hzivm7xnq4z87svnyhc46im"},
+			&Key{"npvta8jaftcjebrjxmai8eiyk2s6tyguqwxqbmcrcquqwksqv5wjx84yhpm9q2jykaup36ysaaaaaf3affifpc6x3xh2zs86fnetuta7kqsnyfecana3zzgf9miuv4shpk3ra2ebd25h"},
 			false},
 		{"public grandchild /1/1",
-			fields{"npubaap98fgsaaaaagts2dwuzsn3dsv9mwqm3zsbrwrsxbwavxw36zwsyik47scskjtguax8c6mqspjegkytd98ksuaqp4txapxyy34ibvr7f7iy4taihk3qmn3yu7dj"},
+			fields{"npuba4jaftckeebm6f2y7a4uinxpch96xbea65xdka5mppvwsdg94m4tpxcasqxu6y2bz92w4aaaaaa4gdaquk8bveqcr7qt3rg8af8t8cwgscqyvhu8uc3bmmyakbjge4iibhabh8s7"},
 			args{1},
-			&Key{"npubaaup36ysaaaaaf3affifpc6x3xh2zs86fnetuta7kqsnyfecana3zzgf9miuv4shnavx37btuurcrsiab445gh9e4t2xrnnphyzza3wtmihfsi8wef7v2jk7nkqp"},
+			&Key{"npuba4jaftckeebhmv4ddfe8e9asadxxynr8jxdtk8224rprqbvjcysqmat7iim5hsscjzhu4aaaaaazeawxaxwmuzgw9c8d5sxsugkedxj4bu2wsibsdg862z7pckrka7trbgc8iaqz"},
 			false},
 		{"bad index",
-			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			fields{"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"},
 			args{-1}, nil, true},
 		{"bad key",
 			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99xxxmg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
@@ -238,18 +238,18 @@ func TestKey_HardenedChild(t *testing.T) {
 		wantErr bool
 	}{
 		{"simple private hardened child",
-			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			fields{"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"},
 			args{1},
-			&Key{"npvt8ap98fg2aaaaaenphqxyh7nh2zhjfugk3a9xvqwkcarfau8239ykec4h69kzkcs8cacj7bkdfhkeyr3mjv5jeaz7ptczqaeqhq6rtwyqvn9wvy5kprj9ubsk7wza"},
+			&Key{"npvta8jaftcjebe8sxbuvxcmh6xw37wuam8y2tmzachdzqh24mhjyr4j5pxgzw93aap98fg2aaaaaenphqxyh7nh2zhjfugk3a9xvqwkcarfau8239ykec4h69kzkcs8dx2ek3uwekhx"},
 			false},
 		{"attempt to create hardened child from a public key should fail",
-			fields{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"},
+			fields{"npuba4jaftckeebzgm7usrcx9jxve8rhst5uejqqtzdtjvhdeswdyzvhn22k98kq25iaaaaaaaaaaaapqhv86syt9pwwpm97n5dgixcmr3sc7ai4km65t9r4wt4s4kywai6fkiae5jkc"},
 			args{1}, nil, true},
 		{"bad key should fail",
 			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdxxxk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
 			args{1}, nil, true},
 		{"bad index should fail",
-			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			fields{"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"},
 			args{-11}, nil, true},
 	}
 	for _, tt := range tests {
@@ -284,12 +284,12 @@ func TestKey_Sign(t *testing.T) {
 		wantErr bool
 	}{
 		{"basic",
-			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			fields{"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"},
 			args{"AQIDBA=="},
 			&Signature{"gbcseiia598sbs4u8p76adr2cgbkhy679867sba4dsaggchk657yzg3f92waeiaaxz8qf7k46cnwt3g2inycttseh38bw5j7nac2jkdg7nywbe7zxi======"},
 			false},
 		{"public key should error",
-			fields{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"},
+			fields{"npuba4jaftckeebzgm7usrcx9jxve8rhst5uejqqtzdtjvhdeswdyzvhn22k98kq25iaaaaaaaaaaaapqhv86syt9pwwpm97n5dgixcmr3sc7ai4km65t9r4wt4s4kywai6fkiae5jkc"},
 			args{"AQIDBA=="},
 			nil,
 			true},
@@ -299,12 +299,12 @@ func TestKey_Sign(t *testing.T) {
 			nil,
 			true},
 		{"different key should gen diff sig",
-			fields{"npvt8ap98fg2aaaaaenphqxyh7nh2zhjfugk3a9xvqwkcarfau8239ykec4h69kzkcs8cacj7bkdfhkeyr3mjv5jeaz7ptczqaeqhq6rtwyqvn9wvy5kprj9ubsk7wza"},
+			fields{"npvta8jaftcjebe8sxbuvxcmh6xw37wuam8y2tmzachdzqh24mhjyr4j5pxgzw93aap98fg2aaaaaenphqxyh7nh2zhjfugk3a9xvqwkcarfau8239ykec4h69kzkcs8dx2ek3uwekhx"},
 			args{"AQIDBA=="},
 			&Signature{"gbcaeiapsjv4ry5qtjya4exuyue2fv4a7ju7ytbr563ka4hhjvm9qzvyv2bcau5d9a5qd7gs5i6ynjx92aan2d3crcwr6jd87fqaz4atd85vuv74"},
 			false},
 		{"bad decode should error",
-			fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"},
+			fields{"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"},
 			args{"AQIDxBA=="},
 			nil,
 			true},
@@ -339,38 +339,20 @@ func TestKey_NdauAddress(t *testing.T) {
 	}{
 		{"addr from private key",
 			fields{
-				"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t",
+				"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf",
 				"nd",
 			},
 			&Address{"ndad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6r7uj"}, false},
 		{"addr from corresponding public key is the same",
 			fields{
-				"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5",
+				"npuba4jaftckeebzgm7usrcx9jxve8rhst5uejqqtzdtjvhdeswdyzvhn22k98kq25iaaaaaaaaaaaapqhv86syt9pwwpm97n5dgixcmr3sc7ai4km65t9r4wt4s4kywai6fkiae5jkc",
 				"nd",
 			},
 			&Address{"ndad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6r7uj"}, false},
-		{"addr from private key on testnet",
-			fields{
-				"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t",
-				"tn",
-			},
-			&Address{"tnad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6rkuf"}, false},
-		{"addr from corresponding public key on testnet is the same",
-			fields{
-				"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5",
-				"tn",
-			},
-			&Address{"tnad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6rkuf"}, false},
 		{"addr from bad key fails",
 			fields{
 				"npvt8aaaaaaaaaaaadmt69zefwxr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t",
 				"nd",
-			},
-			nil, true},
-		{"addr from bad chain fails",
-			fields{
-				"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t",
-				"qz",
 			},
 			nil, true},
 	}
@@ -401,8 +383,8 @@ func TestKey_IsPrivate(t *testing.T) {
 		want    bool
 		wantErr bool
 	}{
-		{"private", fields{"npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"}, true, false},
-		{"public", fields{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"}, false, false},
+		{"private", fields{"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"}, true, false},
+		{"public", fields{"npuba4jaftckeebzgm7usrcx9jxve8rhst5uejqqtzdtjvhdeswdyzvhn22k98kq25iaaaaaaaaaaaapqhv86syt9pwwpm97n5dgixcmr3sc7ai4km65t9r4wt4s4kywai6fkiae5jkc"}, false, false},
 		{"bad key", fields{"npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7xx"}, false, true},
 	}
 	for _, tt := range tests {
@@ -423,8 +405,8 @@ func TestKey_IsPrivate(t *testing.T) {
 }
 
 func TestFromString(t *testing.T) {
-	privateKey := "npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"
-	publicKey := "npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7q5"
+	privateKey := "npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"
+	publicKey := "npuba4jaftckeebzgm7usrcx9jxve8rhst5uejqqtzdtjvhdeswdyzvhn22k98kq25iaaaaaaaaaaaapqhv86syt9pwwpm97n5dgixcmr3sc7ai4km65t9r4wt4s4kywai6fkiae5jkc"
 	badKey := "npubaaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacga5vf83ihtk9w43urhv2i73cezhi5t2w3vtuikb5m3vynnfr9fhnpxzbg7xx"
 	type args struct {
 		s string
@@ -448,46 +430,6 @@ func TestFromString(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("FromString() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_newPath(t *testing.T) {
-	tests := []struct {
-		name    string
-		s       string
-		want    path
-		wantErr bool
-	}{
-		{"root", "/", path{}, false},
-		{"1 level", "/123", path{pathElement{123, false}}, false},
-		{"1 level hardened", "/123'", path{pathElement{123, true}}, false},
-		{"3 levels", "/123/4/567890", path{
-			pathElement{123, false},
-			pathElement{4, false},
-			pathElement{567890, false},
-		}, false},
-		{"3 levels w/hardened", "/123'/4'/567890", path{
-			pathElement{123, true},
-			pathElement{4, true},
-			pathElement{567890, false},
-		}, false},
-		{"bad path 1", "/foo", nil, true},
-		{"bad path 2", "/'", nil, true},
-		{"bad path 3", "/123/123749327234979", nil, true},
-		{"bad path 4", "/foo//bar", nil, true},
-		{"bad path 5", "//", nil, true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := newPath(tt.s)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("newPath() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("newPath() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -522,7 +464,7 @@ func pub(s string) string {
 
 func TestDeriveFrom(t *testing.T) {
 	// let's make sure that DeriveFrom creates keys with the right sequence of derivations
-	privateKey1 := "npvt8aaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t"
+	privateKey1 := "npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"
 	privateKey2 := ch(privateKey1, 456)
 	privateKey3 := ch(privateKey2, 789)
 	privateKey4 := ch(privateKey2, 1)

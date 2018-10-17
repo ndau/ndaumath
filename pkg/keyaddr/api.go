@@ -22,8 +22,6 @@ package keyaddr
 import (
 	"encoding/base64"
 	"errors"
-	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/address"
@@ -70,6 +68,20 @@ type Key struct {
 	Key string
 }
 
+func (k Key) ekey() (*key.ExtendedKey, error) {
+	ekey := new(key.ExtendedKey)
+	err := ekey.UnmarshalText([]byte(k.Key))
+	return ekey, err
+}
+
+func asKey(k *key.ExtendedKey) (*Key, error) {
+	kb, err := k.MarshalText()
+	if err != nil {
+		return nil, err
+	}
+	return &Key{Key: string(kb)}, nil
+}
+
 // Signature is the result of signing a block of data with a key.
 type Signature struct {
 	Signature string
@@ -88,76 +100,40 @@ func NewKey(seedstr string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	mk, err := key.NewMaster([]byte(seed), key.NdauPrivateKeyID)
+	mk, err := key.NewMaster([]byte(seed))
 	if err != nil {
 		return nil, err
 	}
-	return &Key{Key: mk.String()}, nil
+	return asKey(mk)
 }
 
 // FromString acts like a constructor so that the wallet can build a Key object
 // from a string representation of it.
 func FromString(s string) (*Key, error) {
-	ekey, err := key.NewKeyFromString(s)
+	ekey := new(key.ExtendedKey)
+	err := ekey.UnmarshalText([]byte(s))
+	if err != nil {
+		key, nerr := FromOldString(s)
+		if nerr == nil {
+			return key, nerr
+		}
+		return nil, err
+	}
+
+	// re-marshal for reasons?
+	return asKey(ekey)
+}
+
+// FromOldString is FromString, but it operates on the old key serialization format.
+//
+// The returned object will be serialized in the new format, so future calls
+// to FromString will succeed.
+func FromOldString(s string) (*Key, error) {
+	ekey, err := key.FromOldSerialization(s)
 	if err != nil {
 		return nil, err
 	}
-	return &Key{ekey.String()}, nil
-}
-
-type pathElement struct {
-	id     int32
-	harden bool
-}
-
-type path []pathElement
-
-func newPath(s string) (path, error) {
-	// remove all whitespace
-	s = strings.Replace(s, " ", "", -1)
-	// treat root specially
-	if s == "/" {
-		return path{}, nil
-	}
-	// now validate the path
-	// note that other than the pure root marker that we already handled,
-	// the numeric part after the slash is not optional
-	valpat := regexp.MustCompile("^(/([0-9]+)'?)+$")
-	if !valpat.MatchString(s) {
-		return nil, errors.New("Not a valid path string")
-	}
-
-	parsepat := regexp.MustCompile("/([0-9]+)('?)")
-	saa := parsepat.FindAllStringSubmatch(s, -1)
-	// saa now has one entry for each path element, and
-	// for each entry it has the 0th element as the whole path string,
-	// the first as the path ID, and the second as either
-	// an apostrophe or an empty string.
-	p := make(path, len(saa))
-	for i := range saa {
-		var err error
-		n, err := strconv.ParseInt(saa[i][1], 10, 32)
-		if err != nil {
-			return nil, err
-		}
-		p[i].id = int32(n)
-		p[i].harden = saa[i][2] == "'"
-	}
-	return p, nil
-}
-
-func (p path) isParentOf(c path) bool {
-	// if the parent is not shorter than the purported child, it can't be a parent
-	if len(c) <= len(p) {
-		return false
-	}
-	// everything up to the length of the parent has to be the same
-	for i := range p {
-		if c[i].id != p[i].id || c[i].harden != p[i].harden {
-			return false
-		}
-	}
-	return true
+	return asKey(ekey)
 }
 
 // DeriveFrom accepts a parent key and its known path, plus a desired child path
@@ -165,35 +141,19 @@ func (p path) isParentOf(c path) bool {
 // Note that the parent's known path is simply believed -- we have no mechanism to
 // check that it's true.
 func DeriveFrom(parentKey string, parentPath, childPath string) (*Key, error) {
-	ppath, err := newPath(parentPath)
-	if err != nil {
-		return nil, err
-	}
-	cpath, err := newPath(childPath)
-	if err != nil {
-		return nil, err
-	}
-	if !ppath.isParentOf(cpath) {
-		return nil, errors.New("child is not descended from parent")
-	}
-	// if we get here we know that ppath is a subset of cpath so we can trim cpath
-	cpath = cpath[len(ppath):]
 	k, err := FromString(parentKey)
 	if err != nil {
 		return nil, err
 	}
-	// now iterate
-	for _, e := range cpath {
-		if e.harden {
-			k, err = k.HardenedChild(int32(e.id))
-		} else {
-			k, err = k.Child(int32(e.id))
-		}
-		if err != nil {
-			return nil, err
-		}
+	e, err := k.ekey()
+	if err != nil {
+		return nil, err
 	}
-	return k, err
+	e, err = e.DeriveFrom(parentPath, childPath)
+	if err != nil {
+		return nil, err
+	}
+	return asKey(e)
 }
 
 // ToPublic returns an extended public key from any other extended key.
@@ -201,7 +161,7 @@ func DeriveFrom(parentKey string, parentPath, childPath string) (*Key, error) {
 // If the key is already a public key, it just returns itself.
 // It is an error if the key is hardened.
 func (k *Key) ToPublic() (*Key, error) {
-	ekey, err := key.NewKeyFromString(k.Key)
+	ekey, err := k.ekey()
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +169,7 @@ func (k *Key) ToPublic() (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Key{nk.String()}, nil
+	return asKey(nk)
 }
 
 // Child returns the n'th child of the given extended key. The child is of the
@@ -220,7 +180,7 @@ func (k *Key) Child(n int32) (*Key, error) {
 	if n < 0 {
 		return nil, errors.New("child index cannot be negative")
 	}
-	ekey, err := key.NewKeyFromString(k.Key)
+	ekey, err := k.ekey()
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +189,7 @@ func (k *Key) Child(n int32) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Key{nk.String()}, nil
+	return asKey(nk)
 }
 
 // HardenedChild returns the n'th hardened child of the given extended key.
@@ -242,16 +202,15 @@ func (k *Key) HardenedChild(n int32) (*Key, error) {
 	if n < 0 {
 		return nil, errors.New("child index cannot be negative")
 	}
-	ekey, err := key.NewKeyFromString(k.Key)
+	ekey, err := k.ekey()
 	if err != nil {
 		return nil, err
 	}
-	ndx := uint32(key.HardenedKeyStart) + uint32(n)
-	nk, err := ekey.Child(ndx)
+	nk, err := ekey.HardenedChild(uint32(n))
 	if err != nil {
 		return nil, err
 	}
-	return &Key{nk.String()}, nil
+	return asKey(nk)
 }
 
 // Sign uses the given key to sign a message; the message must be the
@@ -263,7 +222,7 @@ func (k *Key) Sign(msgstr string) (*Signature, error) {
 	if err != nil {
 		return nil, err
 	}
-	ekey, err := key.NewKeyFromString(k.Key)
+	ekey, err := k.ekey()
 	if err != nil {
 		return nil, err
 	}
@@ -281,18 +240,9 @@ func (k *Key) Sign(msgstr string) (*Signature, error) {
 // NdauAddress returns the ndau address associated with the given key.
 // Key can be either public or private; if it is private it will be
 // converted to a public key first.
-func (k *Key) NdauAddress(chainid string) (*Address, error) {
+func (k *Key) NdauAddress(string) (*Address, error) {
 	skind := string(address.KindUser)
-	switch chainid {
-	case "nd":
-		// we're good
-	case "tn":
-		skind = chainid + string(skind)
-	default:
-		return nil, errors.New("invalid chain id")
-	}
-
-	ekey, err := key.NewKeyFromString(k.Key)
+	ekey, err := k.ekey()
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +258,7 @@ func (k *Key) NdauAddress(chainid string) (*Address, error) {
 // IsPrivate tests if a given key is a private key; will return non-nil
 // error if the key is invalid.
 func (k *Key) IsPrivate() (bool, error) {
-	ekey, err := key.NewKeyFromString(k.Key)
+	ekey, err := k.ekey()
 	if err != nil {
 		return false, err
 	}

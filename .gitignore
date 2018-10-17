@@ -7,5 +7,13 @@ debug.test
 **/*.js.map
 .DS_Store
 !**/*_test.js
-!cmd/keyaddr/*
 **/.vscode
+
+addrtool
+!cmd/addrtool
+keyaddr
+!cmd/keyaddr
+keytool
+!cmd/keytool
+sigtool
+!cmd/sigtool
