@@ -10,6 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestSizes(t *testing.T) {
+	public, private, err := signature.Generate(signature.Ed25519, nil)
+	require.NoError(t, err)
+
+	require.Equal(t, public.Size(), len(public.KeyBytes()))
+	require.Equal(t, private.Size(), len(private.KeyBytes()))
+}
+
 func TestEncode(t *testing.T) {
 	public, private, err := signature.Generate(signature.Secp256k1, nil)
 	require.NoError(t, err)
