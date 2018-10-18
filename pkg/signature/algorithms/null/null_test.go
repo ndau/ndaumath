@@ -176,3 +176,8 @@ func TestChecksum(t *testing.T) {
 		})
 	}
 }
+
+func TestNullGenerationFails(t *testing.T) {
+	_, _, err := signature.Generate(signature.Null, nil)
+	require.Error(t, err)
+}

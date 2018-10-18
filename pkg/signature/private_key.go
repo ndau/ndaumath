@@ -62,18 +62,12 @@ func RawPrivateKey(al Algorithm, key, extra []byte) (*PrivateKey, error) {
 
 // Size returns the size of this key
 func (key PrivateKey) Size() int {
-	if key.algorithm == nil {
-		return 0
-	}
-	return key.algorithm.PrivateKeySize()
+	return key.Algorithm().PrivateKeySize()
 }
 
 // Sign the supplied message
 func (key PrivateKey) Sign(message []byte) Signature {
-	var al Algorithm
-	if key.algorithm != nil {
-		al = Key(key).algorithm
-	}
+	al := key.Algorithm()
 	return Signature{
 		algorithm: al,
 		data:      al.Sign(key.key, message),

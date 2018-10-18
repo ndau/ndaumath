@@ -89,7 +89,7 @@ func (key Key) Marshal() (serialized []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return marshal(key.algorithm, data)
+	return marshal(key.Algorithm(), data)
 }
 
 // Unmarshal unmarshals the serialized binary data into the supplied key instance
@@ -185,6 +185,9 @@ func (key Key) ExtraBytes() []byte {
 
 // Algorithm returns the key's algorithm
 func (key Key) Algorithm() Algorithm {
+	if key.algorithm == nil {
+		return Null
+	}
 	return key.algorithm
 }
 
