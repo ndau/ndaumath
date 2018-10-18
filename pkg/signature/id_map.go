@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/signature/algorithms/ed25519"
+	"github.com/oneiro-ndev/ndaumath/pkg/signature/algorithms/null"
 	"github.com/oneiro-ndev/ndaumath/pkg/signature/algorithms/secp256k1"
 	"github.com/pkg/errors"
 )
@@ -13,6 +14,7 @@ import (
 var (
 	Ed25519   = ed25519.Ed25519
 	Secp256k1 = secp256k1.Secp256k1
+	Null      = null.Null
 )
 
 var idMap map[AlgorithmID]Algorithm
@@ -20,6 +22,7 @@ var idNameMap map[string]AlgorithmID
 
 func init() {
 	idMap = map[AlgorithmID]Algorithm{
+		AlgorithmID(0): Null,
 		AlgorithmID(1): Ed25519,
 		AlgorithmID(2): Secp256k1,
 	}
@@ -68,6 +71,10 @@ func NameOf(al Algorithm) string {
 
 // Get the ID associated with an Algorithm type
 func idOf(al Algorithm) (AlgorithmID, error) {
+	// if the algorithm field is nil, then it's the Null algorithm
+	if al == nil {
+		return 0, nil
+	}
 	alName := NameOf(al)
 	if len(alName) == 0 {
 		return 0, errors.New("anonymous types are not Algorithms")

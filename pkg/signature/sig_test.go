@@ -32,3 +32,27 @@ func TestSignRoundtripEd25519(t *testing.T) {
 	// method 2 to verify a signature
 	require.True(t, public.Verify(message, signature2))
 }
+
+func TestMarshalNull(t *testing.T) {
+	var s Signature
+
+	ser, err := s.Marshal()
+	require.Nil(t, err)
+
+	var s2 Signature
+	err = s2.Unmarshal(ser)
+	require.Nil(t, err)
+}
+
+func TestMarshalMsgNull(t *testing.T) {
+	var s Signature
+
+	var b []byte
+	ser, err := s.MarshalMsg(b)
+	require.Nil(t, err)
+
+	var s2 Signature
+	leftover, err := s2.UnmarshalMsg(ser)
+	require.Nil(t, err)
+	require.Zero(t, len(leftover))
+}
