@@ -14,6 +14,7 @@ type keyer interface {
 	ExtraBytes() []byte
 	Algorithm() Algorithm
 	Truncate()
+	Zeroize()
 }
 
 // ensure that Key implements msgp marshal types
@@ -214,5 +215,15 @@ func (key Key) String() string {
 // This is a destructive operation which cannot be undone; make copies
 // first if you need to.
 func (key *Key) Truncate() {
+	key.extra = nil
+}
+
+// Zeroize removes all data from this key
+//
+// This is a destructive operation which cannot be undone; make copies
+// first if you need to.
+func (key *Key) Zeroize() {
+	key.algorithm = nil
+	key.key = nil
 	key.extra = nil
 }

@@ -176,3 +176,13 @@ func (key PublicKey) String() string {
 func (key *PublicKey) Truncate() {
 	key.extra = nil
 }
+
+// Zeroize removes all data from this key
+//
+// This is a destructive operation which cannot be undone; make copies
+// first if you need to.
+func (key *PublicKey) Zeroize() {
+	kkey := Key(*key)
+	kkey.Zeroize()
+	*key = PublicKey(kkey)
+}
