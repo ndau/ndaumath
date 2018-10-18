@@ -62,15 +62,15 @@ func RawPublicKey(al Algorithm, key, extra []byte) (*PublicKey, error) {
 
 // Size returns the size of this key
 func (key PublicKey) Size() int {
-	return key.algorithm.PublicKeySize()
+	return key.Algorithm().PublicKeySize()
 }
 
 // Verify the supplied message with the given signature
 func (key PublicKey) Verify(message []byte, sig Signature) bool {
-	if NameOf(key.algorithm) != NameOf(sig.algorithm) {
+	if NameOf(key.Algorithm()) != NameOf(sig.algorithm) {
 		return false
 	}
-	return key.algorithm.Verify(Key(key).key, message, sig.data)
+	return key.Algorithm().Verify(Key(key).key, message, sig.data)
 }
 
 // Marshal marshals the PublicKey into a serialized binary format
