@@ -62,11 +62,17 @@ func RawPublicKey(al Algorithm, key, extra []byte) (*PublicKey, error) {
 
 // Size returns the size of this key
 func (key PublicKey) Size() int {
+	if key.algorithm == nil {
+		return 0
+	}
 	return key.algorithm.PublicKeySize()
 }
 
 // Verify the supplied message with the given signature
 func (key PublicKey) Verify(message []byte, sig Signature) bool {
+	if key.algorithm == nil {
+		return false // a null key can never verify
+	}
 	if NameOf(key.algorithm) != NameOf(sig.algorithm) {
 		return false
 	}

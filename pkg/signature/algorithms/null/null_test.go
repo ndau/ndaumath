@@ -11,16 +11,16 @@ import (
 )
 
 func TestSizes(t *testing.T) {
-	public, private, err := signature.Generate(signature.Null, nil)
-	require.NoError(t, err)
+	public := signature.PublicKey{}
+	private := signature.PrivateKey{}
 
 	require.Equal(t, public.Size(), len(public.KeyBytes()))
 	require.Equal(t, private.Size(), len(private.KeyBytes()))
 }
 
 func TestEncode(t *testing.T) {
-	public, private, err := signature.Generate(signature.Null, nil)
-	require.NoError(t, err)
+	public := signature.PublicKey{}
+	private := signature.PrivateKey{}
 
 	pubTextB, err := public.MarshalText()
 	require.NoError(t, err)
@@ -44,8 +44,8 @@ func TestRoundtripText(t *testing.T) {
 	// that a value and a pointer to that value are equal, which causes the
 	// roundtrip to fail. It's easier to fix by generating with a pointer to
 	// the algorithm here than to change the algorithm serialization code.
-	public, private, err := signature.Generate(&signature.Null, nil)
-	require.NoError(t, err)
+	public := signature.PublicKey{}
+	private := signature.PrivateKey{}
 
 	pubTextB, err := public.MarshalText()
 	require.NoError(t, err)
@@ -61,8 +61,12 @@ func TestRoundtripText(t *testing.T) {
 	err = rtPriv.UnmarshalText(privTextB)
 	require.NoError(t, err)
 
-	require.Equal(t, public, rtPub)
-	require.Equal(t, private, rtPriv)
+	// we have made it so that a Null Algorithm behave the same as a nil Algorithm, so
+	// the .algorithm value may not be identical; that's OK.
+	require.Equal(t, public.KeyBytes(), rtPub.KeyBytes())
+	require.Equal(t, public.ExtraBytes(), rtPub.ExtraBytes())
+	require.Equal(t, private.KeyBytes(), rtPriv.KeyBytes())
+	require.Equal(t, private.ExtraBytes(), rtPriv.ExtraBytes())
 }
 
 func TestRoundtripMsg(t *testing.T) {
@@ -71,8 +75,8 @@ func TestRoundtripMsg(t *testing.T) {
 	// that a value and a pointer to that value are equal, which causes the
 	// roundtrip to fail. It's easier to fix by generating with a pointer to
 	// the algorithm here than to change the algorithm serialization code.
-	public, private, err := signature.Generate(&signature.Null, nil)
-	require.NoError(t, err)
+	public := signature.PublicKey{}
+	private := signature.PrivateKey{}
 
 	pubTextB, err := public.MarshalMsg(nil)
 	require.NoError(t, err)
@@ -89,8 +93,12 @@ func TestRoundtripMsg(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, leftover)
 
-	require.Equal(t, public, rtPub)
-	require.Equal(t, private, rtPriv)
+	// we have made it so that a Null Algorithm behave the same as a nil Algorithm, so
+	// the .algorithm value may not be identical; that's OK.
+	require.Equal(t, public.KeyBytes(), rtPub.KeyBytes())
+	require.Equal(t, public.ExtraBytes(), rtPub.ExtraBytes())
+	require.Equal(t, private.KeyBytes(), rtPriv.KeyBytes())
+	require.Equal(t, private.ExtraBytes(), rtPriv.ExtraBytes())
 }
 
 func TestRoundtripBare(t *testing.T) {
@@ -99,8 +107,8 @@ func TestRoundtripBare(t *testing.T) {
 	// that a value and a pointer to that value are equal, which causes the
 	// roundtrip to fail. It's easier to fix by generating with a pointer to
 	// the algorithm here than to change the algorithm serialization code.
-	public, private, err := signature.Generate(&signature.Null, nil)
-	require.NoError(t, err)
+	public := signature.PublicKey{}
+	private := signature.PrivateKey{}
 
 	pubTextB, err := public.Marshal()
 	require.NoError(t, err)
@@ -115,13 +123,17 @@ func TestRoundtripBare(t *testing.T) {
 	err = rtPriv.Unmarshal(privTextB)
 	require.NoError(t, err)
 
-	require.Equal(t, public, rtPub)
-	require.Equal(t, private, rtPriv)
+	// we have made it so that a Null Algorithm behave the same as a nil Algorithm, so
+	// the .algorithm value may not be identical; that's OK.
+	require.Equal(t, public.KeyBytes(), rtPub.KeyBytes())
+	require.Equal(t, public.ExtraBytes(), rtPub.ExtraBytes())
+	require.Equal(t, private.KeyBytes(), rtPriv.KeyBytes())
+	require.Equal(t, private.ExtraBytes(), rtPriv.ExtraBytes())
 }
 
 func TestChecksum(t *testing.T) {
-	public, private, err := signature.Generate(signature.Null, nil)
-	require.NoError(t, err)
+	public := signature.PublicKey{}
+	private := signature.PrivateKey{}
 
 	pubTextB, err := public.MarshalText()
 	require.NoError(t, err)
