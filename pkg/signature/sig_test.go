@@ -59,10 +59,6 @@ func TestMarshalMsgNull(t *testing.T) {
 }
 
 func TestUnmarshal(t *testing.T) {
-	pub, pvt, err := Generate(Secp256k1, nil)
-	require.NoError(t, err)
-	t.Log(pub, pvt)
-
 	pubkbytes := "npuba8jadtbbebmmi9j8838464z7u7vxgpzyfebhuhyrqcnuz97mitidqytia3pu7nbe43pn2m6x"
 	var k PublicKey
 	err := k.UnmarshalText([]byte(pubkbytes))
