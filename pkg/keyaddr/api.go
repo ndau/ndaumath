@@ -226,15 +226,17 @@ func (k *Key) Sign(msgstr string) (*Signature, error) {
 	if err != nil {
 		return nil, err
 	}
-	pk, err := ekey.ECPrivKey()
+	pk, err := ekey.SPrivKey()
 	if err != nil {
 		return nil, err
 	}
-	sig, err := pk.Sign(msg)
+	sig := pk.Sign(msg)
+	sigB, err := sig.Marshal()
 	if err != nil {
 		return nil, err
 	}
-	return &Signature{b32.Encode(sig.Serialize())}, nil
+
+	return &Signature{b32.Encode(sigB)}, nil
 }
 
 // NdauAddress returns the ndau address associated with the given key.
