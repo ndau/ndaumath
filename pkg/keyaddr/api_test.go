@@ -3,6 +3,9 @@ package keyaddr
 import (
 	"reflect"
 	"testing"
+
+	"github.com/oneiro-ndev/ndaumath/pkg/key"
+	"github.com/stretchr/testify/require"
 )
 
 // We don't need a lot of test cases as all the supporting functions have their own
@@ -509,4 +512,74 @@ func TestDeriveFrom(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPublicKey_SignaturePackageRoundtrip(t *testing.T) {
+	seed, err := key.GenerateSeed(key.RecommendedSeedLen)
+	require.NoError(t, err)
+	ekeyPriv, err := key.NewMaster(seed)
+	require.NoError(t, err)
+	ekeyPub, err := ekeyPriv.Public()
+	require.NoError(t, err)
+
+	ka1, err := KeyFromExtended(ekeyPub)
+	require.NoError(t, err)
+
+	ka1B := []byte(ka1.Key)
+
+	sk1, err := ka1.ToPublicKey()
+	require.NoError(t, err)
+	sk1B, err := sk1.MarshalText()
+	require.NoError(t, err)
+	require.Equal(t, ka1B, sk1B)
+
+	ka2, err := KeyFromPublic(sk1)
+	require.NoError(t, err)
+	ka2B := []byte(ka2.Key)
+
+	require.Equal(t, ka1B, ka2B)
+	require.Equal(t, ka1, ka2)
+
+	sk2, err := ka2.ToPublicKey()
+	require.NoError(t, err)
+	sk2B, err := sk2.MarshalText()
+	require.NoError(t, err)
+
+	require.Equal(t, ka2B, sk2B)
+	require.Equal(t, sk1B, sk2B)
+	require.Equal(t, sk1, sk2)
+}
+
+func TestPrivateKey_SignaturePackageRoundtrip(t *testing.T) {
+	seed, err := key.GenerateSeed(key.RecommendedSeedLen)
+	require.NoError(t, err)
+	ekeyPriv, err := key.NewMaster(seed)
+	require.NoError(t, err)
+
+	ka1, err := KeyFromExtended(ekeyPriv)
+	require.NoError(t, err)
+
+	ka1B := []byte(ka1.Key)
+
+	sk1, err := ka1.ToPrivateKey()
+	require.NoError(t, err)
+	sk1B, err := sk1.MarshalText()
+	require.NoError(t, err)
+	require.Equal(t, ka1B, sk1B)
+
+	ka2, err := KeyFromPrivate(sk1)
+	require.NoError(t, err)
+	ka2B := []byte(ka2.Key)
+
+	require.Equal(t, ka1B, ka2B)
+	require.Equal(t, ka1, ka2)
+
+	sk2, err := ka2.ToPrivateKey()
+	require.NoError(t, err)
+	sk2B, err := sk2.MarshalText()
+	require.NoError(t, err)
+
+	require.Equal(t, ka2B, sk2B)
+	require.Equal(t, sk1B, sk2B)
+	require.Equal(t, sk1, sk2)
 }

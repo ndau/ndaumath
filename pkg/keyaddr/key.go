@@ -21,92 +21,15 @@ package keyaddr
 
 import (
 	"encoding/base64"
-	"errors"
-	"strings"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/address"
 	"github.com/oneiro-ndev/ndaumath/pkg/key"
-	"github.com/oneiro-ndev/ndaumath/pkg/signature"
-	"github.com/oneiro-ndev/ndaumath/pkg/words"
+	"github.com/pkg/errors"
 )
-
-// WordsFromBytes takes an array of bytes and converts it to a space-separated list of
-// words that act as a mnemonic. A 16-byte input array will generate a list of 12 words.
-func WordsFromBytes(lang string, data string) (string, error) {
-	b, err := base64.StdEncoding.DecodeString(data)
-	if err != nil {
-		return "", err
-	}
-	sa, err := words.FromBytes(lang, b)
-	if err != nil {
-		return "", err
-	}
-	return strings.Join(sa, " "), nil
-}
-
-// WordsToBytes takes a space-separated list of words and generates the set of bytes
-// from which it was generated (or an error). The bytes are encoded as a base64 string
-// using standard base64 encoding, as defined in RFC 4648.
-func WordsToBytes(lang string, w string) (string, error) {
-	wordlist := strings.Split(w, " ")
-	b, err := words.ToBytes(lang, wordlist)
-	if err != nil {
-		return "", err
-	}
-	return base64.StdEncoding.EncodeToString(b), nil
-}
-
-// WordsFromPrefix accepts a language and a prefix string and returns a sorted, space-separated list
-// of words that match the given prefix. max can be used to limit the size of the returned list
-// (if max is 0 then all matches are returned, which could be up to 2K if the prefix is empty).
-func WordsFromPrefix(lang string, prefix string, max int) string {
-	return words.FromPrefix(lang, prefix, max)
-}
 
 // Key is the object that contains a public or private key
 type Key struct {
 	Key string
-}
-
-func (k Key) ekey() (*key.ExtendedKey, error) {
-	ekey := new(key.ExtendedKey)
-	err := ekey.UnmarshalText([]byte(k.Key))
-	return ekey, err
-}
-
-func asKey(k *key.ExtendedKey) (*Key, error) {
-	kb, err := k.MarshalText()
-	if err != nil {
-		return nil, err
-	}
-	return &Key{Key: string(kb)}, nil
-}
-
-// Signature is the result of signing a block of data with a key.
-type Signature struct {
-	Signature string
-}
-
-// SignatureFrom converts a `signature.Signature` into a `*Signature`
-func SignatureFrom(sig signature.Signature) (*Signature, error) {
-	sigB, err := sig.MarshalText()
-	if err != nil {
-		return nil, err
-	}
-
-	return &Signature{string(sigB)}, nil
-}
-
-// ToSignature converts a `Signature` into a `signature.Signature`
-func (s Signature) ToSignature() (signature.Signature, error) {
-	sig := signature.Signature{}
-	err := sig.UnmarshalText([]byte(s.Signature))
-	return sig, err
-}
-
-// Address is an Ndau Address, derived from a public key.
-type Address struct {
-	Address string
 }
 
 // NewKey takes a seed (an array of bytes encoded as a base64 string) and creates a private master
@@ -121,7 +44,7 @@ func NewKey(seedstr string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	return asKey(mk)
+	return KeyFromExtended(mk)
 }
 
 // FromString acts like a constructor so that the wallet can build a Key object
@@ -138,7 +61,7 @@ func FromString(s string) (*Key, error) {
 	}
 
 	// re-marshal for reasons?
-	return asKey(ekey)
+	return KeyFromExtended(ekey)
 }
 
 // FromOldString is FromString, but it operates on the old key serialization format.
@@ -150,7 +73,7 @@ func FromOldString(s string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	return asKey(ekey)
+	return KeyFromExtended(ekey)
 }
 
 // DeriveFrom accepts a parent key and its known path, plus a desired child path
@@ -162,7 +85,7 @@ func DeriveFrom(parentKey string, parentPath, childPath string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	e, err := k.ekey()
+	e, err := k.ToExtended()
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +93,7 @@ func DeriveFrom(parentKey string, parentPath, childPath string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	return asKey(e)
+	return KeyFromExtended(e)
 }
 
 // ToPublic returns an extended public key from any other extended key.
@@ -178,7 +101,7 @@ func DeriveFrom(parentKey string, parentPath, childPath string) (*Key, error) {
 // If the key is already a public key, it just returns itself.
 // It is an error if the key is hardened.
 func (k *Key) ToPublic() (*Key, error) {
-	ekey, err := k.ekey()
+	ekey, err := k.ToExtended()
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +109,7 @@ func (k *Key) ToPublic() (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	return asKey(nk)
+	return KeyFromExtended(nk)
 }
 
 // Child returns the n'th child of the given extended key. The child is of the
@@ -197,7 +120,7 @@ func (k *Key) Child(n int32) (*Key, error) {
 	if n < 0 {
 		return nil, errors.New("child index cannot be negative")
 	}
-	ekey, err := k.ekey()
+	ekey, err := k.ToExtended()
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +129,7 @@ func (k *Key) Child(n int32) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	return asKey(nk)
+	return KeyFromExtended(nk)
 }
 
 // HardenedChild returns the n'th hardened child of the given extended key.
@@ -219,7 +142,7 @@ func (k *Key) HardenedChild(n int32) (*Key, error) {
 	if n < 0 {
 		return nil, errors.New("child index cannot be negative")
 	}
-	ekey, err := k.ekey()
+	ekey, err := k.ToExtended()
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +150,7 @@ func (k *Key) HardenedChild(n int32) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	return asKey(nk)
+	return KeyFromExtended(nk)
 }
 
 // Sign uses the given key to sign a message; the message must be the
@@ -239,7 +162,7 @@ func (k *Key) Sign(msgstr string) (*Signature, error) {
 	if err != nil {
 		return nil, err
 	}
-	ekey, err := k.ekey()
+	ekey, err := k.ToExtended()
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +179,7 @@ func (k *Key) Sign(msgstr string) (*Signature, error) {
 // converted to a public key first.
 func (k *Key) NdauAddress(string) (*Address, error) {
 	skind := string(address.KindUser)
-	ekey, err := k.ekey()
+	ekey, err := k.ToExtended()
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +195,7 @@ func (k *Key) NdauAddress(string) (*Address, error) {
 // IsPrivate tests if a given key is a private key; will return non-nil
 // error if the key is invalid.
 func (k *Key) IsPrivate() (bool, error) {
-	ekey, err := k.ekey()
+	ekey, err := k.ToExtended()
 	if err != nil {
 		return false, err
 	}

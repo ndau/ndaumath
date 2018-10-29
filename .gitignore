@@ -10,10 +10,10 @@ debug.test
 **/.vscode
 
 addrtool
-!cmd/addrtool
+!/*/addrtool
 keyaddr
-!cmd/keyaddr
+!/*/keyaddr
 keytool
-!cmd/keytool
+!/*/keytool
 sigtool
-!cmd/sigtool
+!/*/sigtool
