@@ -3,6 +3,8 @@ package signature
 import (
 	"fmt"
 
+	"github.com/oneiro-ndev/ndaumath/pkg/b32"
+	"github.com/pkg/errors"
 	"github.com/tinylib/msgp/msgp"
 )
 
@@ -96,4 +98,33 @@ func (signature *Signature) Msgsize() (s int) {
 // Bytes returns the key's data
 func (signature *Signature) Bytes() []byte {
 	return signature.data
+}
+
+// MarshalText implements encoding.TextMarshaler
+//
+// This marshaller uses a custom b32 encoding which is case-insensitive and
+// lacks certain confusing pairs, for ease of human-friendly handling.
+// For the same reason, it embeds a checksum, so it's easy to tell whether
+// or not it was received correctly.
+func (signature Signature) MarshalText() ([]byte, error) {
+	bytes, err := signature.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	bytes = AddChecksum(bytes)
+	return []byte(b32.Encode(bytes)), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler
+func (signature *Signature) UnmarshalText(text []byte) error {
+	bytes, err := b32.Decode(string(text))
+	if err != nil {
+		return err
+	}
+	var checksumOk bool
+	bytes, checksumOk = CheckChecksum(bytes)
+	if !checksumOk {
+		return errors.New("key unmarshal failure: bad checksum")
+	}
+	return signature.Unmarshal(bytes)
 }

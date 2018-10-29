@@ -3,6 +3,9 @@ package keyaddr
 import (
 	"reflect"
 	"testing"
+
+	"github.com/oneiro-ndev/ndaumath/pkg/key"
+	"github.com/stretchr/testify/require"
 )
 
 // We don't need a lot of test cases as all the supporting functions have their own
@@ -286,7 +289,7 @@ func TestKey_Sign(t *testing.T) {
 		{"basic",
 			fields{"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"},
 			args{"AQIDBA=="},
-			&Signature{"gbcseiia598sbs4u8p76adr2cgbkhy679867sba4dsaggchk657yzg3f92waeiaaxz8qf7k46cnwt3g2inycttseh38bw5j7nac2jkdg7nywbe7zxi======"},
+			&Signature{"aujaftchgbcseiiay7mr4bc69rgj3g4dnf82ijp8t22rnstjerrbwujy5mkbp2382vmseiahffbgsf6aujtn6vs5m3jhnm7qt952f59xemarjrcycphty726ybcgx82x"},
 			false},
 		{"public key should error",
 			fields{"npuba4jaftckeebzgm7usrcx9jxve8rhst5uejqqtzdtjvhdeswdyzvhn22k98kq25iaaaaaaaaaaaapqhv86syt9pwwpm97n5dgixcmr3sc7ai4km65t9r4wt4s4kywai6fkiae5jkc"},
@@ -301,7 +304,7 @@ func TestKey_Sign(t *testing.T) {
 		{"different key should gen diff sig",
 			fields{"npvta8jaftcjebe8sxbuvxcmh6xw37wuam8y2tmzachdzqh24mhjyr4j5pxgzw93aap98fg2aaaaaenphqxyh7nh2zhjfugk3a9xvqwkcarfau8239ykec4h69kzkcs8dx2ek3uwekhx"},
 			args{"AQIDBA=="},
-			&Signature{"gbcaeiapsjv4ry5qtjya4exuyue2fv4a7ju7ytbr563ka4hhjvm9qzvyv2bcau5d9a5qd7gs5i6ynjx92aan2d3crcwr6jd87fqaz4atd85vuv74"},
+			&Signature{"ayjaftcggbcaeibatkbh6whxa5qvica5jp7btt3v44z6mtzcyuwad8xifbsnb3rzp6bcan54rfdkmvif8x4z9p5gwrx24f4qx9ukfx2k5u8rjkfgq5fmpmparr9zkyw9"},
 			false},
 		{"bad decode should error",
 			fields{"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf"},
@@ -509,4 +512,74 @@ func TestDeriveFrom(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPublicKey_SignaturePackageRoundtrip(t *testing.T) {
+	seed, err := key.GenerateSeed(key.RecommendedSeedLen)
+	require.NoError(t, err)
+	ekeyPriv, err := key.NewMaster(seed)
+	require.NoError(t, err)
+	ekeyPub, err := ekeyPriv.Public()
+	require.NoError(t, err)
+
+	ka1, err := KeyFromExtended(ekeyPub)
+	require.NoError(t, err)
+
+	ka1B := []byte(ka1.Key)
+
+	sk1, err := ka1.ToPublicKey()
+	require.NoError(t, err)
+	sk1B, err := sk1.MarshalText()
+	require.NoError(t, err)
+	require.Equal(t, ka1B, sk1B)
+
+	ka2, err := KeyFromPublic(sk1)
+	require.NoError(t, err)
+	ka2B := []byte(ka2.Key)
+
+	require.Equal(t, ka1B, ka2B)
+	require.Equal(t, ka1, ka2)
+
+	sk2, err := ka2.ToPublicKey()
+	require.NoError(t, err)
+	sk2B, err := sk2.MarshalText()
+	require.NoError(t, err)
+
+	require.Equal(t, ka2B, sk2B)
+	require.Equal(t, sk1B, sk2B)
+	require.Equal(t, sk1, sk2)
+}
+
+func TestPrivateKey_SignaturePackageRoundtrip(t *testing.T) {
+	seed, err := key.GenerateSeed(key.RecommendedSeedLen)
+	require.NoError(t, err)
+	ekeyPriv, err := key.NewMaster(seed)
+	require.NoError(t, err)
+
+	ka1, err := KeyFromExtended(ekeyPriv)
+	require.NoError(t, err)
+
+	ka1B := []byte(ka1.Key)
+
+	sk1, err := ka1.ToPrivateKey()
+	require.NoError(t, err)
+	sk1B, err := sk1.MarshalText()
+	require.NoError(t, err)
+	require.Equal(t, ka1B, sk1B)
+
+	ka2, err := KeyFromPrivate(sk1)
+	require.NoError(t, err)
+	ka2B := []byte(ka2.Key)
+
+	require.Equal(t, ka1B, ka2B)
+	require.Equal(t, ka1, ka2)
+
+	sk2, err := ka2.ToPrivateKey()
+	require.NoError(t, err)
+	sk2B, err := sk2.MarshalText()
+	require.NoError(t, err)
+
+	require.Equal(t, ka2B, sk2B)
+	require.Equal(t, sk1B, sk2B)
+	require.Equal(t, sk1, sk2)
 }
