@@ -25,8 +25,8 @@ import (
 	"strings"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/address"
-	"github.com/oneiro-ndev/ndaumath/pkg/b32"
 	"github.com/oneiro-ndev/ndaumath/pkg/key"
+	"github.com/oneiro-ndev/ndaumath/pkg/signature"
 	"github.com/oneiro-ndev/ndaumath/pkg/words"
 )
 
@@ -85,6 +85,23 @@ func asKey(k *key.ExtendedKey) (*Key, error) {
 // Signature is the result of signing a block of data with a key.
 type Signature struct {
 	Signature string
+}
+
+// SignatureFrom converts a `signature.Signature` into a `*Signature`
+func SignatureFrom(sig signature.Signature) (*Signature, error) {
+	sigB, err := sig.MarshalText()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Signature{string(sigB)}, nil
+}
+
+// ToSignature converts a `Signature` into a `signature.Signature`
+func (s Signature) ToSignature() (signature.Signature, error) {
+	sig := signature.Signature{}
+	err := sig.UnmarshalText([]byte(s.Signature))
+	return sig, err
 }
 
 // Address is an Ndau Address, derived from a public key.
@@ -231,12 +248,7 @@ func (k *Key) Sign(msgstr string) (*Signature, error) {
 		return nil, err
 	}
 	sig := pk.Sign(msg)
-	sigB, err := sig.Marshal()
-	if err != nil {
-		return nil, err
-	}
-
-	return &Signature{b32.Encode(sigB)}, nil
+	return SignatureFrom(sig)
 }
 
 // NdauAddress returns the ndau address associated with the given key.
