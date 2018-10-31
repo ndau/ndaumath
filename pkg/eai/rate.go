@@ -1,8 +1,15 @@
 package eai
 
 import (
+	"encoding"
+	"fmt"
+	"strconv"
+	"strings"
+	"unicode/utf8"
+
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
+	"github.com/pkg/errors"
 )
 
 //go:generate msgp
@@ -43,6 +50,37 @@ func RateFromPercent(nPercent uint64) Rate {
 type RTRow struct {
 	From math.Duration
 	Rate Rate
+}
+
+var _ encoding.TextMarshaler = (*RTRow)(nil)
+var _ encoding.TextUnmarshaler = (*RTRow)(nil)
+
+// MarshalText implements encoding.TextMarshaler
+func (r RTRow) MarshalText() ([]byte, error) {
+	return []byte(fmt.Sprintf("%d:%d", r.From, r.Rate)), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler
+func (r *RTRow) UnmarshalText(text []byte) error {
+	if !utf8.Valid(text) {
+		return errors.New("text was not utf-8")
+	}
+	parts := strings.Split(string(text), ":")
+	if len(parts) != 2 {
+		return errors.New("invalid fmt: expected single ':'")
+	}
+	from, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil {
+		return errors.Wrap(err, "parsing from")
+	}
+	rate, err := strconv.ParseUint(parts[1], 10, 64)
+	if err != nil {
+		return errors.Wrap(err, "parsing rate")
+	}
+
+	r.From = math.Duration(from)
+	r.Rate = Rate(rate)
+	return nil
 }
 
 // A RateTable defines a stepped sequence of EAI rates which apply
