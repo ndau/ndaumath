@@ -3,6 +3,8 @@ package eai
 import (
 	"encoding"
 	"fmt"
+	gomath "math"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -37,6 +39,79 @@ import (
 // frequent node is that it sees the increase more often.
 type Rate uint64
 
+var (
+	fracdigits int
+	ratefmt    string
+	ratere     *regexp.Regexp
+)
+
+func init() {
+	// fracdigits: how many digits go behind the decimal?
+	// computed here so that if constants.RateDenominator ever changes,
+	// this stays automatically in sync
+	fracdigits = int(gomath.Floor(gomath.Log10(constants.RateDenominator))) - 2
+	// ratefmt: just there to add the right number of 0s to the fractional part
+	// of the text serialization of the rate
+	ratefmt = fmt.Sprintf("%%d.%%0%dd", fracdigits)
+	// ratere: parse a rate into pct (before the decimal) and frac (after the decimal)
+	// strings, which can be used to regenerate the rate
+	ratere = regexp.MustCompile(fmt.Sprintf(`^\s*(?P<pct>\d+)(\.(?P<frac>\d{1,%d}))?%%\s*$`, fracdigits))
+}
+
+// String writes this Rate as a string
+func (r Rate) String() string {
+	onePct := RateFromPercent(1)
+	rs := fmt.Sprintf(ratefmt, r/onePct, r%onePct)
+	for rs[len(rs)-1] == '0' {
+		rs = rs[:len(rs)-1]
+	}
+	if rs[len(rs)-1] == '.' {
+		rs = rs[:len(rs)-1]
+	}
+	return rs + "%"
+}
+
+// ParseRate attempts to parse a Rate from the provided string
+func ParseRate(s string) (Rate, error) {
+	match := ratere.FindStringSubmatch(s)
+	result := make(map[string]string)
+	for i, name := range ratere.SubexpNames() {
+		if i != 0 && name != "" && i < len(match) {
+			result[name] = match[i]
+		}
+	}
+
+	pcts, ok := result["pct"]
+	if !ok {
+		return Rate(0), errors.New("failed to parse rate")
+	}
+	pct, err := strconv.ParseUint(pcts, 10, 64)
+	if err != nil {
+		return Rate(0), errors.Wrap(err, "parsing pct")
+	}
+	out := RateFromPercent(1) * Rate(pct)
+
+	fracs, ok := result["frac"]
+	if ok {
+		if len(fracs) > fracdigits {
+			fracs = fracs[:fracdigits]
+		} else if len(fracs) < fracdigits {
+			iters := fracdigits - len(fracs)
+			for i := 0; i < iters; i++ {
+				fracs += "0"
+			}
+		}
+
+		frac, err := strconv.ParseUint(fracs, 10, 64)
+		if err != nil {
+			return Rate(0), errors.Wrap(err, "parsing frac")
+		}
+		out += Rate(frac)
+	}
+
+	return out, nil
+}
+
 // RateFromPercent returns a Rate whose value is that of the input, as percent.
 //
 // i.e. to express 1%, `nPercent` should equal `1`
@@ -57,7 +132,7 @@ var _ encoding.TextUnmarshaler = (*RTRow)(nil)
 
 // MarshalText implements encoding.TextMarshaler
 func (r RTRow) MarshalText() ([]byte, error) {
-	return []byte(fmt.Sprintf("%d:%d", r.From, r.Rate)), nil
+	return []byte(fmt.Sprintf("%s:%s", r.From, r.Rate)), nil
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler
@@ -69,17 +144,16 @@ func (r *RTRow) UnmarshalText(text []byte) error {
 	if len(parts) != 2 {
 		return errors.New("invalid fmt: expected single ':'")
 	}
-	from, err := strconv.ParseInt(parts[0], 10, 64)
+	var err error
+	r.From, err = math.ParseDuration(parts[0])
 	if err != nil {
 		return errors.Wrap(err, "parsing from")
 	}
-	rate, err := strconv.ParseUint(parts[1], 10, 64)
+	r.Rate, err = ParseRate(parts[1])
 	if err != nil {
 		return errors.Wrap(err, "parsing rate")
 	}
 
-	r.From = math.Duration(from)
-	r.Rate = Rate(rate)
 	return nil
 }
 
