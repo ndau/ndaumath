@@ -17,7 +17,6 @@ func keytype(ktype string) string {
 	return strings.ToUpper(strings.TrimSpace(ktype)) + "KEY"
 }
 
-// TODO: doesn't work if we need to read multiple keys in one subcmd
 func getKeySpec(ktype string) string {
 	return fmt.Sprintf("(%s | --stdin)", keytype(ktype))
 }
@@ -84,5 +83,73 @@ func getKeyClosureHD(cmd *cli.Cmd, ktype string, desc string) func() *key.Extend
 		err := ek.UnmarshalText([]byte(keys))
 		check(err)
 		return ek
+	}
+}
+
+func getKeyClosurePrivate(cmd *cli.Cmd, ktype string, desc string) func() signature.PrivateKey {
+	key := cmd.StringArg(keytype(ktype), "", desc)
+	stdin := cmd.BoolOpt("stdin", false, "if set, read the key from stdin")
+
+	return func() signature.PrivateKey {
+		var keys string
+		if stdin != nil && *stdin {
+			in := bufio.NewScanner(os.Stdin)
+			if !in.Scan() {
+				check(errors.New("stdin selected but empty"))
+			}
+			check(in.Err())
+			keys = in.Text()
+		} else if key != nil && len(*key) > 0 {
+			keys = *key
+		} else {
+			check(errors.New("no or multiple keys input--this should be unreachable"))
+		}
+
+		switch {
+		case signature.MaybePrivate(keys):
+			var pk signature.PrivateKey
+			err := pk.UnmarshalText([]byte(keys))
+			check(err)
+			return pk
+		default:
+			check(errors.New("provided data is not an ndau private key"))
+		}
+
+		// UNREACHABLE
+		return signature.PrivateKey{}
+	}
+}
+
+func getKeyClosurePublic(cmd *cli.Cmd, ktype string, desc string) func() signature.PublicKey {
+	key := cmd.StringArg(keytype(ktype), "", desc)
+	stdin := cmd.BoolOpt("stdin", false, "if set, read the key from stdin")
+
+	return func() signature.PublicKey {
+		var keys string
+		if stdin != nil && *stdin {
+			in := bufio.NewScanner(os.Stdin)
+			if !in.Scan() {
+				check(errors.New("stdin selected but empty"))
+			}
+			check(in.Err())
+			keys = in.Text()
+		} else if key != nil && len(*key) > 0 {
+			keys = *key
+		} else {
+			check(errors.New("no or multiple keys input--this should be unreachable"))
+		}
+
+		switch {
+		case signature.MaybePublic(keys):
+			var pk signature.PublicKey
+			err := pk.UnmarshalText([]byte(keys))
+			check(err)
+			return pk
+		default:
+			check(errors.New("provided data is not an ndau public key"))
+		}
+
+		// UNREACHABLE
+		return signature.PublicKey{}
 	}
 }

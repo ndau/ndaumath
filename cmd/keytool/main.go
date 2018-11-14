@@ -10,6 +10,8 @@ func main() {
 	app := cli.App("keytool", "manipulate key strings on the command line")
 
 	app.Command("hd", "manipulate HD keys", hd)
+	app.Command("sign", "sign some data", cmdSign)
+	app.Command("verify", "verify some data", cmdVerify)
 
 	app.Run(os.Args)
 }
