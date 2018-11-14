@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/address"
-
 	cli "github.com/jawher/mow.cli"
+	"github.com/oneiro-ndev/ndaumath/pkg/address"
 	"github.com/oneiro-ndev/ndaumath/pkg/key"
 )
 
@@ -34,9 +33,11 @@ func cmdHDNew(cmd *cli.Cmd) {
 }
 
 func cmdHDPublic(cmd *cli.Cmd) {
-	pvtS := cmd.StringArg("PRIVATE", "", "private key from which to make a public key")
+	cmd.Spec = getKeySpec("PVT")
+	getKey := getKeyClosureHD(cmd, "PVT", "private key from which to make a public key")
+
 	cmd.Action = func() {
-		pvt := hdparse(*pvtS)
+		pvt := getKey()
 		pub, err := pvt.Public()
 		check(err)
 		fmt.Println(hdstr(*pub))
@@ -44,10 +45,16 @@ func cmdHDPublic(cmd *cli.Cmd) {
 }
 
 func cmdHDChild(cmd *cli.Cmd) {
-	keyS := cmd.StringArg("KEY", "", "key from which to derive a child")
+	cmd.Spec = fmt.Sprintf(
+		"%s PATH",
+		getKeySpec(""),
+	)
+
+	getKey := getKeyClosureHD(cmd, "", "key from which to derive a child")
+
 	pathS := cmd.StringArg("PATH", "", "derivation path for child key")
 	cmd.Action = func() {
-		key := hdparse(*keyS)
+		key := getKey()
 		key, err := key.DeriveFrom("/", *pathS)
 		check(err)
 		fmt.Println(hdstr(*key))
@@ -65,10 +72,12 @@ func cmdHDConvert(cmd *cli.Cmd) {
 }
 
 func cmdHDTruncate(cmd *cli.Cmd) {
-	keyS := cmd.StringArg("KEY", "", "key to truncate")
+	cmd.Spec = getKeySpec("")
+
+	getKey := getKeyClosureHD(cmd, "", "key to truncate")
 
 	cmd.Action = func() {
-		key := hdparse(*keyS)
+		key := getKey()
 		var keyB []byte
 		var err error
 		if key.IsPrivate() {
@@ -88,17 +97,21 @@ func cmdHDTruncate(cmd *cli.Cmd) {
 }
 
 func cmdHDAddr(cmd *cli.Cmd) {
+	// mow.cli ensures with this that only one option is specified
+	cmd.Spec = fmt.Sprintf(
+		"%s [-k=<kind> | -a | -n | -e | -x]",
+		getKeySpec(""),
+	)
+
+	getKey := getKeyClosureHD(cmd, "", "get address from this key, converting to public as necessary")
+
 	var (
-		keyS   = cmd.StringArg("KEY", "", "key from which to make a public key")
 		pkind  = cmd.StringOpt("k kind", string(address.KindUser), "manually specify address kind")
 		kuser  = cmd.BoolOpt("a user", false, "address kind: user (default)")
 		kndau  = cmd.BoolOpt("n ndau", false, "address kind: ndau")
 		kendow = cmd.BoolOpt("e endowment", false, "address kind: endowment")
 		kxchng = cmd.BoolOpt("x exchange", false, "address kind: exchange")
 	)
-
-	// mow.cli ensures with this that only one option is specified
-	cmd.Spec = "KEY [-k=<kind> | -a | -n | -e | -x]"
 
 	cmd.Action = func() {
 		kind := address.Kind(*pkind) // never nil dereference; defaults to user
@@ -119,7 +132,7 @@ func cmdHDAddr(cmd *cli.Cmd) {
 			check(errors.New("invalid kind: " + string(kind)))
 		}
 
-		key := hdparse(*keyS)
+		key := getKey()
 		addr, err := address.Generate(kind, key.PubKeyBytes())
 		check(err)
 		fmt.Println(addr)
