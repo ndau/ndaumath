@@ -1,6 +1,6 @@
 ANDROID_HOME ?= $(HOME)/Library/Android/sdk/
 
-.PHONY: default all test build clean
+.PHONY: default all test build clean sources ios android
 
 default: all
 
