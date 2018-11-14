@@ -41,10 +41,12 @@ func newError(msg string) error {
 // type of network (mainnet==nd and testnet==tn). ? is the kind of
 // address. Valid address types are as follows:
 const (
-	KindUser      Kind = "a"
-	KindNdau      Kind = "n"
-	KindEndowment Kind = "e"
-	KindExchange  Kind = "x"
+	KindUser        Kind = "a"
+	KindNdau        Kind = "n"
+	KindEndowment   Kind = "e"
+	KindExchange    Kind = "x"
+	KindBPC         Kind = "b"
+	KindMarketMaker Kind = "m"
 )
 
 // IsValidKind returns true if the last letter of a is one of the currently-valid Kinds
@@ -56,7 +58,9 @@ func IsValidKind(a Kind) bool {
 	case KindUser,
 		KindNdau,
 		KindEndowment,
-		KindExchange:
+		KindExchange,
+		KindBPC,
+		KindMarketMaker:
 		return true
 	}
 	return false
