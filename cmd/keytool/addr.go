@@ -11,7 +11,7 @@ import (
 
 func getKindSpec() string {
 	// mow.cli ensures with this that only one option is specified
-	return "[-k=<kind> | -a | -n | -e | -x]"
+	return "[-k=<kind> | -a | -n | -e | -x | -b | -m]"
 }
 
 func getKindClosure(cmd *cli.Cmd) func() address.Kind {
@@ -21,21 +21,25 @@ func getKindClosure(cmd *cli.Cmd) func() address.Kind {
 		kndau  = cmd.BoolOpt("n ndau", false, "address kind: ndau")
 		kendow = cmd.BoolOpt("e endowment", false, "address kind: endowment")
 		kxchng = cmd.BoolOpt("x exchange", false, "address kind: exchange")
+		kbpc   = cmd.BoolOpt("b bpc", false, "address kind: bpc")
+		kmm    = cmd.BoolOpt("m market-maker", false, "address kind: market maker")
 	)
 
 	return func() address.Kind {
 		kind := address.Kind(*pkind) // never nil dereference; defaults to user
-		if kuser != nil && *kuser {
+		switch {
+		case kuser != nil && *kuser:
 			kind = address.KindUser
-		}
-		if kndau != nil && *kndau {
+		case kndau != nil && *kndau:
 			kind = address.KindNdau
-		}
-		if kendow != nil && *kendow {
+		case kendow != nil && *kendow:
 			kind = address.KindEndowment
-		}
-		if kxchng != nil && *kxchng {
+		case kxchng != nil && *kxchng:
 			kind = address.KindExchange
+		case kbpc != nil && *kbpc:
+			kind = address.KindBPC
+		case kmm != nil && *kmm:
+			kind = address.KindMarketMaker
 		}
 
 		if !address.IsValidKind(kind) {
