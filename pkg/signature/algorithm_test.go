@@ -2,7 +2,6 @@ package signature
 
 import (
 	"crypto/rand"
-	"encoding"
 	"fmt"
 	"io"
 	"reflect"
@@ -11,17 +10,11 @@ import (
 	"unicode/utf8"
 
 	"github.com/stretchr/testify/require"
-	"github.com/tinylib/msgp/msgp"
 )
 
 func TestAlgorithms(t *testing.T) {
 	type key interface {
-		encoding.TextMarshaler
-		encoding.TextUnmarshaler
-		msgp.Marshaler
-		msgp.Unmarshaler
-
-		keyer
+		Key
 
 		Size() int
 		Marshal() ([]byte, error)

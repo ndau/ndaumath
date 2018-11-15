@@ -26,6 +26,7 @@ import (
 	"encoding"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"math/big"
 	"unicode/utf8"
 
@@ -410,12 +411,11 @@ func (k *ExtendedKey) SPubKey() (*signature.PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	sk, err := pub.asSignatureKey()
+	sk, err := pub.AsSignatureKey()
 	if err != nil {
 		return nil, err
 	}
-	spk := signature.PublicKey(sk)
-	return &spk, err
+	return sk.(*signature.PublicKey), err
 }
 
 // SPrivKey converts the extended key to a signature.PrivateKey and returns it.
@@ -428,12 +428,11 @@ func (k *ExtendedKey) SPrivKey() (*signature.PrivateKey, error) {
 		return nil, ErrNotPrivExtKey
 	}
 
-	sk, err := k.asSignatureKey()
+	sk, err := k.AsSignatureKey()
 	if err != nil {
 		return nil, err
 	}
-	spk := signature.PrivateKey(sk)
-	return &spk, err
+	return sk.(*signature.PrivateKey), err
 }
 
 const extraLen = 1 + 3 + 4 + 32
@@ -536,27 +535,49 @@ func (k *ExtendedKey) Bytes() []byte {
 	return k.key
 }
 
-func (k ExtendedKey) asSignatureKey() (signature.Key, error) {
+// FromSignatureKey attempts to construct an ExtendedKey from a signature.Key instance
+func (k *ExtendedKey) FromSignatureKey(key signature.Key) (err error) {
+	k.Zero()
+
+	if signature.NameOf(key.Algorithm()) != signature.NameOf(signature.Secp256k1) {
+		err = fmt.Errorf(
+			"ExtendedKey must use %s algorithm; provided key uses %s",
+			signature.NameOf(signature.Secp256k1),
+			signature.NameOf(key.Algorithm()),
+		)
+		return
+	}
+
+	k.isPrivate = signature.IsPrivate(key)
+	k.key = key.KeyBytes()
+	err = k.parseExtra(key.ExtraBytes())
+	return
+}
+
+// FromSignatureKey attempts to construct an ExtendedKey from a signature.Key instance
+func FromSignatureKey(key signature.Key) (ek *ExtendedKey, err error) {
+	ek = new(ExtendedKey)
+	err = ek.FromSignatureKey(key)
+	return
+}
+
+// AsSignatureKey converts this ExtendedKey into a signature.Key instance
+func (k ExtendedKey) AsSignatureKey() (signature.Key, error) {
 	if k.isPrivate {
 		priv, err := signature.RawPrivateKey(signature.Secp256k1, k.key, k.extra())
-		return signature.Key(*priv), err
+		return priv, err
 	}
 	pub, err := signature.RawPublicKey(signature.Secp256k1, k.key, k.extra())
-	return signature.Key(*pub), err
+	return pub, err
 }
 
 // MarshalText implements encoding.TextMarshaler
 func (k ExtendedKey) MarshalText() ([]byte, error) {
-	key, err := k.asSignatureKey()
+	key, err := k.AsSignatureKey()
 	if err != nil {
 		return nil, err
 	}
-	if k.isPrivate {
-		priv := signature.PrivateKey(key)
-		return priv.MarshalText()
-	}
-	pub := signature.PublicKey(key)
-	return pub.MarshalText()
+	return key.MarshalText()
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler
@@ -574,26 +595,14 @@ func (k *ExtendedKey) UnmarshalText(text []byte) (err error) {
 		if err != nil {
 			break
 		}
-		if signature.NameOf(priv.Algorithm()) != signature.NameOf(signature.Secp256k1) {
-			err = errors.New("encoded ExtendedKey must use secp256k1 algorithm")
-			break
-		}
-		k.isPrivate = true
-		k.key = priv.KeyBytes()
-		err = k.parseExtra(priv.ExtraBytes())
+		return k.FromSignatureKey(priv)
 	case signature.MaybePublic(s):
 		pub := new(signature.PublicKey)
 		err = pub.UnmarshalText(text)
 		if err != nil {
 			break
 		}
-		if signature.NameOf(pub.Algorithm()) != signature.NameOf(signature.Secp256k1) {
-			err = errors.New("encoded ExtendedKey must use secp256k1 algorithm")
-			break
-		}
-		k.isPrivate = false
-		k.key = pub.KeyBytes()
-		err = k.parseExtra(pub.ExtraBytes())
+		return k.FromSignatureKey(pub)
 	default:
 		err = errors.New("text does not appear to be an ndau key")
 	}
