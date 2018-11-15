@@ -1,7 +1,9 @@
 package keyaddr
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/key"
@@ -582,4 +584,32 @@ func TestPrivateKey_SignaturePackageRoundtrip(t *testing.T) {
 	require.Equal(t, ka2B, sk2B)
 	require.Equal(t, sk1B, sk2B)
 	require.Equal(t, sk1, sk2)
+}
+
+func TestDebugAPIProblem(t *testing.T) {
+	// This makes sure that DeriveFrom creates lots of derived keys without failure.
+	// The particular sequence of bytes below drove an issue with the Child function where sometimes
+	// keys would be returned that were shorter than desired because the key was just representing
+	// a large number, and the big number package was trimming leading zeros -- so 1/256 of the time
+	// it would return 31 bytes instead of 32. (And 1/65536 times it would return 30 bytes...)
+	// This byte pattern generates that key on the 25th attempt.
+	k, err := NewKey("ZDZjNmM5ZmNmYWJiODdkNg==")
+	require.Nil(t, err)
+	rootPrivateKey1, err := k.ToPrivateKey()
+	require.Nil(t, err)
+	s, err := rootPrivateKey1.MarshalText()
+	require.Nil(t, err)
+	for i := 0; i < 500; i++ {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			childpath := fmt.Sprintf("/44'/20036'/100/%d", i)
+			derivedKey, err := DeriveFrom(string(s), "/", childpath)
+			require.Nil(t, err)
+			x, err := derivedKey.IsPrivate()
+			require.Nil(t, err)
+			require.True(t, x)
+			addr, err := derivedKey.NdauAddress("nd")
+			require.Nil(t, err)
+			require.True(t, strings.HasPrefix(addr.Address, "nda"))
+		})
+	}
 }
