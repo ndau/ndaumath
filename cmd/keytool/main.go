@@ -9,7 +9,7 @@ import (
 func main() {
 	app := cli.App("keytool", "manipulate key strings on the command line")
 
-	app.Command("hd", "manipulate HD keys", hd)
+	app.Command("hd secp256k1", "manipulate HD keys", hd)
 	app.Command("ed ed25519", "manipulate ed25519 keys", ed)
 	app.Command("sign", "sign some data", cmdSign)
 	app.Command("verify", "verify some data", cmdVerify)
