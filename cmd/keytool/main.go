@@ -15,6 +15,7 @@ func main() {
 	app.Command("verify", "verify some data", cmdVerify)
 	app.Command("addr", "generate addresses from public keys", cmdAddr)
 	app.Command("truncate", "remove any extra data from a key", cmdTruncate)
+	app.Command("inspect", "inspect a key", cmdInspect)
 
 	app.Run(os.Args)
 }
