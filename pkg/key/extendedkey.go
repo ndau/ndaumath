@@ -585,26 +585,11 @@ func (k *ExtendedKey) UnmarshalText(text []byte) (err error) {
 	if !utf8.Valid(text) {
 		return errors.New("text not valid utf-8")
 	}
-	s := string(text)
 
 	k.Zero()
-	switch {
-	case signature.MaybePrivate(s):
-		priv := new(signature.PrivateKey)
-		err = priv.UnmarshalText(text)
-		if err != nil {
-			break
-		}
-		return k.FromSignatureKey(priv)
-	case signature.MaybePublic(s):
-		pub := new(signature.PublicKey)
-		err = pub.UnmarshalText(text)
-		if err != nil {
-			break
-		}
-		return k.FromSignatureKey(pub)
-	default:
-		err = errors.New("text does not appear to be an ndau key")
+	key, err := signature.ParseKey(string(text))
+	if err != nil {
+		return err
 	}
-	return
+	return k.FromSignatureKey(key)
 }

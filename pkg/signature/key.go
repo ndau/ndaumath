@@ -4,6 +4,7 @@ import (
 	"encoding"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/tinylib/msgp/msgp"
 )
 
@@ -13,9 +14,9 @@ import (
 // private key. To recover the concrete instance, consider a typeswitch:
 //
 // switch key := keyI.(type) {
-// case signature.PublicKey:
+// case PublicKey:
 //     ...
-// case signature.PrivateKey:
+// case PrivateKey:
 //     ...
 // }
 //
@@ -46,4 +47,20 @@ func IsPublic(k Key) bool {
 func IsPrivate(k Key) bool {
 	_, ok := k.(*PrivateKey)
 	return ok
+}
+
+// ParseKey attempts to parse the given text as a Key of the proper type
+func ParseKey(text string) (Key, error) {
+	switch {
+	case MaybePrivate(text):
+		priv := new(PrivateKey)
+		err := priv.UnmarshalText([]byte(text))
+		return priv, err
+	case MaybePublic(text):
+		pub := new(PublicKey)
+		err := pub.UnmarshalText([]byte(text))
+		return pub, err
+	default:
+		return nil, errors.New("text does not appear to be an ndau key")
+	}
 }
