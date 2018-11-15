@@ -40,116 +40,18 @@ func getKeyClosure(cmd *cli.Cmd, ktype string, desc string) func() signature.Key
 			check(errors.New("no or multiple keys input--this should be unreachable"))
 		}
 
-		switch {
-		case signature.MaybePrivate(keys):
-			var pk signature.PrivateKey
-			err := pk.UnmarshalText([]byte(keys))
-			check(err)
-			return signature.Key(pk)
-		case signature.MaybePublic(keys):
-			var pk signature.PublicKey
-			err := pk.UnmarshalText([]byte(keys))
-			check(err)
-			return signature.Key(pk)
-		default:
-			check(errors.New("provided data is not an ndau key"))
-		}
-
-		// UNREACHABLE
-		return signature.Key{}
+		k, err := signature.ParseKey(keys)
+		check(err)
+		return k
 	}
 }
 
 func getKeyClosureHD(cmd *cli.Cmd, ktype string, desc string) func() *key.ExtendedKey {
-	keyi := cmd.StringArg(keytype(ktype), "", desc)
-	stdin := cmd.BoolOpt("stdin", false, "if set, read the key from stdin")
-
+	getKey := getKeyClosure(cmd, ktype, desc)
 	return func() *key.ExtendedKey {
-		var keys string
-		if stdin != nil && *stdin {
-			in := bufio.NewScanner(os.Stdin)
-			if !in.Scan() {
-				check(errors.New("stdin selected but empty"))
-			}
-			check(in.Err())
-			keys = in.Text()
-		} else if keyi != nil && len(*keyi) > 0 {
-			keys = *keyi
-		} else {
-			check(errors.New("no or multiple keys input--this should be unreachable"))
-		}
-
-		ek := new(key.ExtendedKey)
-		err := ek.UnmarshalText([]byte(keys))
+		k := getKey()
+		ek, err := key.FromSignatureKey(k)
 		check(err)
 		return ek
-	}
-}
-
-func getKeyClosurePrivate(cmd *cli.Cmd, ktype string, desc string) func() signature.PrivateKey {
-	key := cmd.StringArg(keytype(ktype), "", desc)
-	stdin := cmd.BoolOpt("stdin", false, "if set, read the key from stdin")
-
-	return func() signature.PrivateKey {
-		var keys string
-		if stdin != nil && *stdin {
-			in := bufio.NewScanner(os.Stdin)
-			if !in.Scan() {
-				check(errors.New("stdin selected but empty"))
-			}
-			check(in.Err())
-			keys = in.Text()
-		} else if key != nil && len(*key) > 0 {
-			keys = *key
-		} else {
-			check(errors.New("no or multiple keys input--this should be unreachable"))
-		}
-
-		switch {
-		case signature.MaybePrivate(keys):
-			var pk signature.PrivateKey
-			err := pk.UnmarshalText([]byte(keys))
-			check(err)
-			return pk
-		default:
-			check(errors.New("provided data is not an ndau private key"))
-		}
-
-		// UNREACHABLE
-		return signature.PrivateKey{}
-	}
-}
-
-func getKeyClosurePublic(cmd *cli.Cmd, ktype string, desc string) func() signature.PublicKey {
-	key := cmd.StringArg(keytype(ktype), "", desc)
-	stdin := cmd.BoolOpt("stdin", false, "if set, read the key from stdin")
-
-	return func() signature.PublicKey {
-		var keys string
-		if stdin != nil && *stdin {
-			in := bufio.NewScanner(os.Stdin)
-			if !in.Scan() {
-				check(errors.New("stdin selected but empty"))
-			}
-			check(in.Err())
-			keys = in.Text()
-		} else if key != nil && len(*key) > 0 {
-			keys = *key
-		} else {
-			check(errors.New("no or multiple keys input--this should be unreachable"))
-		}
-
-		switch {
-		case signature.MaybePublic(keys):
-			var pk signature.PublicKey
-			err := pk.UnmarshalText([]byte(keys))
-			check(err)
-			return pk
-		default:
-			check(errors.New("provided data is not an ndau public key"))
-		}
-
-		// UNREACHABLE
-		return signature.PublicKey{}
 	}
 }

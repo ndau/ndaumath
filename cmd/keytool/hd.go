@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
 	cli "github.com/jawher/mow.cli"
@@ -13,13 +12,6 @@ func hdstr(k key.ExtendedKey) string {
 	text, err := k.MarshalText()
 	check(err)
 	return string(text)
-}
-
-func hdparse(s string) *key.ExtendedKey {
-	k := new(key.ExtendedKey)
-	err := k.UnmarshalText([]byte(s))
-	check(err)
-	return k
 }
 
 func cmdHDNew(cmd *cli.Cmd) {
@@ -71,68 +63,21 @@ func cmdHDConvert(cmd *cli.Cmd) {
 	}
 }
 
-func cmdHDTruncate(cmd *cli.Cmd) {
-	cmd.Spec = getKeySpec("")
-
-	getKey := getKeyClosureHD(cmd, "", "key to truncate")
-
-	cmd.Action = func() {
-		key := getKey()
-		var keyB []byte
-		var err error
-		if key.IsPrivate() {
-			skey, err := key.SPrivKey()
-			check(err)
-			skey.Truncate()
-			keyB, err = skey.MarshalText()
-		} else {
-			skey, err := key.SPubKey()
-			check(err)
-			skey.Truncate()
-			keyB, err = skey.MarshalText()
-		}
-		check(err)
-		fmt.Println(string(keyB))
-	}
-}
-
 func cmdHDAddr(cmd *cli.Cmd) {
 	// mow.cli ensures with this that only one option is specified
 	cmd.Spec = fmt.Sprintf(
-		"%s [-k=<kind> | -a | -n | -e | -x]",
+		"%s %s",
 		getKeySpec(""),
+		getKindSpec(),
 	)
 
 	getKey := getKeyClosureHD(cmd, "", "get address from this key, converting to public as necessary")
-
-	var (
-		pkind  = cmd.StringOpt("k kind", string(address.KindUser), "manually specify address kind")
-		kuser  = cmd.BoolOpt("a user", false, "address kind: user (default)")
-		kndau  = cmd.BoolOpt("n ndau", false, "address kind: ndau")
-		kendow = cmd.BoolOpt("e endowment", false, "address kind: endowment")
-		kxchng = cmd.BoolOpt("x exchange", false, "address kind: exchange")
-	)
+	getKind := getKindClosure(cmd)
 
 	cmd.Action = func() {
-		kind := address.Kind(*pkind) // never nil dereference; defaults to user
-		if kuser != nil && *kuser {
-			kind = address.KindUser
-		}
-		if kndau != nil && *kndau {
-			kind = address.KindNdau
-		}
-		if kendow != nil && *kendow {
-			kind = address.KindEndowment
-		}
-		if kxchng != nil && *kxchng {
-			kind = address.KindExchange
-		}
-
-		if !address.IsValidKind(kind) {
-			check(errors.New("invalid kind: " + string(kind)))
-		}
-
 		key := getKey()
+		kind := getKind()
+
 		addr, err := address.Generate(kind, key.PubKeyBytes())
 		check(err)
 		fmt.Println(addr)

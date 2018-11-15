@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/signature"
-
 	cli "github.com/jawher/mow.cli"
+	"github.com/oneiro-ndev/ndaumath/pkg/signature"
 )
 
 func cmdSign(cmd *cli.Cmd) {
@@ -16,11 +15,14 @@ func cmdSign(cmd *cli.Cmd) {
 		getDataSpec(),
 	)
 
-	getKey := getKeyClosurePrivate(cmd, "PVT", "sign with this private key")
+	getKey := getKeyClosure(cmd, "PVT", "sign with this private key")
 	getData := getDataClosure(cmd)
 
 	cmd.Action = func() {
-		key := getKey()
+		key, ok := getKey().(*signature.PrivateKey)
+		if !ok {
+			check(errors.New("signing requires a private key"))
+		}
 		data := getData()
 
 		sig := key.Sign(data)
@@ -37,14 +39,17 @@ func cmdVerify(cmd *cli.Cmd) {
 		getDataSpec(),
 	)
 
-	getKey := getKeyClosurePublic(cmd, "PUB", "verify with this public key")
+	getKey := getKeyClosure(cmd, "PUB", "verify with this public key")
 	getData := getDataClosure(cmd)
 
 	verbose := cmd.BoolOpt("v verbose", false, "indicate success or failure on stdout in addition to the return code")
 	sigi := cmd.StringArg("SIGNATURE", "", "verify this signature")
 
 	cmd.Action = func() {
-		key := getKey()
+		key, ok := getKey().(*signature.PublicKey)
+		if !ok {
+			check(errors.New("verification requires a public key"))
+		}
 		data := getData()
 
 		if sigi == nil || len(*sigi) == 0 {
@@ -59,7 +64,7 @@ func cmdVerify(cmd *cli.Cmd) {
 			v = true
 		}
 
-		if sig.Verify(data, key) {
+		if sig.Verify(data, *key) {
 			if v {
 				fmt.Println("OK")
 			}

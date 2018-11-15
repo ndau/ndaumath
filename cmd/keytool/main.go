@@ -10,8 +10,11 @@ func main() {
 	app := cli.App("keytool", "manipulate key strings on the command line")
 
 	app.Command("hd", "manipulate HD keys", hd)
+	app.Command("ed", "manipulate ed25519 keys", ed)
 	app.Command("sign", "sign some data", cmdSign)
 	app.Command("verify", "verify some data", cmdVerify)
+	app.Command("addr", "generate addresses from public keys", cmdAddr)
+	app.Command("truncate", "remove any extra data from a key", cmdTruncate)
 
 	app.Run(os.Args)
 }
@@ -22,6 +25,10 @@ func hd(cmd *cli.Cmd) {
 	cmd.Command("public", "create a public key from supplied key", cmdHDPublic)
 	cmd.Command("child", "create a child key derived from the supplied key", cmdHDChild)
 	cmd.Command("convert", "convert an old-format key into the new format", cmdHDConvert)
-	cmd.Command("truncate", "remove HD portions from an HD key leaving only the key itself", cmdHDTruncate)
-	cmd.Command("address", "convert HD key to address", cmdHDAddr)
+	cmd.Command("addr", "convert HD key to address", cmdHDAddr)
+}
+
+// ed subcommand
+func ed(cmd *cli.Cmd) {
+	cmd.Command("new", "create a new ed25519 keypair", cmdEdNew)
 }
