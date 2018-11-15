@@ -383,10 +383,12 @@ var (
 )
 
 func init() {
-	for i := 1; i < 10; i++ {
+	for i := uint64(1); i < 10; i++ {
 		DefaultUnlockedEAI = append(DefaultUnlockedEAI, RTRow{
 			Rate: RateFromPercent(uint64(i + 1)),
-			From: math.Duration(i * 30 * math.Day),
+			// the wrapper here for uint64 serves as a notice to gomobile that it should
+			// assume this constant is 64 bits. Otherwise this breaks gomobile.
+			From: math.Duration(i * 30 * uint64(math.Day)),
 		})
 	}
 
