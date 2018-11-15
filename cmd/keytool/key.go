@@ -23,7 +23,7 @@ func getKeySpec(ktype string) string {
 
 func getKeyClosure(cmd *cli.Cmd, ktype string, desc string) func() signature.Key {
 	key := cmd.StringArg(keytype(ktype), "", desc)
-	stdin := cmd.BoolOpt("stdin", false, "if set, read the key from stdin")
+	stdin := cmd.BoolOpt("S stdin", false, "if set, read the key from stdin")
 
 	return func() signature.Key {
 		var keys string

@@ -99,3 +99,42 @@ func cmdEdNew(cmd *cli.Cmd) {
 		check(puberr)
 	}
 }
+
+func cmdEdRaw(cmd *cli.Cmd) {
+	cmd.Command("public", "transform a raw ed25519 public key into ndau format", cmdEdRawPublic)
+	cmd.Command("signature", "transform a raw ed25519 signature into ndau format", cmdEdRawSig)
+}
+
+func cmdEdRawPublic(cmd *cli.Cmd) {
+	cmd.Spec = getDataSpec(true)
+
+	getData := getDataClosure(cmd, true)
+
+	cmd.Action = func() {
+		data := getData()
+
+		key, err := signature.RawPublicKey(signature.Ed25519, data, nil)
+		check(err)
+
+		data, err = key.MarshalText()
+		check(err)
+		fmt.Println(string(data))
+	}
+}
+
+func cmdEdRawSig(cmd *cli.Cmd) {
+	cmd.Spec = getDataSpec(true)
+
+	getData := getDataClosure(cmd, true)
+
+	cmd.Action = func() {
+		data := getData()
+
+		sig, err := signature.RawSignature(signature.Ed25519, data)
+		check(err)
+
+		data, err = sig.MarshalText()
+		check(err)
+		fmt.Println(string(data))
+	}
+}

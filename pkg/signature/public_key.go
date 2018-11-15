@@ -49,13 +49,19 @@ type PublicKey keyBase
 // This is unsafe and subject to only minimal type-checking; it should
 // normally be avoided.
 func RawPublicKey(al Algorithm, key, extra []byte) (*PublicKey, error) {
+	if key == nil {
+		key = []byte{}
+	}
+	if extra == nil {
+		extra = []byte{}
+	}
 	pk := PublicKey{
 		algorithm: al,
 		key:       key,
 		extra:     extra,
 	}
 	if len(key) != pk.Size() {
-		return nil, fmt.Errorf("Wrong public key length")
+		return nil, fmt.Errorf("wrong public key length: have %d, want %d", len(key), pk.Size())
 	}
 	return &pk, nil
 }

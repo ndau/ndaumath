@@ -31,4 +31,5 @@ func hd(cmd *cli.Cmd) {
 // ed subcommand
 func ed(cmd *cli.Cmd) {
 	cmd.Command("new", "create a new ed25519 keypair", cmdEdNew)
+	cmd.Command("raw", "create an ndau-style ed25519 public key from raw bytes", cmdEdRaw)
 }

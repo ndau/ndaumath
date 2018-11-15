@@ -12,11 +12,11 @@ func cmdSign(cmd *cli.Cmd) {
 	cmd.Spec = fmt.Sprintf(
 		"%s %s",
 		getKeySpec("PVT"),
-		getDataSpec(),
+		getDataSpec(false),
 	)
 
 	getKey := getKeyClosure(cmd, "PVT", "sign with this private key")
-	getData := getDataClosure(cmd)
+	getData := getDataClosure(cmd, false)
 
 	cmd.Action = func() {
 		key, ok := getKey().(*signature.PrivateKey)
@@ -36,11 +36,11 @@ func cmdVerify(cmd *cli.Cmd) {
 	cmd.Spec = fmt.Sprintf(
 		"[-v] %s SIGNATURE %s",
 		getKeySpec("PUB"),
-		getDataSpec(),
+		getDataSpec(false),
 	)
 
 	getKey := getKeyClosure(cmd, "PUB", "verify with this public key")
-	getData := getDataClosure(cmd)
+	getData := getDataClosure(cmd, false)
 
 	verbose := cmd.BoolOpt("v verbose", false, "indicate success or failure on stdout in addition to the return code")
 	sigi := cmd.StringArg("SIGNATURE", "", "verify this signature")
