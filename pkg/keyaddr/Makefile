@@ -1,6 +1,6 @@
 ANDROID_HOME ?= $(HOME)/Library/Android/sdk/
 
-.PHONY: default all test build clean
+.PHONY: default all test build clean sources ios android
 
 default: all
 
@@ -13,7 +13,9 @@ build: ios android
 
 ios: Keyaddr.framework
 
-Keyaddr.framework: api.go
+sources: address.go key.go key_conv.go signature.go words.go
+
+Keyaddr.framework: sources
 	gomobile bind -target ios -v
 
 keyaddr.zip: Keyaddr.framework
@@ -22,7 +24,7 @@ keyaddr.zip: Keyaddr.framework
 
 android: keyaddr.aar
 
-keyaddr.aar: api.go
+keyaddr.aar: sources
 	gomobile bind -target android -v
 
 clean:

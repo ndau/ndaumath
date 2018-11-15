@@ -318,7 +318,19 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 		keyNum := new(big.Int).SetBytes(k.key)
 		ilNum.Add(ilNum, keyNum)
 		ilNum.Mod(ilNum, btcec.S256().N)
+		// the bytes function here returns a minimum-length buffer to represent a big-endian
+		// value. It actually works to trim leading zeros, but we definitely don't want that
+		// as we have an assumption that all keys are the same length. So we might need to
+		// put the zeros back on the front.
 		childKey = ilNum.Bytes()
+		if len(childKey) < 32 {
+			buf := make([]byte, 32)
+			offset := 32 - len(childKey)
+			for i := range childKey {
+				buf[i+offset] = childKey[i]
+			}
+			childKey = buf
+		}
 		isPrivate = true
 	} else {
 		// Case #3.
