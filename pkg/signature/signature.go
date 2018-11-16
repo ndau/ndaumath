@@ -29,7 +29,7 @@ func RawSignature(al Algorithm, data []byte) (*Signature, error) {
 		data:      data,
 	}
 	if len(data) != sig.Size() {
-		return nil, fmt.Errorf("Wrong signature length")
+		return nil, fmt.Errorf("wrong signature length: have %d, want %d", len(data), sig.Size())
 	}
 	return &sig, nil
 }

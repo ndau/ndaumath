@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	cli "github.com/jawher/mow.cli"
+	"github.com/oneiro-ndev/ndaumath/pkg/address"
 	"github.com/oneiro-ndev/ndaumath/pkg/key"
 )
 
@@ -11,13 +12,6 @@ func hdstr(k key.ExtendedKey) string {
 	text, err := k.MarshalText()
 	check(err)
 	return string(text)
-}
-
-func hdparse(s string) *key.ExtendedKey {
-	k := new(key.ExtendedKey)
-	err := k.UnmarshalText([]byte(s))
-	check(err)
-	return k
 }
 
 func cmdHDNew(cmd *cli.Cmd) {
@@ -31,9 +25,11 @@ func cmdHDNew(cmd *cli.Cmd) {
 }
 
 func cmdHDPublic(cmd *cli.Cmd) {
-	pvtS := cmd.StringArg("PRIVATE", "", "private key from which to make a public key")
+	cmd.Spec = getKeySpec("PVT")
+	getKey := getKeyClosureHD(cmd, "PVT", "private key from which to make a public key")
+
 	cmd.Action = func() {
-		pvt := hdparse(*pvtS)
+		pvt := getKey()
 		pub, err := pvt.Public()
 		check(err)
 		fmt.Println(hdstr(*pub))
@@ -41,10 +37,16 @@ func cmdHDPublic(cmd *cli.Cmd) {
 }
 
 func cmdHDChild(cmd *cli.Cmd) {
-	keyS := cmd.StringArg("KEY", "", "key from which to derive a child")
+	cmd.Spec = fmt.Sprintf(
+		"%s PATH",
+		getKeySpec(""),
+	)
+
+	getKey := getKeyClosureHD(cmd, "", "key from which to derive a child")
+
 	pathS := cmd.StringArg("PATH", "", "derivation path for child key")
 	cmd.Action = func() {
-		key := hdparse(*keyS)
+		key := getKey()
 		key, err := key.DeriveFrom("/", *pathS)
 		check(err)
 		fmt.Println(hdstr(*key))
@@ -61,25 +63,23 @@ func cmdHDConvert(cmd *cli.Cmd) {
 	}
 }
 
-func cmdHDTruncate(cmd *cli.Cmd) {
-	keyS := cmd.StringArg("KEY", "", "key to truncate")
+func cmdHDAddr(cmd *cli.Cmd) {
+	// mow.cli ensures with this that only one option is specified
+	cmd.Spec = fmt.Sprintf(
+		"%s %s",
+		getKeySpec(""),
+		getKindSpec(),
+	)
+
+	getKey := getKeyClosureHD(cmd, "", "get address from this key, converting to public as necessary")
+	getKind := getKindClosure(cmd)
 
 	cmd.Action = func() {
-		key := hdparse(*keyS)
-		var keyB []byte
-		var err error
-		if key.IsPrivate() {
-			skey, err := key.SPrivKey()
-			check(err)
-			skey.Truncate()
-			keyB, err = skey.MarshalText()
-		} else {
-			skey, err := key.SPubKey()
-			check(err)
-			skey.Truncate()
-			keyB, err = skey.MarshalText()
-		}
+		key := getKey()
+		kind := getKind()
+
+		addr, err := address.Generate(kind, key.PubKeyBytes())
 		check(err)
-		fmt.Println(string(keyB))
+		fmt.Println(addr)
 	}
 }

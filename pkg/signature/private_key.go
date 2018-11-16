@@ -2,7 +2,6 @@ package signature
 
 import (
 	"bytes"
-	"encoding"
 	"fmt"
 	"strings"
 
@@ -26,36 +25,30 @@ func MaybePrivate(s string) bool {
 	return strings.HasPrefix(s, PrivateKeyPrefix)
 }
 
-// ensure that PrivateKey implements msgp marshal types
-var _ msgp.Marshaler = (*PrivateKey)(nil)
-var _ msgp.Unmarshaler = (*PrivateKey)(nil)
-var _ msgp.Sizer = (*PrivateKey)(nil)
-
-// ensure that PrivateKey implements text encoding interfaces
-var _ encoding.TextMarshaler = (*PrivateKey)(nil)
-var _ encoding.TextUnmarshaler = (*PrivateKey)(nil)
-
-// ensure that PrivateKey implements string shorthand interfaces
-var _ fmt.Stringer = (*PrivateKey)(nil)
-
 // ensure that PrivateKey implements export interfaces
-var _ keyer = (*PrivateKey)(nil)
+var _ Key = (*PrivateKey)(nil)
 
 // A PrivateKey is the private half of a keypair
-type PrivateKey Key
+type PrivateKey keyBase
 
 // RawPrivateKey creates a PrivateKey from raw data
 //
 // This is unsafe and subject to only minimal type-checking; it should
 // normally be avoided.
 func RawPrivateKey(al Algorithm, key, extra []byte) (*PrivateKey, error) {
+	if key == nil {
+		key = []byte{}
+	}
+	if extra == nil {
+		extra = []byte{}
+	}
 	pk := PrivateKey{
 		algorithm: al,
 		key:       key,
 		extra:     extra,
 	}
 	if len(key) != pk.Size() {
-		return nil, fmt.Errorf("Wrong private key length")
+		return nil, fmt.Errorf("wrong private key length: have %d, want %d", len(key), pk.Size())
 	}
 	return &pk, nil
 }
@@ -76,12 +69,12 @@ func (key PrivateKey) Sign(message []byte) Signature {
 
 // Marshal marshals the PrivateKey into a serialized binary format
 func (key PrivateKey) Marshal() ([]byte, error) {
-	return Key(key).Marshal()
+	return keyBase(key).Marshal()
 }
 
 // Unmarshal unmarshals the serialized bytes into the PrivateKey pointer
 func (key *PrivateKey) Unmarshal(serialized []byte) error {
-	err := (*Key)(key).Unmarshal(serialized)
+	err := (*keyBase)(key).Unmarshal(serialized)
 	if err == nil {
 		if len(key.key) != key.Size() {
 			err = fmt.Errorf("Wrong size private key: expect len %d, have %d", key.Size(), len(key.key))
@@ -92,12 +85,12 @@ func (key *PrivateKey) Unmarshal(serialized []byte) error {
 
 // MarshalMsg implements msgp.Marshaler
 func (key PrivateKey) MarshalMsg(in []byte) (out []byte, err error) {
-	return Key(key).MarshalMsg(in)
+	return keyBase(key).MarshalMsg(in)
 }
 
 // UnmarshalMsg implements msgp.Unmarshaler
 func (key *PrivateKey) UnmarshalMsg(in []byte) (leftover []byte, err error) {
-	leftover, err = (*Key)(key).UnmarshalMsg(in)
+	leftover, err = (*keyBase)(key).UnmarshalMsg(in)
 	if err == nil {
 		if len(key.key) != key.Size() {
 			err = fmt.Errorf("Wrong size signature: expect len %d, have %d", key.Size(), len(key.key))
@@ -122,7 +115,7 @@ func (key *PrivateKey) Msgsize() (s int) {
 // PublicKeys encode like Keys, with the addition of a human-readable prefix
 // for easy identification.
 func (key PrivateKey) MarshalText() ([]byte, error) {
-	bytes, err := Key(key).MarshalText()
+	bytes, err := keyBase(key).MarshalText()
 	bytes = append([]byte(PrivateKeyPrefix), bytes...)
 	return bytes, err
 }
@@ -132,12 +125,12 @@ func (key *PrivateKey) UnmarshalText(text []byte) error {
 	expectPrefix := []byte(PrivateKeyPrefix)
 	lep := len(expectPrefix)
 	if !bytes.Equal(expectPrefix, text[:lep]) {
-		return fmt.Errorf("public key must begin with %q; got %q", PublicKeyPrefix, text[:lep])
+		return fmt.Errorf("private key must begin with %q; got %q", PublicKeyPrefix, text[:lep])
 	}
-	err := (*Key)(key).UnmarshalText(text[lep:])
+	err := (*keyBase)(key).UnmarshalText(text[lep:])
 	if err == nil {
 		if len(key.key) != key.Size() {
-			err = fmt.Errorf("Wrong size signature: expect len %d, have %d", key.Size(), len(key.key))
+			err = fmt.Errorf("Wrong size key: expect len %d, have %d", key.Size(), len(key.key))
 		}
 	}
 	return err
@@ -145,17 +138,17 @@ func (key *PrivateKey) UnmarshalText(text []byte) error {
 
 // KeyBytes returns the key's data
 func (key PrivateKey) KeyBytes() []byte {
-	return Key(key).KeyBytes()
+	return keyBase(key).KeyBytes()
 }
 
 // ExtraBytes returns the key's extra data
 func (key PrivateKey) ExtraBytes() []byte {
-	return Key(key).ExtraBytes()
+	return keyBase(key).ExtraBytes()
 }
 
 // Algorithm returns the key's algorithm
 func (key PrivateKey) Algorithm() Algorithm {
-	return Key(key).Algorithm()
+	return keyBase(key).Algorithm()
 }
 
 // String returns a shorthand for the key's data
@@ -167,7 +160,7 @@ func (key PrivateKey) Algorithm() Algorithm {
 // This destructively truncates the key, but it is a useful format for
 // humans.
 func (key PrivateKey) String() string {
-	return Key(key).String()
+	return keyBase(key).String(PrivateKeyPrefix)
 }
 
 // Truncate removes all extra data from this key.
@@ -183,7 +176,10 @@ func (key *PrivateKey) Truncate() {
 // This is a destructive operation which cannot be undone; make copies
 // first if you need to.
 func (key *PrivateKey) Zeroize() {
-	kkey := Key(*key)
+	if key == nil {
+		return
+	}
+	kkey := keyBase(*key)
 	kkey.Zeroize()
 	*key = PrivateKey(kkey)
 }
