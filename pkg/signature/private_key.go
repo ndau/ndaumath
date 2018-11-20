@@ -183,3 +183,20 @@ func (key *PrivateKey) Zeroize() {
 	kkey.Zeroize()
 	*key = PrivateKey(kkey)
 }
+
+// MarshalString is like MarshalText, but to a string
+func (key *PrivateKey) MarshalString() (string, error) {
+	// Why doesn't MarshalText produce a string anyway?
+	t, err := key.MarshalText()
+	if t == nil {
+		t = []byte{}
+	}
+	return string(t), err
+}
+
+// ParsePrivateKey parses a string representation of a private key, if possible
+func ParsePrivateKey(s string) (*PrivateKey, error) {
+	key := new(PrivateKey)
+	err := key.UnmarshalText([]byte(s))
+	return key, err
+}

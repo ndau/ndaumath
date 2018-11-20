@@ -128,3 +128,20 @@ func (signature *Signature) UnmarshalText(text []byte) error {
 	}
 	return signature.Unmarshal(bytes)
 }
+
+// MarshalString is like MarshalText, but to a string
+func (signature *Signature) MarshalString() (string, error) {
+	// Why doesn't MarshalText produce a string anyway?
+	t, err := signature.MarshalText()
+	if t == nil {
+		t = []byte{}
+	}
+	return string(t), err
+}
+
+// ParseSignature parses a string representation of a signature, if possible
+func ParseSignature(s string) (*Signature, error) {
+	key := new(Signature)
+	err := key.UnmarshalText([]byte(s))
+	return key, err
+}
