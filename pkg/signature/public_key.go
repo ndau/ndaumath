@@ -195,3 +195,20 @@ func (key *PublicKey) Zeroize() {
 	kkey.Zeroize()
 	*key = PublicKey(kkey)
 }
+
+// MarshalString is like MarshalText, but to a string
+func (key *PublicKey) MarshalString() (string, error) {
+	// Why doesn't MarshalText produce a string anyway?
+	t, err := key.MarshalText()
+	if t == nil {
+		t = []byte{}
+	}
+	return string(t), err
+}
+
+// ParsePublicKey parses a string representation of a public key, if possible
+func ParsePublicKey(s string) (*PublicKey, error) {
+	key := new(PublicKey)
+	err := key.UnmarshalText([]byte(s))
+	return key, err
+}
