@@ -19,6 +19,11 @@ type Signature struct {
 	data      []byte
 }
 
+// Algorithm gets the signature's algorithm
+func (signature Signature) Algorithm() Algorithm {
+	return signature.algorithm
+}
+
 // RawSignature creates a Signature from raw data
 //
 // This is unsafe and subject to only minimal type-checking; it should
@@ -28,7 +33,8 @@ func RawSignature(al Algorithm, data []byte) (*Signature, error) {
 		algorithm: al,
 		data:      data,
 	}
-	if len(data) != sig.Size() {
+	exsize := sig.Size()
+	if exsize >= 0 && len(data) != exsize {
 		return nil, fmt.Errorf("wrong signature length: have %d, want %d", len(data), sig.Size())
 	}
 	return &sig, nil
