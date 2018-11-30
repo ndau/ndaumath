@@ -29,12 +29,16 @@ func (secp256k1) PrivateKeySize() int {
 
 // SignatureSize is the size in bytes of this algorithm's signatures
 func (secp256k1) SignatureSize() int {
+	// we'd estimate 70, but
 	// strictly speaking, this is only occasionally true: the actual signature
 	// size depends on the encoded size of arbitrarily-sized bigints, plus
 	// some structure. The min size for single byte encodings is 8, and the
 	// constant is 6; picking 70 means that the bigints can be up to 32
 	// bytes each, which seems plausible.
-	return 70
+	//
+	// Instead, we return a negative value to indicate that size shouldn't
+	// be checked in RawSignature
+	return -1
 }
 
 // Generate creates a new keypair
