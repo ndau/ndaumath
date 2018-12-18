@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDuration_UpdateWeightedAverageAge(t *testing.T) {
@@ -65,13 +66,14 @@ func TestParseDuration(t *testing.T) {
 		{"t1m", args{"t1m"}, Duration(1 * Minute), false},
 		{"p1y2m3dt4h5m6s", args{"p1y2m3dt4h5m6s"}, Duration(36993906000000), false},
 		{"P1Y2M3DT4H5M6S", args{"P1Y2M3DT4H5M6S"}, Duration(36993906000000), false},
+		{"1y2m3dt4h5m6s7u", args{"1y2m3dt4h5m6s7u"}, Duration(36993906000007), false},
 		{"1h", args{"1h"}, Duration(0), true},               // needs t
 		{"100y", args{"100y"}, Duration(100 * Year), false}, // 3 digit year
 		{"100m", args{"100m"}, Duration(0), true},           // 3 digit anything else
-		{"100d", args{"100m"}, Duration(0), true},           // 3 digit anything else
-		{"t100h", args{"100m"}, Duration(0), true},          // 3 digit anything else
-		{"t100m", args{"100m"}, Duration(0), true},          // 3 digit anything else
-		{"t100s", args{"100m"}, Duration(0), true},          // 3 digit anything else
+		{"100d", args{"100d"}, Duration(0), true},           // 3 digit anything else
+		{"t100h", args{"t100h"}, Duration(0), true},         // 3 digit anything else
+		{"t100m", args{"t100m"}, Duration(0), true},         // 3 digit anything else
+		{"t100s", args{"t100s"}, Duration(0), true},         // 3 digit anything else
 		{"t1u", args{"t1u"}, Duration(1), false},
 		{"t1us", args{"t1us"}, Duration(1), false},
 		{"t1μ", args{"t1μ"}, Duration(1), false},
@@ -88,6 +90,34 @@ func TestParseDuration(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("ParseDuration() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// MarshalText not tested because it's trivial
+func TestDuration_UnmarshalText(t *testing.T) {
+	d0 := Duration(0)
+	tests := []struct {
+		name    string
+		t       *Duration
+		text    string
+		wantErr bool
+	}{
+		{"nil", nil, "", true},
+		{"1234567", new(Duration), "1y2m3dt4h5m6s7μs", false},
+		{"year", &d0, "1y", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.t.UnmarshalText([]byte(tt.text))
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, tt.t)
+				remarshal := tt.t.String()
+				require.Equal(t, tt.text, remarshal)
 			}
 		})
 	}

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"strconv"
@@ -16,6 +17,10 @@ import (
 //
 // It can be negative if the timestamps are out of order.
 type Duration int64
+
+// ensure Timestamp implements encoding.Text(Un)Marshaler
+var _ encoding.TextMarshaler = (*Duration)(nil)
+var _ encoding.TextUnmarshaler = (*Duration)(nil)
 
 // DurationFrom creates a Duration given a time.Duration object
 func DurationFrom(d time.Duration) Duration {
@@ -146,6 +151,24 @@ func (d *Duration) UpdateWeightedAverageAge(
 		}
 	}
 	*d = Duration(waa)
+	return nil
+}
+
+// MarshalText implements encoding.TextMarshaler
+func (d Duration) MarshalText() ([]byte, error) {
+	return []byte(d.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler
+func (d *Duration) UnmarshalText(text []byte) error {
+	if d == nil {
+		return errors.New("nil Duration")
+	}
+	dd, err := ParseDuration(string(text))
+	if err != nil {
+		return err
+	}
+	*d = dd
 	return nil
 }
 
