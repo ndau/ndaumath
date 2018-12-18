@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTimestampFrom(t *testing.T) {
@@ -179,6 +180,35 @@ func TestTimestamp_String(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.t.String(); got != tt.want {
 				t.Errorf("Timestamp.String() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// not testing MarshalText because the implementation is trivial
+
+func TestTimestamp_UnmarshalText(t *testing.T) {
+	ts0 := Timestamp(0)
+	tests := []struct {
+		name    string
+		t       *Timestamp
+		text    string
+		wantErr bool
+	}{
+		{"nil", nil, "", true},
+		{"epoch", new(Timestamp), constants.EpochStart, false},
+		{"eighteenth", &ts0, "2000-01-18T14:21:00Z", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.t.UnmarshalText([]byte(tt.text))
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, tt.t)
+				remarshal := tt.t.String()
+				require.Equal(t, tt.text, remarshal)
 			}
 		})
 	}

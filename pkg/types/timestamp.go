@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding"
 	"errors"
 	"time"
 
@@ -17,6 +18,10 @@ import (
 // A timestamp can never be negative, but for mathematical simplicity we represent
 // it with an int64. The total range of timestamps is almost 300,000 years.
 type Timestamp int64
+
+// ensure Timestamp implements encoding.Text(Un)Marshaler
+var _ encoding.TextMarshaler = (*Timestamp)(nil)
+var _ encoding.TextUnmarshaler = (*Timestamp)(nil)
 
 // ParseTimestamp creates a timestamp from an ISO-3933 string
 func ParseTimestamp(s string) (Timestamp, error) {
@@ -92,4 +97,22 @@ func (t Timestamp) Sub(d Duration) Timestamp {
 
 func (t Timestamp) String() string {
 	return t.AsTime().Format(constants.TimestampFormat)
+}
+
+// MarshalText implements encoding.TextMarshaler
+func (t Timestamp) MarshalText() ([]byte, error) {
+	return []byte(t.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler
+func (t *Timestamp) UnmarshalText(text []byte) error {
+	if t == nil {
+		return errors.New("nil Timestamp")
+	}
+	tt, err := ParseTimestamp(string(text))
+	if err != nil {
+		return err
+	}
+	*t = tt
+	return nil
 }
