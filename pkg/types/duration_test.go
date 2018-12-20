@@ -105,7 +105,7 @@ func TestDuration_UnmarshalText(t *testing.T) {
 		wantErr bool
 	}{
 		{"nil", nil, "", true},
-		{"1234567", new(Duration), "1y2m3dt4h5m6s7μs", false},
+		{"1234567", new(Duration), "1y2m3dt4h5m6s7us", false},
 		{"year", &d0, "1y", false},
 	}
 	for _, tt := range tests {
