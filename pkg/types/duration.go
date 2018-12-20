@@ -117,7 +117,7 @@ func (d Duration) String() string {
 	extract("h", Hour)
 	extract("m", Minute)
 	extract("s", Second)
-	extract("μs", Microsecond)
+	extract("us", Microsecond)
 
 	if out == "" {
 		// input duration was 0
