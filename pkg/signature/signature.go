@@ -54,7 +54,8 @@ func (signature Signature) Marshal() (serialized []byte, err error) {
 // Unmarshal unmarshals the serialized binary data into the supplied signature instance
 func (signature *Signature) Unmarshal(serialized []byte) error {
 	al, b, err := unmarshal(serialized)
-	if err == nil && len(b) != al.SignatureSize() {
+	ss := al.SignatureSize()
+	if err == nil && ss >= 0 && len(b) != ss {
 		err = fmt.Errorf("Wrong size signature: expect len %d, have %d", al.SignatureSize(), len(b))
 	}
 	if err == nil {
