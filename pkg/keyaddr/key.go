@@ -177,7 +177,7 @@ func (k *Key) Sign(msgstr string) (*Signature, error) {
 // NdauAddress returns the ndau address associated with the given key.
 // Key can be either public or private; if it is private it will be
 // converted to a public key first.
-func (k *Key) NdauAddress(string) (*Address, error) {
+func (k *Key) NdauAddress() (*Address, error) {
 	skind := string(address.KindUser)
 	ekey, err := k.ToExtended()
 	if err != nil {

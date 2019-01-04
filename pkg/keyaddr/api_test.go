@@ -313,6 +313,11 @@ func TestKey_Sign(t *testing.T) {
 			args{"AQIDxBA=="},
 			nil,
 			true},
+		{"real life test",
+			fields{"npvta8jaftcjed4m8juti4sdgku42kq4g6nckgsprvexjb29jrewmznzshyatbzp6ceik9yaaaaaahvccndjymyem3tknrbsikfwrhfiwr6xg4g5md3gicyzd7adcmn4yn94rgjrgp4r"},
+			args{"bnB1YmE0amFmdGNrZWViNjJ1YWFqOG41eGh1YnJoYjY4dWM2ZXR4bnltYjJqZWNwdnZ4YXZnZGEzYjRhZm1lcm4yMmV1d3JtZ2FhYWFhYXZoN3p4Y2d6ZnA0ZTd3bnozMjI5N3I4emd5N2V1OXRubW15MmRyODhkNHd4ejJ0bWppeWZ5ZDl6aW5hOHYAAAAAAAAAAW5kYXFmZ2Y5bnNkNTZlaGV0OWNxemZneTQ3cHd1YjM0ZDNjYWJha2l6ejN6ejJ4Zm5wdWJhNGphZnRja2VlYnZqYTV5c2VtZmIyZm16cjRrMnFjd2NlZWo3M3ZrYmQ2dzc2M2E1djZjYzZ1N3VkZGNoM2lpdGJtODJhYWFhYWE4bmlqc3BnM3EydHJnZmp0NmdiYml5dDY2eGN0OXV3NWk1cG5yZTNhazQ2cndhbmpwdms5NnNrd3ZwbjNp"},
+			&Signature{"ayjaftcggbcaeiatiugceq4kkh6fwmwrnrzgqqc78xecd9u95djmxwngmip2wm6ut2bca7ghwhh2x7ftdies7df6zrbz8dh7r9br3bzxu8kri34jtrjfuks5yutxr2c3"},
+			false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -333,8 +338,7 @@ func TestKey_Sign(t *testing.T) {
 
 func TestKey_NdauAddress(t *testing.T) {
 	type fields struct {
-		Key   string
-		SKind string
+		Key string
 	}
 	tests := []struct {
 		name    string
@@ -345,19 +349,16 @@ func TestKey_NdauAddress(t *testing.T) {
 		{"addr from private key",
 			fields{
 				"npvta8jaftcjebc56pvxgs8w2448fibvc4yqeub8b49b7k4tdg7t5dsdhayzi569eaaaaaaaaaaaadmt69zefwr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxachhw8sfiuejtf",
-				"nd",
 			},
 			&Address{"ndad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6r7uj"}, false},
 		{"addr from corresponding public key is the same",
 			fields{
 				"npuba4jaftckeebzgm7usrcx9jxve8rhst5uejqqtzdtjvhdeswdyzvhn22k98kq25iaaaaaaaaaaaapqhv86syt9pwwpm97n5dgixcmr3sc7ai4km65t9r4wt4s4kywai6fkiae5jkc",
-				"nd",
 			},
 			&Address{"ndad79yux8we7vk7dgvkqjwnkdhme57piydekb9bkbc6r7uj"}, false},
 		{"addr from bad key fails",
 			fields{
 				"npvt8aaaaaaaaaaaadmt69zefwxr5pfdk99mg23ufiu58nazicguu9g6r58xeqwguxxacgacfz25hkpb7jtxx6ksdgfxn6jed6dx8d4xxcgp5dyhagqbpqtz38kcrgm4t",
-				"nd",
 			},
 			nil, true},
 	}
@@ -366,7 +367,7 @@ func TestKey_NdauAddress(t *testing.T) {
 			k := &Key{
 				Key: tt.fields.Key,
 			}
-			got, err := k.NdauAddress(tt.fields.SKind)
+			got, err := k.NdauAddress()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Key.NdauAddress() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -607,7 +608,7 @@ func TestDebugAPIProblem(t *testing.T) {
 			x, err := derivedKey.IsPrivate()
 			require.Nil(t, err)
 			require.True(t, x)
-			addr, err := derivedKey.NdauAddress("nd")
+			addr, err := derivedKey.NdauAddress()
 			require.Nil(t, err)
 			require.True(t, strings.HasPrefix(addr.Address, "nda"))
 		})
