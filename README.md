@@ -31,6 +31,10 @@ The packages in this library contain the low-level math functions used by ndau.
  B32 is an implementation of a base32 encoding; this is preferable to base64 in
  that it is case-insensitive and avoids 1, 0, i, and l as problematic characters
  in many typefaces. Addresses use this library, as do keys.
+ 
+ ### BIP32
+ 
+ Functions to support Bitcoin BIP32, which is related to HD wallets.
 
  ### Bitset256
 
@@ -63,6 +67,10 @@ gomobile to generate Java and Objective-C code for use by Android and IoS applic
 
 Defines a couple of error types used by ndaumath libraries.
 
+### pricecurve
+
+Functions that calculate prices on the ndau price curve (see details in ndau documentation)
+
 ### Signature
 
 Implementation of a generic concept of signatures so that ndau can someday have new signature types
@@ -89,21 +97,4 @@ The equivalent of the Signed library, only Unsigned.
 
 An implementation of the BIP-0039 words-to-bits technique, using the same wordlist. It supports
 multiple languages in the API but so far only English is supported.
-
-
-## Commands
-
-None of the code in the cmd subdirectory is required to make ndau work, and in some cases the
-code is obsolete and is only being kept around for experimental purposes.
-
-The ones documented below, however, may sometimes be useful, and may eventually evolve into
-full-fledged applications.
-
-### addrtool
-
-addrtool can generate and validate ndau addresses.
-
-### sigtool
-
-sigtool can generate ndau keypairs, sign blocks of data, and validate signatures.
 
