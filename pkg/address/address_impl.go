@@ -192,3 +192,8 @@ func Validate(addr string) (Address, error) {
 func (z Address) String() string {
 	return z.addr
 }
+
+// Kind returns the Kind of the address
+func (z Address) Kind() Kind {
+	return Kind(z.addr[2:3])
+}
