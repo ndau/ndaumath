@@ -12,6 +12,7 @@ func (z *Timestamp) DecodeMsg(dc *msgp.Reader) (err error) {
 		var zb0001 int64
 		zb0001, err = dc.ReadInt64()
 		if err != nil {
+			err = msgp.WrapError(err)
 			return
 		}
 		(*z) = Timestamp(zb0001)
@@ -23,6 +24,7 @@ func (z *Timestamp) DecodeMsg(dc *msgp.Reader) (err error) {
 func (z Timestamp) EncodeMsg(en *msgp.Writer) (err error) {
 	err = en.WriteInt64(int64(z))
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	return
@@ -41,6 +43,7 @@ func (z *Timestamp) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		var zb0001 int64
 		zb0001, bts, err = msgp.ReadInt64Bytes(bts)
 		if err != nil {
+			err = msgp.WrapError(err)
 			return
 		}
 		(*z) = Timestamp(zb0001)

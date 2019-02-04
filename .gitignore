@@ -8,6 +8,8 @@ debug.test
 .DS_Store
 !**/*_test.js
 **/.vscode
+*~
+.#*
 
 addrtool
 !/*/addrtool

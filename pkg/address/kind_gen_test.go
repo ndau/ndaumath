@@ -9,8 +9,8 @@ import (
 	"github.com/tinylib/msgp/msgp"
 )
 
-func TestMarshalUnmarshalAddress(t *testing.T) {
-	v := Address{}
+func TestMarshalUnmarshalKind(t *testing.T) {
+	v := Kind{}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -32,8 +32,8 @@ func TestMarshalUnmarshalAddress(t *testing.T) {
 	}
 }
 
-func BenchmarkMarshalMsgAddress(b *testing.B) {
-	v := Address{}
+func BenchmarkMarshalMsgKind(b *testing.B) {
+	v := Kind{}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -41,8 +41,8 @@ func BenchmarkMarshalMsgAddress(b *testing.B) {
 	}
 }
 
-func BenchmarkAppendMsgAddress(b *testing.B) {
-	v := Address{}
+func BenchmarkAppendMsgKind(b *testing.B) {
+	v := Kind{}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
 	b.SetBytes(int64(len(bts)))
@@ -53,8 +53,8 @@ func BenchmarkAppendMsgAddress(b *testing.B) {
 	}
 }
 
-func BenchmarkUnmarshalAddress(b *testing.B) {
-	v := Address{}
+func BenchmarkUnmarshalKind(b *testing.B) {
+	v := Kind{}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
 	b.SetBytes(int64(len(bts)))
@@ -67,8 +67,8 @@ func BenchmarkUnmarshalAddress(b *testing.B) {
 	}
 }
 
-func TestEncodeDecodeAddress(t *testing.T) {
-	v := Address{}
+func TestEncodeDecodeKind(t *testing.T) {
+	v := Kind{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 
@@ -77,7 +77,7 @@ func TestEncodeDecodeAddress(t *testing.T) {
 		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
 	}
 
-	vn := Address{}
+	vn := Kind{}
 	err := msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -91,8 +91,8 @@ func TestEncodeDecodeAddress(t *testing.T) {
 	}
 }
 
-func BenchmarkEncodeAddress(b *testing.B) {
-	v := Address{}
+func BenchmarkEncodeKind(b *testing.B) {
+	v := Kind{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -105,8 +105,8 @@ func BenchmarkEncodeAddress(b *testing.B) {
 	en.Flush()
 }
 
-func BenchmarkDecodeAddress(b *testing.B) {
-	v := Address{}
+func BenchmarkDecodeKind(b *testing.B) {
+	v := Kind{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))

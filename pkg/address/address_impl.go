@@ -3,6 +3,7 @@ package address
 import (
 	"crypto/sha256"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/b32"
@@ -14,11 +15,6 @@ import (
 // information. The result is a key that always starts with a specific 2-letter
 // prefix (nd for the main chain and tn for the testnet), plus one more
 // character that specifies the type of address.
-
-// Kind indicates the type of address in use; this is an external indication
-// designed to help users evaluate their own actions; it may or may not be
-// enforced by the blockchain.
-type Kind string
 
 func emptyA() Address {
 	return Address{}
@@ -40,27 +36,27 @@ func newError(msg string) error {
 // we want the first letters of the address to be "XX?" where XX is the code for the particular
 // type of network (mainnet==nd and testnet==tn). ? is the kind of
 // address. Valid address types are as follows:
-const (
-	KindUser        Kind = "a"
-	KindNdau        Kind = "n"
-	KindEndowment   Kind = "e"
-	KindExchange    Kind = "x"
-	KindBPC         Kind = "b"
-	KindMarketMaker Kind = "m"
+var (
+	KindUser        Kind = Kind{k:"a"}
+	KindNdau        Kind = Kind{k:"n"}
+	KindEndowment   Kind = Kind{k:"e"}
+	KindExchange    Kind = Kind{k:"x"}
+	KindBPC         Kind = Kind{k:"b"}
+	KindMarketMaker Kind = Kind{k:"m"}
 )
 
 // IsValidKind returns true if the last letter of a is one of the currently-valid Kinds
-func IsValidKind(a Kind) bool {
-	if len(a) == 0 {
+func IsValidKind(k string) bool {
+	if len(k) == 0 {
 		return false
 	}
-	switch a[len(a)-1:] {
-	case KindUser,
-		KindNdau,
-		KindEndowment,
-		KindExchange,
-		KindBPC,
-		KindMarketMaker:
+	switch k[len(k)-1:] {
+	case KindUser.k,
+		KindNdau.k,
+		KindEndowment.k,
+		KindExchange.k,
+		KindBPC.k,
+		KindMarketMaker.k:
 		return true
 	}
 	return false
@@ -70,14 +66,14 @@ func IsValidKind(a Kind) bool {
 // The value used is the last letter of the kind string (one of anex)
 func NewKind(kind string) (Kind, error) {
 	kinds := map[string]Kind{
-		string(KindUser):      KindUser,
-		string(KindNdau):      KindNdau,
-		string(KindExchange):  KindExchange,
-		string(KindEndowment): KindEndowment,
+		KindUser.k:      KindUser,
+		KindNdau.k:      KindNdau,
+		KindExchange.k:  KindExchange,
+		KindEndowment.k: KindEndowment,
 	}
 
 	if kind == "" {
-		return "", errors.New("kind must not be blank")
+		return Kind{}, errors.New("kind must not be blank")
 	}
 	ltr := kind[len(kind)-1:]
 	k, ok := kinds[ltr]
@@ -90,11 +86,11 @@ func NewKind(kind string) (Kind, error) {
 // splitKind returns the 2-letter prefix and the kind (as a string) for s, which should be a Kind
 // containing either 1 or 3 characters.
 func splitKind(s Kind) (string, string, error) {
-	switch len(s) {
+	switch len(s.k) {
 	case 1:
-		return "nd", string(s), nil
+		return "nd", s.k, nil
 	case 3:
-		return string(s)[0:2], string(s)[2:3], nil
+		return s.k[0:2], s.k[2:3], nil
 	default:
 		return "", "", errors.New("not a valid Kind")
 	}
@@ -128,7 +124,7 @@ const MinDataLength = 12
 // crc model to have a short (16-bit) checksum and still be quite safe against
 // transposition and typos.
 func Generate(kind Kind, data []byte) (Address, error) {
-	if !IsValidKind(kind) {
+	if !IsValidKind(kind.k) {
 		return emptyA(), newError("invalid kind")
 	}
 	if len(data) < MinDataLength {
@@ -164,9 +160,9 @@ func Validate(addr string) (Address, error) {
 	// 	return emptyA(), newError("not an ndau key")
 	// }
 	if len(addr) != AddrLength {
-		return emptyA(), newError("not a valid address length")
+		return emptyA(), newError(fmt.Sprintf("not a valid address length '%s'", addr))
 	}
-	if !IsValidKind(Kind(addr[2:3])) {
+	if !IsValidKind(addr[2:3]) {
 		return emptyA(), newError("unknown address kind " + addr[2:3])
 	}
 	h, err := b32.Decode(addr)
@@ -195,5 +191,5 @@ func (z Address) String() string {
 
 // Kind returns the Kind of the address
 func (z Address) Kind() Kind {
-	return Kind(z.addr[2:3])
+	return Kind{k:z.addr[2:3]}
 }
