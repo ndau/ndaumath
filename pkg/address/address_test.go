@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getKinds() []Kind {
-	return []Kind{
+func getKinds() []byte {
+	return []byte{
 		KindUser,
 		KindNdau,
 		KindExchange,
