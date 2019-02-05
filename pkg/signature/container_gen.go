@@ -12,6 +12,7 @@ func (z *AlgorithmID) DecodeMsg(dc *msgp.Reader) (err error) {
 		var zb0001 uint8
 		zb0001, err = dc.ReadUint8()
 		if err != nil {
+			err = msgp.WrapError(err)
 			return
 		}
 		(*z) = AlgorithmID(zb0001)
@@ -23,6 +24,7 @@ func (z *AlgorithmID) DecodeMsg(dc *msgp.Reader) (err error) {
 func (z AlgorithmID) EncodeMsg(en *msgp.Writer) (err error) {
 	err = en.WriteUint8(uint8(z))
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	return
@@ -41,6 +43,7 @@ func (z *AlgorithmID) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		var zb0001 uint8
 		zb0001, bts, err = msgp.ReadUint8Bytes(bts)
 		if err != nil {
+			err = msgp.WrapError(err)
 			return
 		}
 		(*z) = AlgorithmID(zb0001)
@@ -60,6 +63,7 @@ func (z *IdentifiedData) DecodeMsg(dc *msgp.Reader) (err error) {
 	var zb0001 uint32
 	zb0001, err = dc.ReadArrayHeader()
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	if zb0001 != 2 {
@@ -70,12 +74,14 @@ func (z *IdentifiedData) DecodeMsg(dc *msgp.Reader) (err error) {
 		var zb0002 uint8
 		zb0002, err = dc.ReadUint8()
 		if err != nil {
+			err = msgp.WrapError(err, "Algorithm")
 			return
 		}
 		z.Algorithm = AlgorithmID(zb0002)
 	}
 	z.Data, err = dc.ReadBytes(z.Data)
 	if err != nil {
+		err = msgp.WrapError(err, "Data")
 		return
 	}
 	return
@@ -90,10 +96,12 @@ func (z *IdentifiedData) EncodeMsg(en *msgp.Writer) (err error) {
 	}
 	err = en.WriteUint8(uint8(z.Algorithm))
 	if err != nil {
+		err = msgp.WrapError(err, "Algorithm")
 		return
 	}
 	err = en.WriteBytes(z.Data)
 	if err != nil {
+		err = msgp.WrapError(err, "Data")
 		return
 	}
 	return
@@ -114,6 +122,7 @@ func (z *IdentifiedData) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var zb0001 uint32
 	zb0001, bts, err = msgp.ReadArrayHeaderBytes(bts)
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	if zb0001 != 2 {
@@ -124,12 +133,14 @@ func (z *IdentifiedData) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		var zb0002 uint8
 		zb0002, bts, err = msgp.ReadUint8Bytes(bts)
 		if err != nil {
+			err = msgp.WrapError(err, "Algorithm")
 			return
 		}
 		z.Algorithm = AlgorithmID(zb0002)
 	}
 	z.Data, bts, err = msgp.ReadBytesBytes(bts, z.Data)
 	if err != nil {
+		err = msgp.WrapError(err, "Data")
 		return
 	}
 	o = bts

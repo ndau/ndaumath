@@ -178,13 +178,13 @@ func (k *Key) Sign(msgstr string) (*Signature, error) {
 // Key can be either public or private; if it is private it will be
 // converted to a public key first.
 func (k *Key) NdauAddress() (*Address, error) {
-	skind := string(address.KindUser)
+	kind := address.KindUser
 	ekey, err := k.ToExtended()
 	if err != nil {
 		return nil, err
 	}
 
-	a, err := address.Generate(address.Kind(skind), ekey.PubKeyBytes())
+	a, err := address.Generate(kind, ekey.PubKeyBytes())
 	if err != nil {
 		return nil, err
 	}

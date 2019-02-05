@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getKinds() []Kind {
-	return []Kind{
+func getKinds() []byte {
+	return []byte{
 		KindUser,
 		KindNdau,
 		KindExchange,
@@ -31,6 +31,32 @@ func TestArbitraryAddressesAreValid(t *testing.T) {
 			t.Log("address", address)
 			address, err = Validate(address.addr)
 			t.Log("address", address)
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestArbitraryAddressesDoRoundtrips(t *testing.T) {
+	kinds := getKinds()
+	for i := 0; i < 16; i++ {
+		key := make([]byte, 32)
+		_, err := rand.Read(key)
+		require.NoError(t, err)
+
+		t.Run(string(i), func(t *testing.T) {
+			t.Log("key", fmt.Sprintf("%x", key))
+			address1, err := Generate(kinds[i&3], key)
+			require.NoError(t, err)
+			t.Log("address1", address1)
+			b, err := address1.MarshalMsg(nil)
+			require.NoError(t, err)
+			address2 := Address{}
+			extra, err := address2.UnmarshalMsg(b)
+			require.NoError(t, err)
+			require.Empty(t, extra)
+			t.Log("address2", address2)
+			address3, err := Validate(address2.addr)
+			t.Log("address3", address3)
 			require.NoError(t, err)
 		})
 	}

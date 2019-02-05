@@ -11,6 +11,7 @@ func (z *RSRow) DecodeMsg(dc *msgp.Reader) (err error) {
 	var zb0001 uint32
 	zb0001, err = dc.ReadArrayHeader()
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	if zb0001 != 2 {
@@ -19,12 +20,14 @@ func (z *RSRow) DecodeMsg(dc *msgp.Reader) (err error) {
 	}
 	err = z.Duration.DecodeMsg(dc)
 	if err != nil {
+		err = msgp.WrapError(err, "Duration")
 		return
 	}
 	{
 		var zb0002 uint64
 		zb0002, err = dc.ReadUint64()
 		if err != nil {
+			err = msgp.WrapError(err, "Rate")
 			return
 		}
 		z.Rate = Rate(zb0002)
@@ -41,10 +44,12 @@ func (z *RSRow) EncodeMsg(en *msgp.Writer) (err error) {
 	}
 	err = z.Duration.EncodeMsg(en)
 	if err != nil {
+		err = msgp.WrapError(err, "Duration")
 		return
 	}
 	err = en.WriteUint64(uint64(z.Rate))
 	if err != nil {
+		err = msgp.WrapError(err, "Rate")
 		return
 	}
 	return
@@ -57,6 +62,7 @@ func (z *RSRow) MarshalMsg(b []byte) (o []byte, err error) {
 	o = append(o, 0x92)
 	o, err = z.Duration.MarshalMsg(o)
 	if err != nil {
+		err = msgp.WrapError(err, "Duration")
 		return
 	}
 	o = msgp.AppendUint64(o, uint64(z.Rate))
@@ -68,6 +74,7 @@ func (z *RSRow) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var zb0001 uint32
 	zb0001, bts, err = msgp.ReadArrayHeaderBytes(bts)
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	if zb0001 != 2 {
@@ -76,12 +83,14 @@ func (z *RSRow) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	}
 	bts, err = z.Duration.UnmarshalMsg(bts)
 	if err != nil {
+		err = msgp.WrapError(err, "Duration")
 		return
 	}
 	{
 		var zb0002 uint64
 		zb0002, bts, err = msgp.ReadUint64Bytes(bts)
 		if err != nil {
+			err = msgp.WrapError(err, "Rate")
 			return
 		}
 		z.Rate = Rate(zb0002)
@@ -101,6 +110,7 @@ func (z *RTRow) DecodeMsg(dc *msgp.Reader) (err error) {
 	var zb0001 uint32
 	zb0001, err = dc.ReadArrayHeader()
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	if zb0001 != 2 {
@@ -109,12 +119,14 @@ func (z *RTRow) DecodeMsg(dc *msgp.Reader) (err error) {
 	}
 	err = z.From.DecodeMsg(dc)
 	if err != nil {
+		err = msgp.WrapError(err, "From")
 		return
 	}
 	{
 		var zb0002 uint64
 		zb0002, err = dc.ReadUint64()
 		if err != nil {
+			err = msgp.WrapError(err, "Rate")
 			return
 		}
 		z.Rate = Rate(zb0002)
@@ -131,10 +143,12 @@ func (z *RTRow) EncodeMsg(en *msgp.Writer) (err error) {
 	}
 	err = z.From.EncodeMsg(en)
 	if err != nil {
+		err = msgp.WrapError(err, "From")
 		return
 	}
 	err = en.WriteUint64(uint64(z.Rate))
 	if err != nil {
+		err = msgp.WrapError(err, "Rate")
 		return
 	}
 	return
@@ -147,6 +161,7 @@ func (z *RTRow) MarshalMsg(b []byte) (o []byte, err error) {
 	o = append(o, 0x92)
 	o, err = z.From.MarshalMsg(o)
 	if err != nil {
+		err = msgp.WrapError(err, "From")
 		return
 	}
 	o = msgp.AppendUint64(o, uint64(z.Rate))
@@ -158,6 +173,7 @@ func (z *RTRow) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var zb0001 uint32
 	zb0001, bts, err = msgp.ReadArrayHeaderBytes(bts)
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	if zb0001 != 2 {
@@ -166,12 +182,14 @@ func (z *RTRow) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	}
 	bts, err = z.From.UnmarshalMsg(bts)
 	if err != nil {
+		err = msgp.WrapError(err, "From")
 		return
 	}
 	{
 		var zb0002 uint64
 		zb0002, bts, err = msgp.ReadUint64Bytes(bts)
 		if err != nil {
+			err = msgp.WrapError(err, "Rate")
 			return
 		}
 		z.Rate = Rate(zb0002)
@@ -192,6 +210,7 @@ func (z *Rate) DecodeMsg(dc *msgp.Reader) (err error) {
 		var zb0001 uint64
 		zb0001, err = dc.ReadUint64()
 		if err != nil {
+			err = msgp.WrapError(err)
 			return
 		}
 		(*z) = Rate(zb0001)
@@ -203,6 +222,7 @@ func (z *Rate) DecodeMsg(dc *msgp.Reader) (err error) {
 func (z Rate) EncodeMsg(en *msgp.Writer) (err error) {
 	err = en.WriteUint64(uint64(z))
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	return
@@ -221,6 +241,7 @@ func (z *Rate) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		var zb0001 uint64
 		zb0001, bts, err = msgp.ReadUint64Bytes(bts)
 		if err != nil {
+			err = msgp.WrapError(err)
 			return
 		}
 		(*z) = Rate(zb0001)
@@ -240,6 +261,7 @@ func (z *RateSlice) DecodeMsg(dc *msgp.Reader) (err error) {
 	var zb0002 uint32
 	zb0002, err = dc.ReadArrayHeader()
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	if cap((*z)) >= int(zb0002) {
@@ -251,6 +273,7 @@ func (z *RateSlice) DecodeMsg(dc *msgp.Reader) (err error) {
 		var zb0003 uint32
 		zb0003, err = dc.ReadArrayHeader()
 		if err != nil {
+			err = msgp.WrapError(err, zb0001)
 			return
 		}
 		if zb0003 != 2 {
@@ -259,12 +282,14 @@ func (z *RateSlice) DecodeMsg(dc *msgp.Reader) (err error) {
 		}
 		err = (*z)[zb0001].Duration.DecodeMsg(dc)
 		if err != nil {
+			err = msgp.WrapError(err, zb0001, "Duration")
 			return
 		}
 		{
 			var zb0004 uint64
 			zb0004, err = dc.ReadUint64()
 			if err != nil {
+				err = msgp.WrapError(err, zb0001, "Rate")
 				return
 			}
 			(*z)[zb0001].Rate = Rate(zb0004)
@@ -277,6 +302,7 @@ func (z *RateSlice) DecodeMsg(dc *msgp.Reader) (err error) {
 func (z RateSlice) EncodeMsg(en *msgp.Writer) (err error) {
 	err = en.WriteArrayHeader(uint32(len(z)))
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	for zb0005 := range z {
@@ -287,10 +313,12 @@ func (z RateSlice) EncodeMsg(en *msgp.Writer) (err error) {
 		}
 		err = z[zb0005].Duration.EncodeMsg(en)
 		if err != nil {
+			err = msgp.WrapError(err, zb0005, "Duration")
 			return
 		}
 		err = en.WriteUint64(uint64(z[zb0005].Rate))
 		if err != nil {
+			err = msgp.WrapError(err, zb0005, "Rate")
 			return
 		}
 	}
@@ -306,6 +334,7 @@ func (z RateSlice) MarshalMsg(b []byte) (o []byte, err error) {
 		o = append(o, 0x92)
 		o, err = z[zb0005].Duration.MarshalMsg(o)
 		if err != nil {
+			err = msgp.WrapError(err, zb0005, "Duration")
 			return
 		}
 		o = msgp.AppendUint64(o, uint64(z[zb0005].Rate))
@@ -318,6 +347,7 @@ func (z *RateSlice) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var zb0002 uint32
 	zb0002, bts, err = msgp.ReadArrayHeaderBytes(bts)
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	if cap((*z)) >= int(zb0002) {
@@ -329,6 +359,7 @@ func (z *RateSlice) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		var zb0003 uint32
 		zb0003, bts, err = msgp.ReadArrayHeaderBytes(bts)
 		if err != nil {
+			err = msgp.WrapError(err, zb0001)
 			return
 		}
 		if zb0003 != 2 {
@@ -337,12 +368,14 @@ func (z *RateSlice) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		}
 		bts, err = (*z)[zb0001].Duration.UnmarshalMsg(bts)
 		if err != nil {
+			err = msgp.WrapError(err, zb0001, "Duration")
 			return
 		}
 		{
 			var zb0004 uint64
 			zb0004, bts, err = msgp.ReadUint64Bytes(bts)
 			if err != nil {
+				err = msgp.WrapError(err, zb0001, "Rate")
 				return
 			}
 			(*z)[zb0001].Rate = Rate(zb0004)
@@ -366,6 +399,7 @@ func (z *RateTable) DecodeMsg(dc *msgp.Reader) (err error) {
 	var zb0002 uint32
 	zb0002, err = dc.ReadArrayHeader()
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	if cap((*z)) >= int(zb0002) {
@@ -377,6 +411,7 @@ func (z *RateTable) DecodeMsg(dc *msgp.Reader) (err error) {
 		var zb0003 uint32
 		zb0003, err = dc.ReadArrayHeader()
 		if err != nil {
+			err = msgp.WrapError(err, zb0001)
 			return
 		}
 		if zb0003 != 2 {
@@ -385,12 +420,14 @@ func (z *RateTable) DecodeMsg(dc *msgp.Reader) (err error) {
 		}
 		err = (*z)[zb0001].From.DecodeMsg(dc)
 		if err != nil {
+			err = msgp.WrapError(err, zb0001, "From")
 			return
 		}
 		{
 			var zb0004 uint64
 			zb0004, err = dc.ReadUint64()
 			if err != nil {
+				err = msgp.WrapError(err, zb0001, "Rate")
 				return
 			}
 			(*z)[zb0001].Rate = Rate(zb0004)
@@ -403,6 +440,7 @@ func (z *RateTable) DecodeMsg(dc *msgp.Reader) (err error) {
 func (z RateTable) EncodeMsg(en *msgp.Writer) (err error) {
 	err = en.WriteArrayHeader(uint32(len(z)))
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	for zb0005 := range z {
@@ -413,10 +451,12 @@ func (z RateTable) EncodeMsg(en *msgp.Writer) (err error) {
 		}
 		err = z[zb0005].From.EncodeMsg(en)
 		if err != nil {
+			err = msgp.WrapError(err, zb0005, "From")
 			return
 		}
 		err = en.WriteUint64(uint64(z[zb0005].Rate))
 		if err != nil {
+			err = msgp.WrapError(err, zb0005, "Rate")
 			return
 		}
 	}
@@ -432,6 +472,7 @@ func (z RateTable) MarshalMsg(b []byte) (o []byte, err error) {
 		o = append(o, 0x92)
 		o, err = z[zb0005].From.MarshalMsg(o)
 		if err != nil {
+			err = msgp.WrapError(err, zb0005, "From")
 			return
 		}
 		o = msgp.AppendUint64(o, uint64(z[zb0005].Rate))
@@ -444,6 +485,7 @@ func (z *RateTable) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var zb0002 uint32
 	zb0002, bts, err = msgp.ReadArrayHeaderBytes(bts)
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	if cap((*z)) >= int(zb0002) {
@@ -455,6 +497,7 @@ func (z *RateTable) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		var zb0003 uint32
 		zb0003, bts, err = msgp.ReadArrayHeaderBytes(bts)
 		if err != nil {
+			err = msgp.WrapError(err, zb0001)
 			return
 		}
 		if zb0003 != 2 {
@@ -463,12 +506,14 @@ func (z *RateTable) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		}
 		bts, err = (*z)[zb0001].From.UnmarshalMsg(bts)
 		if err != nil {
+			err = msgp.WrapError(err, zb0001, "From")
 			return
 		}
 		{
 			var zb0004 uint64
 			zb0004, bts, err = msgp.ReadUint64Bytes(bts)
 			if err != nil {
+				err = msgp.WrapError(err, zb0001, "Rate")
 				return
 			}
 			(*z)[zb0001].Rate = Rate(zb0004)

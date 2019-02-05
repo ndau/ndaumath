@@ -2,8 +2,18 @@ package address
 
 import "encoding"
 
-///go:generate msgp
+//========== I M P O R T A N T ====================
+// NOTE: These go generate commands are deliberately triple-commented.
+// The address field is private, but we want it to be serialized. This
+// requires a manual step -- make the field public (by naming it Addr)
+// remove the extra slash from these two lines, and do `go generate`.
+// Then change all occurences of Addr back to addr (including in the
+// generated code). And recomment those two lines.
 
+// Yes, this is horribly ugly.
+//=================================================
+
+///go:generate msgp
 ///msgp:tuple Address
 
 // An Address is a 48-character string uniquely identifying an Ndau account
