@@ -37,12 +37,12 @@ func newError(msg string) error {
 // type of network (mainnet==nd and testnet==tn). ? is the kind of
 // address. Valid address types are as follows:
 var (
-	KindUser        Kind = Kind{k:"a"}
-	KindNdau        Kind = Kind{k:"n"}
-	KindEndowment   Kind = Kind{k:"e"}
-	KindExchange    Kind = Kind{k:"x"}
-	KindBPC         Kind = Kind{k:"b"}
-	KindMarketMaker Kind = Kind{k:"m"}
+	KindUser        = Kind{k: "a"}
+	KindNdau        = Kind{k: "n"}
+	KindEndowment   = Kind{k: "e"}
+	KindExchange    = Kind{k: "x"}
+	KindBPC         = Kind{k: "b"}
+	KindMarketMaker = Kind{k: "m"}
 )
 
 // IsValidKind returns true if the last letter of a is one of the currently-valid Kinds
@@ -191,5 +191,5 @@ func (z Address) String() string {
 
 // Kind returns the Kind of the address
 func (z Address) Kind() Kind {
-	return Kind{k:z.addr[2:3]}
+	return Kind{k: z.addr[2:3]}
 }
