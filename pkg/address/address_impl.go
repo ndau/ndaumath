@@ -41,6 +41,7 @@ func newError(msg string) error {
 
 // All addresses start with this 2-byte prefix, followed by a kind byte.
 const addrPrefix string = "nd"
+const kindOffset int = len(addrPrefix)
 const (
 	KindUser        byte = 'a'
 	KindNdau        byte = 'n'
@@ -129,7 +130,7 @@ func Validate(addr string) (Address, error) {
 	if len(addr) != AddrLength {
 		return emptyA(), newError(fmt.Sprintf("not a valid address length '%s'", addr))
 	}
-	if kind := addr[2]; !IsValidKind(kind) {
+	if kind := addr[kindOffset]; !IsValidKind(kind) {
 		return emptyA(), newError(fmt.Sprintf("unknown address kind: %x", kind))
 	}
 	h, err := b32.Decode(addr)
@@ -158,5 +159,5 @@ func (z Address) String() string {
 
 // Kind returns the kind byte of the address.
 func (z Address) Kind() byte {
-	return z.addr[2]
+	return z.addr[kindOffset]
 }
