@@ -2,7 +2,6 @@ package address
 
 import (
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -15,6 +14,13 @@ import (
 // information. The result is a key that always starts with a specific 2-letter
 // prefix (nd for the main chain and tn for the testnet), plus one more
 // character that specifies the type of address.
+
+// Kind indicates the type of address in use; this is an external indication
+// designed to help users evaluate their own actions; it may or may not be
+// enforced by the blockchain.
+// We don't define a type for it so that it serializes naturally.  We give up
+// type safety to avoid msgp hassles.  See address.go for details.
+//type Kind byte
 
 func emptyA() Address {
 	return Address{}
@@ -33,67 +39,29 @@ func newError(msg string) error {
 	return &Error{msg}
 }
 
-// we want the first letters of the address to be "XX?" where XX is the code for the particular
-// type of network (mainnet==nd and testnet==tn). ? is the kind of
-// address. Valid address types are as follows:
-var (
-	KindUser        = Kind{k: "a"}
-	KindNdau        = Kind{k: "n"}
-	KindEndowment   = Kind{k: "e"}
-	KindExchange    = Kind{k: "x"}
-	KindBPC         = Kind{k: "b"}
-	KindMarketMaker = Kind{k: "m"}
+// All addresses start with this 2-byte prefix, followed by a kind byte.
+const addrPrefix string = "nd"
+const (
+	KindUser        byte = 'a'
+	KindNdau        byte = 'n'
+	KindEndowment   byte = 'e'
+	KindExchange    byte = 'x'
+	KindBPC         byte = 'b'
+	KindMarketMaker byte = 'm'
 )
 
-// IsValidKind returns true if the last letter of a is one of the currently-valid Kinds
-func IsValidKind(k string) bool {
-	if len(k) == 0 {
-		return false
-	}
-	switch k[len(k)-1:] {
-	case KindUser.k,
-		KindNdau.k,
-		KindEndowment.k,
-		KindExchange.k,
-		KindBPC.k,
-		KindMarketMaker.k:
+// IsValidKind returns true if the last letter of a is one of the currently-valid kinds
+func IsValidKind(k byte) bool {
+	switch k {
+	case KindUser,
+		KindNdau,
+		KindEndowment,
+		KindExchange,
+		KindBPC,
+		KindMarketMaker:
 		return true
 	}
 	return false
-}
-
-// NewKind constructs an address.Kind, given a string corresponding to the kind value
-// The value used is the last letter of the kind string (one of anex)
-func NewKind(kind string) (Kind, error) {
-	kinds := map[string]Kind{
-		KindUser.k:      KindUser,
-		KindNdau.k:      KindNdau,
-		KindExchange.k:  KindExchange,
-		KindEndowment.k: KindEndowment,
-	}
-
-	if kind == "" {
-		return Kind{}, errors.New("kind must not be blank")
-	}
-	ltr := kind[len(kind)-1:]
-	k, ok := kinds[ltr]
-	if ok {
-		return k, nil
-	}
-	return k, errors.New("invalid kind character")
-}
-
-// splitKind returns the 2-letter prefix and the kind (as a string) for s, which should be a Kind
-// containing either 1 or 3 characters.
-func splitKind(s Kind) (string, string, error) {
-	switch len(s.k) {
-	case 1:
-		return "nd", s.k, nil
-	case 3:
-		return s.k[0:2], s.k[2:3], nil
-	default:
-		return "", "", errors.New("not a valid Kind")
-	}
 }
 
 // HashTrim is the number of bytes that we trim the input hash to.
@@ -123,9 +91,9 @@ const MinDataLength = 12
 // Since length changes are explicitly disallowed, we can use a relatively simple
 // crc model to have a short (16-bit) checksum and still be quite safe against
 // transposition and typos.
-func Generate(kind Kind, data []byte) (Address, error) {
-	if !IsValidKind(kind.k) {
-		return emptyA(), newError("invalid kind")
+func Generate(kind byte, data []byte) (Address, error) {
+	if !IsValidKind(kind) {
+		return emptyA(), newError(fmt.Sprintf("invalid kind: %x", kind))
 	}
 	if len(data) < MinDataLength {
 		return emptyA(), newError("insufficient quantity of data")
@@ -136,11 +104,10 @@ func Generate(kind Kind, data []byte) (Address, error) {
 
 	// an ndau address always starts with nd and a "kind" character
 	// so we figure out what characters we want and build that into a header
-	sprefix, skind, err := splitKind(kind)
-	if err != nil {
-		return emptyA(), newError("invalid kind")
-	}
-	prefix := b32.Index(sprefix[0:1])<<11 + b32.Index(sprefix[1:2])<<6 + b32.Index(skind)<<1
+	prefix :=
+		b32.Index(addrPrefix[0:1])<<11 +
+		b32.Index(addrPrefix[1:2])<<6 +
+		b32.Index(string(kind))<<1
 	hdr := []byte{byte((prefix >> 8) & 0xFF), byte(prefix & 0xFF)}
 	h2 := append(hdr, h1...)
 	// then we checksum that result and append the checksum
@@ -162,8 +129,9 @@ func Validate(addr string) (Address, error) {
 	if len(addr) != AddrLength {
 		return emptyA(), newError(fmt.Sprintf("not a valid address length '%s'", addr))
 	}
-	if !IsValidKind(addr[2:3]) {
-		return emptyA(), newError("unknown address kind " + addr[2:3])
+	kind := addr[2]
+	if !IsValidKind(kind) {
+		return emptyA(), newError(fmt.Sprintf("unknown address kind: %x", kind))
 	}
 	h, err := b32.Decode(addr)
 	if err != nil {
@@ -189,7 +157,7 @@ func (z Address) String() string {
 	return z.addr
 }
 
-// Kind returns the Kind of the address
-func (z Address) Kind() Kind {
-	return Kind{k: z.addr[2:3]}
+// Kind returns the kind byte of the address.
+func (z Address) Kind() byte {
+	return z.addr[2]
 }
