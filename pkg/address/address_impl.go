@@ -129,8 +129,7 @@ func Validate(addr string) (Address, error) {
 	if len(addr) != AddrLength {
 		return emptyA(), newError(fmt.Sprintf("not a valid address length '%s'", addr))
 	}
-	kind := addr[2]
-	if !IsValidKind(kind) {
+	if kind := addr[2]; !IsValidKind(kind) {
 		return emptyA(), newError(fmt.Sprintf("unknown address kind: %x", kind))
 	}
 	h, err := b32.Decode(addr)
