@@ -49,3 +49,27 @@ func Test_UnitAtPrice(t *testing.T) {
 		})
 	}
 }
+
+func TestTotalPriceFor(t *testing.T) {
+	type args struct {
+		numNdau     types.Ndau
+		alreadySold types.Ndau
+	}
+	tests := []struct {
+		name string
+		args args
+		want float64
+	}{
+		{"first ndau", args{100000000, 0}, 1},
+		{"first block", args{100000000000, 0}, 1000},
+		{"second block", args{100000000000, 100000000000}, 1000.9708770490777},
+		{"ten blocks at start", args{1000000000000, 0}, 10043.8027718836},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := TotalPriceFor(tt.args.numNdau, tt.args.alreadySold); got != tt.want {
+				t.Errorf("TotalPriceFor() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

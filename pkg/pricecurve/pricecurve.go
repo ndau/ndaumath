@@ -62,3 +62,28 @@ func UnitAtPrice(price float64) int {
 	}
 	return guess * 1000
 }
+
+// TotalPriceFor returns the total price for a group of ndau given the amount to be purchased and the number already sold
+// The numbers passed in are integer number of napu NOT ndau
+func TotalPriceFor(numNdau, alreadySold types.Ndau) float64 {
+	const numPerBlock = 1000 * constants.QuantaPerUnit
+	var totalPrice float64
+	for {
+		var price = PriceAtUnit(alreadySold)
+		var availableInThisBlock = alreadySold % numPerBlock
+		if availableInThisBlock == 0 {
+			availableInThisBlock = numPerBlock
+		}
+
+		// if what we're buying fits in the current block, just calculate the total price and we're done
+		if numNdau <= availableInThisBlock {
+			totalPrice += price * float64(numNdau/constants.QuantaPerUnit)
+			return totalPrice
+		}
+
+		// otherwise, buy the remainder of this block and loop
+		numNdau -= availableInThisBlock
+		alreadySold += availableInThisBlock
+		totalPrice += price * float64(availableInThisBlock/constants.QuantaPerUnit)
+	}
+}
