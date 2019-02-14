@@ -1,8 +1,12 @@
 package eai
 
 import (
+	"encoding/csv"
 	"fmt"
+	"os"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/ericlagergren/decimal"
 	dmath "github.com/ericlagergren/decimal/math"
@@ -565,6 +569,111 @@ func TestCalculateEAIRate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := CalculateEAIRate(tt.args.weightedAverageAge, tt.args.lock, tt.args.unlockedTable); got != tt.want {
 				t.Errorf("CalculateEAIRate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+const datefmt = "1/2/06"
+
+type realtest struct {
+	name         string
+	chainDate    math.Timestamp
+	lockDuration math.Duration
+	quantity     math.Ndau
+	expected     math.Ndau
+	ken          math.Ndau
+}
+
+func getTestRecords(filename string) (string, []realtest) {
+	f, err := os.Open(filename)
+	if err != nil {
+		panic(err)
+	}
+	recs, err := csv.NewReader(f).ReadAll()
+	if err != nil {
+		panic(err)
+	}
+
+	testdate := ""
+	testdata := make([]realtest, 0, len(recs))
+	fieldnumbers := map[string]int{}
+	for i, r := range recs {
+		rec := realtest{}
+		switch {
+		case i == 0:
+			testdate = r[1]
+		case i == 4:
+			for j, s := range r {
+				fieldnumbers[s] = j
+			}
+		case i > 4:
+			// if last column is blank it's not good data
+			if r[0] == "" || r[len(r)-1] == "" {
+				continue
+			}
+			for f, j := range fieldnumbers {
+				switch f {
+				case "chain date":
+					startdate, err := time.Parse(datefmt, r[j])
+					if err != nil {
+						panic(err)
+					}
+					rec.chainDate, _ = math.TimestampFrom(startdate)
+				case "ndau amount in":
+					q, _ := strconv.ParseFloat(r[j], 64)
+					rec.quantity = math.Ndau(q * constants.QuantaPerUnit)
+				case "address ID":
+					rec.name = r[j]
+				case "days":
+					d, _ := strconv.Atoi(r[j])
+					rec.lockDuration = math.Duration(d * math.Day)
+				case "actual EAI earned":
+					q, _ := strconv.ParseFloat(r[j], 64)
+					rec.expected = math.Ndau(q * constants.QuantaPerUnit)
+				case "Simple EAI":
+					q, _ := strconv.ParseFloat(r[j], 64)
+					rec.ken = math.Ndau(q * constants.QuantaPerUnit)
+				}
+			}
+			testdata = append(testdata, rec)
+		}
+	}
+	return testdate, testdata
+}
+
+func withinEpsilon(x, y, epsilon math.Ndau) bool {
+	if x-y > 0 {
+		return (x-y < epsilon)
+	}
+	return (y-x < epsilon)
+}
+
+func TestCalculateRealWorld(t *testing.T) {
+	// This test reads a CSV file of test data and checks that
+	// the calculations the blockchain does match the same
+	// calculations in the spreadsheet that generated the CSV.
+	// This is all the data in the genesis block.
+	testDate, tests := getTestRecords("output_2-11-19.csv")
+	enddate, err := time.Parse(datefmt, testDate)
+	if err != nil {
+		t.Errorf("%s", err)
+	}
+	endts, _ := math.TimestampFrom(enddate)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			waa := endts.Since(tt.chainDate)
+			got, err := Calculate(
+				tt.quantity,
+				endts, tt.chainDate, waa,
+				newTestLock(tt.lockDuration, DefaultLockBonusEAI),
+				DefaultUnlockedEAI,
+			)
+			if err != nil {
+				t.Errorf("Calculate had a problem: %s", err)
+			}
+			if !withinEpsilon(got, tt.expected, math.Ndau(20)) {
+				t.Errorf("Calculate() = %v, want Ed:%v Ken:%v", got, tt.expected, tt.ken)
 			}
 		})
 	}
