@@ -523,8 +523,10 @@ func TestEAIFactorSoundness(t *testing.T) {
 }
 
 // we need some custom cases to test situations with different assumptions
-func TestGenesisCustomDates(t *testing.T) {
+func TestSoundnessCustomDates(t *testing.T) {
 	daysn35 := math.Duration(-35 * math.Day)
+	daysn15 := math.Duration(-15 * math.Day)
+	days90 := math.Duration(90 * math.Day)
 	days365 := math.Duration(math.Year)
 
 	type ec struct {
@@ -535,7 +537,7 @@ func TestGenesisCustomDates(t *testing.T) {
 		expectCalc         []ec
 		lastEAIOffset      math.Duration
 		lockPeriod         *math.Duration
-		lockNotifyOffset   *math.Duration
+		unlocksOnOffset    *math.Duration
 		blockTime          math.Timestamp
 		weightedAverageAge math.Duration
 	}
@@ -578,9 +580,56 @@ func TestGenesisCustomDates(t *testing.T) {
 			},
 			lastEAIOffset:      400 * math.Day,
 			lockPeriod:         &days365,
-			lockNotifyOffset:   &daysn35,
+			unlocksOnOffset:    &daysn35,
 			blockTime:          400 * math.Day,
 			weightedAverageAge: 400 * math.Day,
+		},
+		//  Case 2: What happens if an account is:
+		//
+		// - created at day 240
+		// - immediately locked for 90 days
+		// - notified immediately
+		// - block time is 345
+		// - 125 days since last EAI update (update was on day 220)
+		// - current actual weighted average age is 105 days
+		//
+		// In other words, can we correctly handle the case that an account
+		// is created, locked, notified, and unlocked all in the interval
+		// between creditEAI txs?
+		//
+		// The span of effective average age we care about for the unlocked
+		// portion runs from day 0 to day 400. Using the example table:
+		//
+		//   5%       x─────────────────┐
+		//   4%                         └─────x--
+		//          _____________________________
+		//  actual   240               330   345
+		//  effect.   90                90   105
+		//  month    (3)               (3)
+		//
+		// Because the account was locked for 90 days, and 90 days has a bonus
+		// rate of 1%, the actual rate used for that period should increase by
+		// a constant rate of 1%. At the end of the lock period, the bonus expires,
+		// returning the account to the basic unlocked rate for its age: 3%.
+		//
+		// Because the account was notified immediately, its effective WAA doesn't
+		// change through the duration of the notification period.
+		//
+		// We thus get the following calculation to
+		// compute the EAI multiplier:
+		//
+		//    e^(4% * 90 days)
+		//  * e^(3% * 15 days)
+		customDateCase{
+			expectCalc: []ec{
+				{5, 90},
+				{4, 15},
+			},
+			lastEAIOffset:      125 * math.Day,
+			lockPeriod:         &days90,
+			unlocksOnOffset:    &daysn15,
+			blockTime:          345 * math.Day,
+			weightedAverageAge: 105 * math.Day,
 		},
 	}
 
@@ -622,8 +671,11 @@ func TestGenesisCustomDates(t *testing.T) {
 			var lock *testLock
 			if scase.lockPeriod != nil {
 				lock = newTestLock(*scase.lockPeriod, DefaultLockBonusEAI)
-				if scase.lockNotifyOffset != nil {
-					uo := scase.blockTime.Add(*scase.lockNotifyOffset)
+				if scase.unlocksOnOffset != nil {
+					uo := scase.blockTime.Add(*scase.unlocksOnOffset)
+					if uo < scase.blockTime.Sub(scase.weightedAverageAge).Add(lock.NoticePeriod) {
+						t.Fatal("malformed test case: lock older than waa")
+					}
 					lock.UnlocksOn = &uo
 				}
 			}

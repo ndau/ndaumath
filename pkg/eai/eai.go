@@ -121,6 +121,14 @@ func calculateEAIFactor(
 		offset = lock.GetNoticePeriod()
 	}
 	from := weightedAverageAge - lastEAICalcAge
+	if from < 0 {
+		// the WAA can be treated as the actual age of the account.
+		// if the WAA is more recent than the lastEAICalcAge, from will be negative.
+		// this isn't a useful position to take: from any particular account's
+		// perspective, the previous state of the blockchain shouldn't matter
+		// at all. Therefore, we set it to 0 to get the correct rate period.
+		from = 0
+	}
 	var rateSlice RateSlice
 	if lock != nil && lock.GetUnlocksOn() != nil {
 		notify := lock.GetUnlocksOn().Sub(lock.GetNoticePeriod())
