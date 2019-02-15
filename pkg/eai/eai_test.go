@@ -222,10 +222,12 @@ func TestEAIFactorLocked(t *testing.T) {
 }
 
 func TestEAIFactorSoundness(t *testing.T) {
+	daysn35 := math.Duration(-35 * math.Day)
 	days34 := math.Duration(34 * math.Day)
 	days90 := math.Duration(90 * math.Day)
 	days165 := math.Duration(165 * math.Day)
 	days180 := math.Duration(180 * math.Day)
+	days365 := math.Duration(math.Year)
 
 	type ec struct {
 		rate uint64
@@ -447,6 +449,44 @@ func TestEAIFactorSoundness(t *testing.T) {
 			},
 			lastEAIOffset: 84 * math.Day,
 		},
+		//  Case 6: What happens if an account is:
+		//
+		// - locked for 365 days
+		// - notified immediately
+		// - 400 days since last EAI update
+		// - current actual weighted average age is 400 days
+		//
+		// In other words, can we correctly handle the case that a genesis
+		// account is first processed after it has already unlocked?
+		//
+		// The span of effective average age we care about for the unlocked
+		// portion runs from day 0 to day 400. Using the example table:
+		//
+		//  13%       x────────────────┐
+		//  10%                        x───────x--
+		//          _______________________________
+		//  actual    0               365     400
+		//  effect.  365              365     400
+		//  month
+		//
+		// Because the account was locked for 365 days, and 365 days has a bonus
+		// rate of 3%, the actual rate used for that period should increase by
+		// a constant rate of 3%. At the end of the lock period, the bonus expires,
+		// returning the account to the basic unlocked rate for its age: 10%.
+		// We thus get the following calculation to
+		// compute the EAI multiplier:
+		//
+		//    e^(13% * 365 days)
+		//  * e^(10% *  35 days)
+		soundnessCase{
+			expectCalc: []ec{
+				{13, 365},
+				{10, 35},
+			},
+			lastEAIOffset:    400 * math.Day,
+			lockPeriod:       &days365,
+			lockNotifyOffset: &daysn35,
+		},
 	}
 
 	for i, scase := range cases {
@@ -480,7 +520,7 @@ func TestEAIFactorSoundness(t *testing.T) {
 			for _, ec := range scase.expectCalc {
 				calc(ec.rate, ec.days)
 			}
-			t.Logf("Total factor: %s", expected)
+			t.Logf("Total factor:  %s", expected)
 
 			// calculate the actual value
 			blockTime := math.Timestamp(1 * math.Year)
@@ -501,6 +541,12 @@ func TestEAIFactorSoundness(t *testing.T) {
 				DefaultUnlockedEAI,
 			)
 			require.NoError(t, err)
+
+			// log the actual factor
+			actualF := decimal.WithContext(decimal.Context128)
+			actualF.SetUint64(actual)
+			actualF.Quo(actualF, decimal.New(constants.RateDenominator, 0))
+			t.Logf("Actual factor: %s", actualF)
 
 			// convert to same format as actual
 			expected.Mul(expected, decimal.New(constants.RateDenominator, 0))
