@@ -610,7 +610,7 @@ func TestSoundnessCustomDates(t *testing.T) {
 		// Because the account was locked for 90 days, and 90 days has a bonus
 		// rate of 1%, the actual rate used for that period should increase by
 		// a constant rate of 1%. At the end of the lock period, the bonus expires,
-		// returning the account to the basic unlocked rate for its age: 3%.
+		// returning the account to the basic unlocked rate for its age: 4%.
 		//
 		// Because the account was notified immediately, its effective WAA doesn't
 		// change through the duration of the notification period.
@@ -618,14 +618,61 @@ func TestSoundnessCustomDates(t *testing.T) {
 		// We thus get the following calculation to
 		// compute the EAI multiplier:
 		//
-		//    e^(4% * 90 days)
-		//  * e^(3% * 15 days)
+		//    e^(5% * 90 days)
+		//  * e^(4% * 15 days)
 		customDateCase{
 			expectCalc: []ec{
 				{5, 90},
 				{4, 15},
 			},
 			lastEAIOffset:      125 * math.Day,
+			lockPeriod:         &days90,
+			unlocksOnOffset:    &daysn15,
+			blockTime:          345 * math.Day,
+			weightedAverageAge: 105 * math.Day,
+		},
+		//  Case 3: What happens if an account is:
+		//
+		// - created at day 240
+		// - immediately locked for 90 days
+		// - notified immediately
+		// - block time is 345
+		// - 100 days since last EAI update (update was on day 245)
+		// - current actual weighted average age is 105 days
+		//
+		// In other words, can we correctly handle the case that an account
+		// is created, locked, notified, and unlocked all in the interval
+		// between creditEAI txs?
+		//
+		// The span of effective average age we care about for the unlocked
+		// portion runs from day 0 to day 400. Using the example table:
+		//
+		//   5%       ├─────x───────────┐
+		//   4%                         └─────x--
+		//          _____________________________
+		//  actual   240   245         330   345
+		//  effect.   90    5           90   105
+		//  month    (3)               (3)
+		//
+		// Because the account was locked for 90 days, and 90 days has a bonus
+		// rate of 1%, the actual rate used for that period should increase by
+		// a constant rate of 1%. At the end of the lock period, the bonus expires,
+		// returning the account to the basic unlocked rate for its age: 4%.
+		//
+		// Because the account was notified immediately, its effective WAA doesn't
+		// change through the duration of the notification period.
+		//
+		// We thus get the following calculation to
+		// compute the EAI multiplier:
+		//
+		//    e^(5% * 85 days)
+		//  * e^(4% * 15 days)
+		customDateCase{
+			expectCalc: []ec{
+				{5, 85},
+				{4, 15},
+			},
+			lastEAIOffset:      100 * math.Day,
 			lockPeriod:         &days90,
 			unlocksOnOffset:    &daysn15,
 			blockTime:          345 * math.Day,
