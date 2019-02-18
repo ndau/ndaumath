@@ -1,11 +1,10 @@
 package eai
 
 import (
-	"fmt"
-
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 	"github.com/oneiro-ndev/ndaumath/pkg/unsigned"
+	"github.com/pkg/errors"
 )
 
 // Calculate the EAI due for a given account
@@ -29,11 +28,6 @@ import (
 // Continuously compounded interest avoids that issue: both accounts will
 // see the same rate of return; the benefit of the one registered to the
 // frequent node is that it sees the increase more often.
-//
-// It is a logic error if `lock != nil && lock.UnlocksOn < blockTime`:
-// rates change at the unlock point, so this function must be called once
-// at its unlock moment, and once again for the unlocked span from the
-// unlock point until the next event.
 func Calculate(
 	balance math.Ndau,
 	blockTime, lastEAICalc math.Timestamp,
@@ -77,15 +71,48 @@ func Calculate(
 //       │   ├── from ───┴───── lastEAICalcAge ──────┤
 //       │   └────── weightedAverageAge (to) ────────┘
 //   Durations
-//
-// It is a logic error if lock.UnlocksOn < blockTime;
-// in that case, this function will return nil.
 func calculateEAIFactor(
 	blockTime, lastEAICalc math.Timestamp,
 	weightedAverageAge math.Duration,
 	lock Lock,
 	unlockedTable RateTable,
 ) (uint64, error) {
+	if lock != nil && lock.GetUnlocksOn() != nil && *lock.GetUnlocksOn() < blockTime {
+		// we need to treat this as two nested calls and return their product
+		unlockTs := *lock.GetUnlocksOn()
+
+		atUnlock, err := calculateEAIFactor(
+			unlockTs, lastEAICalc,
+			weightedAverageAge-blockTime.Since(unlockTs),
+			lock,
+			unlockedTable,
+		)
+		if err != nil {
+			return 0, errors.Wrap(err, "calculating preUnlock")
+		}
+
+		postUnlock, err := calculateEAIFactor(
+			blockTime, unlockTs,
+			weightedAverageAge,
+			nil,
+			unlockedTable,
+		)
+		if err != nil {
+			return 0, errors.Wrap(err, "calculating postUnlock")
+		}
+
+		factor, err := unsigned.MulDiv(
+			atUnlock,
+			postUnlock,
+			constants.RateDenominator,
+		)
+		if err != nil {
+			return factor, errors.Wrap(err, "calculating composite factor")
+		}
+
+		return factor, err
+	}
+
 	factor := uint64(constants.RateDenominator) // 1.0, effectively
 
 	lastEAICalcAge := blockTime.Since(lastEAICalc)
@@ -94,13 +121,16 @@ func calculateEAIFactor(
 		offset = lock.GetNoticePeriod()
 	}
 	from := weightedAverageAge - lastEAICalcAge
+	if from < 0 {
+		// the WAA can be treated as the actual age of the account.
+		// if the WAA is more recent than the lastEAICalcAge, from will be negative.
+		// this isn't a useful position to take: from any particular account's
+		// perspective, the previous state of the blockchain shouldn't matter
+		// at all. Therefore, we set it to 0 to get the correct rate period.
+		from = 0
+	}
 	var rateSlice RateSlice
 	if lock != nil && lock.GetUnlocksOn() != nil {
-		if *lock.GetUnlocksOn() < blockTime {
-			return 0, fmt.Errorf("*lock.UnlocksOn (%s) < blockTime (%s)",
-				lock.GetUnlocksOn().String(), blockTime.String(),
-			)
-		}
 		notify := lock.GetUnlocksOn().Sub(lock.GetNoticePeriod())
 		freeze := blockTime.Since(notify)
 		rateSlice = unlockedTable.SliceF(from, weightedAverageAge, offset, freeze)
