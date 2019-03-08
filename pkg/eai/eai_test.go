@@ -816,6 +816,63 @@ func TestCalculateEAIRate(t *testing.T) {
 	}
 }
 
+func TestCalculateEAIRateNotified(t *testing.T) {
+	type args struct {
+		weightedAverageAge math.Duration
+		lock               *testLock
+		unlockedTable      RateTable
+	}
+	tests := []struct {
+		name      string
+		args      args
+		want      Rate
+		unlocksOn math.Timestamp
+		now       math.Timestamp
+	}{
+		{
+			"five-line chart",
+			// lock bonus: 1%. effective WAA at unlock: 252d -> 8m -> 9%. Expect 10%.
+			args{200 * math.Day, newTestLock(90*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI},
+			RateFromPercent(10),
+			252 * math.Day,
+			200 * math.Day,
+		},
+		{
+			"five-line chart 1000 days later",
+			// lock bonus: 1%. effective WAA at unlock: 252d -> 8m -> 9%. Expect 10%.
+			args{200 * math.Day, newTestLock(90*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI},
+			RateFromPercent(10),
+			(1000 + 252) * math.Day,
+			(1000 + 200) * math.Day,
+		},
+		{
+			"five-line chart after unlock",
+			// unlocks @ 252. Day 260. effective WAA 260 -> 8m -> 9%. Expect 9%.
+			args{260 * math.Day, newTestLock(90*math.Day, DefaultLockBonusEAI), DefaultUnlockedEAI},
+			RateFromPercent(9),
+			252 * math.Day,
+			260 * math.Day,
+		},
+		{
+			"max rate",
+			// unlocks at 3y; bonus 5%. Day 0. Effective WAA 3y -> 10%. Expect 15%
+			args{0, newTestLock(3*math.Year, DefaultLockBonusEAI), DefaultUnlockedEAI},
+			RateFromPercent(15),
+			3 * math.Year,
+			0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// notify the lock
+			tt.args.lock.UnlocksOn = &tt.unlocksOn
+			if got := CalculateEAIRate(tt.args.weightedAverageAge, tt.args.lock, tt.args.unlockedTable, tt.now); got != tt.want {
+				t.Errorf("CalculateEAIRate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 const datefmt = "1/2/06"
 
 type realtest struct {

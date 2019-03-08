@@ -198,14 +198,15 @@ func CalculateEAIRate(
 			effectiveWAA += lock.GetNoticePeriod()
 		} else {
 			uo := *lock.GetUnlocksOn()
-			if uo < at {
+			if at < uo {
 				// notified, which means our effective WAA is frozen at the
 				// WAA we'll have at the unlock time, which means we need to
 				// add the time until then
 				effectiveWAA += uo.Since(at)
+			} else {
+				// we're past the unlock timestamp, so we're not actually locked anymore
+				lock = nil
 			}
-			// else we're past the unlock timestamp, so we're back on the normal
-			// increase of WAA
 		}
 	}
 	effectiveRate := unlockedTable.RateAt(effectiveWAA)
