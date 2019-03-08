@@ -179,29 +179,18 @@ func calculateEAIFactor(
 	return factor, nil
 }
 
-// CalculateEAIRate accepts a WAA and a lock, plus rate table and estimated
-// block time, and looks up the current EAI rate from that info. The rate is
-// returned as a Rate: a newtype wrapping a uint64, with an implied denominator
-// of constants.RateDenominator.
-//
-// This function is necessarily an approximation: it will return values close
-// to, but not necessarily exactly the same as, an true EAI calculation. This
-// occurrs when the appropriate Lock has been notified and its notification
-// period has already expired, because the rate depends on the duration between
-// the unlock and the current block time.
+// CalculateEAIRate accepts a WAA and a lock, plus rate table,
+// and looks up the current EAI rate from that info.
+// The rate is returned as a Rate: a newtype wrapping a uint64,
+// with an implied denominator of constants.RateDenominator.
 func CalculateEAIRate(
 	weightedAverageAge math.Duration,
 	lock Lock,
 	unlockedTable RateTable,
-	estimatedBlockTime math.Timestamp,
-) (Rate, error) {
-	rateInt, err := calculateEAIFactor(
-		estimatedBlockTime,
-		estimatedBlockTime.Sub(weightedAverageAge),
-		weightedAverageAge,
-		lock,
-		unlockedTable,
-	)
-	// subtract 1 from the rate; we only want the rate, not a multiplier
-	return Rate(rateInt - constants.RateDenominator), err
+) Rate {
+	effectiveRate := unlockedTable.RateAt(weightedAverageAge)
+	if lock != nil {
+		effectiveRate += lock.GetBonusRate()
+	}
+	return effectiveRate
 }
