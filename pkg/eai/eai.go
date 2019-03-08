@@ -179,16 +179,36 @@ func calculateEAIFactor(
 	return factor, nil
 }
 
-// CalculateEAIRate accepts a WAA and a lock, plus rate table,
-// and looks up the current EAI rate from that info.
-// The rate is returned as a Rate: a newtype wrapping a uint64,
-// with an implied denominator of constants.RateDenominator.
+// CalculateEAIRate accepts a WAA, a lock, a rate table, and a calculation
+// timestamp, and looks up the current EAI rate from that info. The rate is
+// returned as a Rate: a newtype wrapping a uint64, with an implied denominator
+// of constants.RateDenominator.
+//
+// The timestamp is necessary in order to determine whether the lock is still
+// notified, or the notice period has expired.
 func CalculateEAIRate(
 	weightedAverageAge math.Duration,
 	lock Lock,
 	unlockedTable RateTable,
+	at math.Timestamp,
 ) Rate {
-	effectiveRate := unlockedTable.RateAt(weightedAverageAge)
+	effectiveWAA := weightedAverageAge
+	if lock != nil {
+		if lock.GetUnlocksOn() == nil {
+			effectiveWAA += lock.GetNoticePeriod()
+		} else {
+			uo := *lock.GetUnlocksOn()
+			if uo < at {
+				// notified, which means our effective WAA is frozen at the
+				// WAA we'll have at the unlock time, which means we need to
+				// add the time until then
+				effectiveWAA += uo.Since(at)
+			}
+			// else we're past the unlock timestamp, so we're back on the normal
+			// increase of WAA
+		}
+	}
+	effectiveRate := unlockedTable.RateAt(effectiveWAA)
 	if lock != nil {
 		effectiveRate += lock.GetBonusRate()
 	}
