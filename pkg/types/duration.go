@@ -91,6 +91,10 @@ func ParseDuration(s string) (Duration, error) {
 		return Duration(0), err
 	}
 
+	if result["neg"] != "" {
+		duration = -duration
+	}
+
 	return duration, nil
 }
 
@@ -98,6 +102,10 @@ func ParseDuration(s string) (Duration, error) {
 func (d Duration) String() string {
 	value := int64(d)
 	out := ""
+	if value < 0 {
+		out = "-"
+		value = -value
+	}
 	divmod := func(divisor, dividend int64) (int64, int64) {
 		return divisor / dividend, divisor % dividend
 	}
