@@ -80,6 +80,18 @@ func TestParseDuration(t *testing.T) {
 		{"t1μs", args{"t1μs"}, Duration(1), false},
 		{"t999999μ", args{"t999999μ"}, Duration(999999), false},
 		{"t1000000μ", args{"t1000000μ"}, Duration(0), true},
+		{"-t1s", args{"-t1s"}, -Duration(1 * Second), false},
+		{"-1m", args{"-1m"}, -Duration(1 * Month), false},
+		{"-t1m", args{"-t1m"}, -Duration(1 * Minute), false},
+		{"-p1y2m3dt4h5m6s", args{"-p1y2m3dt4h5m6s"}, -Duration(36993906000000), false},
+		{"-P1Y2M3DT4H5M6S", args{"-P1Y2M3DT4H5M6S"}, -Duration(36993906000000), false},
+		{"-1y2m3dt4h5m6s7u", args{"-1y2m3dt4h5m6s7u"}, -Duration(36993906000007), false},
+		{"-100y", args{"-100y"}, -Duration(100 * Year), false}, // 3 digit year
+		{"-t1u", args{"-t1u"}, -Duration(1), false},
+		{"-t1us", args{"-t1us"}, -Duration(1), false},
+		{"-t1μ", args{"-t1μ"}, -Duration(1), false},
+		{"-t1μs", args{"-t1μs"}, -Duration(1), false},
+		{"-t999999μ", args{"-t999999μ"}, -Duration(999999), false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
