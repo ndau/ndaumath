@@ -125,7 +125,7 @@ func (key *PrivateKey) UnmarshalText(text []byte) error {
 	expectPrefix := []byte(PrivateKeyPrefix)
 	lep := len(expectPrefix)
 	if !bytes.Equal(expectPrefix, text[:lep]) {
-		return fmt.Errorf("private key must begin with %q; got %q", PublicKeyPrefix, text[:lep])
+		return fmt.Errorf("private key must begin with %q; got %q", PrivateKeyPrefix, text[:lep])
 	}
 	err := (*keyBase)(key).UnmarshalText(text[lep:])
 	if err == nil {
