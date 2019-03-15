@@ -20,14 +20,14 @@ type Nanocent int64
 const (
 	dollar       = 100000000000 // 10^11 nanocents
 	phaseBlocks  = 10000
-	saleBlockQty = 1000
+	SaleBlockQty = 1000
 )
 
 // ApproxPriceAtUnit returns the price of the next ndau in USD given the number
 // already sold
 func ApproxPriceAtUnit(nunitsSold types.Ndau) float64 {
 	ndauSold := float64(nunitsSold / constants.QuantaPerUnit)
-	saleBlock := ndauSold / saleBlockQty
+	saleBlock := ndauSold / SaleBlockQty
 
 	if saleBlock <= phaseBlocks*1 {
 		// price in phase 1 has 14 doublings, from a starting point of $1 to a
@@ -217,7 +217,7 @@ func phase23(block int64) (out Nanocent, err error) {
 // PriceAtUnit returns the price of the next ndau given the number already sold
 func PriceAtUnit(nunitsSold types.Ndau) (Nanocent, error) {
 	ndauSold := nunitsSold / constants.QuantaPerUnit
-	block := uint64(ndauSold / saleBlockQty)
+	block := uint64(ndauSold / SaleBlockQty)
 
 	if block <= phaseBlocks*1 {
 		return phase1(block), nil

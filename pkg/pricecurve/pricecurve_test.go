@@ -107,7 +107,7 @@ func TestPhase1(t *testing.T) {
 	}
 
 	for block := uint64(0); block < 10000; block++ {
-		sold := block * constants.QuantaPerUnit * saleBlockQty
+		sold := block * constants.QuantaPerUnit * SaleBlockQty
 		apau := ApproxPriceAtUnit(types.Ndau(sold))
 		pau := phase1(block)
 		paud := float64(pau) / float64(dollar)
@@ -153,7 +153,7 @@ func TestPhase23(t *testing.T) {
 	}
 
 	for block := int64(10000); block < 30000; block++ {
-		sold := block * constants.QuantaPerUnit * saleBlockQty
+		sold := block * constants.QuantaPerUnit * SaleBlockQty
 		apau := ApproxPriceAtUnit(types.Ndau(sold))
 		pau, err := phase23(block)
 		require.NoError(t, err)
