@@ -9,6 +9,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+//go:generate msgp
+
 // A Nanocent is one billionth of one hundredth of one USD.
 //
 // It is fundamentally an integer and is computed using only integer math, for
