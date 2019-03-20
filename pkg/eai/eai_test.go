@@ -875,13 +875,16 @@ func TestCalculateEAIRateNotified(t *testing.T) {
 
 const datefmt = "1/2/06"
 
+// there was an assertion made that simple interest was the correct way to calculate
+// EAI. This test reads a simple interest result from the spreadsheet to
+// verify that the simple interest numbers are not in fact correct.
 type realtest struct {
 	name         string
 	chainDate    math.Timestamp
 	lockDuration math.Duration
 	quantity     math.Ndau
 	expected     math.Ndau
-	ken          math.Ndau
+	simpleint    math.Ndau
 }
 
 func getTestRecords(filename string) (string, []realtest) {
@@ -932,7 +935,7 @@ func getTestRecords(filename string) (string, []realtest) {
 					rec.expected = math.Ndau(q * constants.QuantaPerUnit)
 				case "Simple EAI":
 					q, _ := strconv.ParseFloat(r[j], 64)
-					rec.ken = math.Ndau(q * constants.QuantaPerUnit)
+					rec.simpleint = math.Ndau(q * constants.QuantaPerUnit)
 				}
 			}
 			testdata = append(testdata, rec)
@@ -972,7 +975,7 @@ func TestCalculateRealWorld(t *testing.T) {
 				t.Errorf("Calculate had a problem: %s", err)
 			}
 			if !withinEpsilon(got, tt.expected, math.Ndau(20)) {
-				t.Errorf("Calculate() = %v, want Ed:%v Ken:%v", got, tt.expected, tt.ken)
+				t.Errorf("Calculate() = %v, want:%v (simpleint:%v)", got, tt.expected, tt.simpleint)
 			}
 		})
 	}
@@ -1007,7 +1010,7 @@ func TestCalculateDebug(t *testing.T) {
 				t.Errorf("Calculate had a problem: %s", err)
 			}
 			if !withinEpsilon(got, tt.expected, math.Ndau(20)) {
-				t.Errorf("Calculate() = %v, want Ed:%v Ken:%v", got, tt.expected, tt.ken)
+				t.Errorf("Calculate() = %v, want:%v (simpleint:%v)", got, tt.expected, tt.simpleint)
 			}
 		})
 	}
@@ -1019,7 +1022,6 @@ type seqtest struct {
 	lockDuration math.Duration
 	quantity     math.Ndau
 	expected     math.Ndau
-	ken          math.Ndau
 }
 
 func TestCalculateSequence(t *testing.T) {
