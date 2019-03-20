@@ -977,3 +977,116 @@ func TestCalculateRealWorld(t *testing.T) {
 		})
 	}
 }
+
+func TestCalculateDebug(t *testing.T) {
+	// this test is mainly to make it easy to play with the calculations for EAI
+	enddate, _ := math.ParseTimestamp("2019-03-18T13:36:23Z")
+	chaindate, _ := math.ParseTimestamp("2017-11-27T00:00:00Z")
+	lock, _ := math.ParseDuration("1y3m21dt13h36m23s")
+	tests := []realtest{
+		realtest{
+			name:         "account 1",
+			chainDate:    chaindate,
+			lockDuration: lock,
+			quantity:     math.Ndau(1000 * constants.QuantaPerUnit),
+			expected:     math.Ndau(18499217106),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			waa := enddate.Since(tt.chainDate)
+			fmt.Printf("waa = %s", waa.String())
+			got, err := Calculate(
+				tt.quantity,
+				enddate, tt.chainDate, waa,
+				newTestLock(tt.lockDuration, DefaultLockBonusEAI),
+				DefaultUnlockedEAI,
+			)
+			if err != nil {
+				t.Errorf("Calculate had a problem: %s", err)
+			}
+			if !withinEpsilon(got, tt.expected, math.Ndau(20)) {
+				t.Errorf("Calculate() = %v, want Ed:%v Ken:%v", got, tt.expected, tt.ken)
+			}
+		})
+	}
+}
+
+type seqtest struct {
+	name         string
+	lastEAICalc  math.Timestamp
+	lockDuration math.Duration
+	quantity     math.Ndau
+	expected     math.Ndau
+	ken          math.Ndau
+}
+
+func TestCalculateSequence(t *testing.T) {
+	// we want two accounts to start at the same time but have different
+	// times at which they calculate EAI. At the end, we do a final
+	// calculation at the same time and see how much difference has
+	// accumulated
+	startqty := math.Ndau(1000 * constants.QuantaPerUnit)
+	starttime, _ := math.ParseTimestamp("2017-11-27T00:00:00Z")
+	endtime, _ := math.ParseTimestamp("2019-03-18T13:36:23Z")
+	lock, _ := math.ParseDuration("1y3m21dt13h36m23s")
+	accts := []seqtest{
+		seqtest{
+			name:         "acct A",
+			lastEAICalc:  starttime,
+			lockDuration: lock,
+			quantity:     startqty,
+		},
+		seqtest{
+			name:         "acct B",
+			lastEAICalc:  starttime,
+			lockDuration: lock,
+			quantity:     startqty,
+		},
+	}
+
+	for thistime := starttime + 300*math.Day; thistime < endtime; thistime += 3 * math.Day {
+		for i, tt := range accts {
+			waa := thistime.Since(starttime)
+			// fmt.Printf("waa = %s", waa.String())
+			eai, err := Calculate(
+				tt.quantity,
+				thistime, tt.lastEAICalc, waa,
+				newTestLock(tt.lockDuration, DefaultLockBonusEAI),
+				DefaultUnlockedEAI,
+			)
+			if err != nil {
+				t.Errorf("Calculate had a problem: %s", err)
+			}
+			accts[i].quantity += eai
+			accts[i].lastEAICalc = thistime
+			fmt.Printf("%s: Added %d to %d to get %d\n", tt.name, eai, tt.quantity, accts[i].quantity)
+			// for the next account we want to advance the clock by a couple of minutes
+			thistime += 2 * math.Minute
+		}
+	}
+
+	fmt.Println(accts[0].quantity, accts[1].quantity)
+
+	t.Run("TestCalculateSequence result", func(t *testing.T) {
+		for i, tt := range accts {
+			waa := endtime.Since(tt.lastEAICalc)
+			// fmt.Printf("waa = %s\n", waa.String())
+			eai, err := Calculate(
+				tt.quantity,
+				endtime, tt.lastEAICalc, waa,
+				newTestLock(tt.lockDuration, DefaultLockBonusEAI),
+				DefaultUnlockedEAI,
+			)
+			if err != nil {
+				t.Errorf("Calculate had a problem: %s", err)
+			}
+			accts[i].quantity += eai
+			fmt.Printf("%s: Added %d to %d to get %d\n", tt.name, eai, tt.quantity, accts[i].quantity)
+		}
+		if !withinEpsilon(accts[0].quantity, accts[1].quantity, math.Ndau(1)) {
+			t.Errorf("Calculate results didn't match: %v and %v", accts[0].quantity, accts[1].quantity)
+		}
+	})
+}
