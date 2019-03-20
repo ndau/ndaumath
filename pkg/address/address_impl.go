@@ -42,6 +42,8 @@ func newError(msg string) error {
 // All addresses start with this 2-byte prefix, followed by a kind byte.
 const addrPrefix string = "nd"
 const kindOffset int = len(addrPrefix)
+
+// predefined address kinds
 const (
 	KindUser        byte = 'a'
 	KindNdau        byte = 'n'
@@ -107,8 +109,8 @@ func Generate(kind byte, data []byte) (Address, error) {
 	// so we figure out what characters we want and build that into a header
 	prefix :=
 		b32.Index(addrPrefix[0:1])<<11 +
-		b32.Index(addrPrefix[1:2])<<6 +
-		b32.Index(string(kind))<<1
+			b32.Index(addrPrefix[1:2])<<6 +
+			b32.Index(string(kind))<<1
 	hdr := []byte{byte((prefix >> 8) & 0xFF), byte(prefix & 0xFF)}
 	h2 := append(hdr, h1...)
 	// then we checksum that result and append the checksum
@@ -160,4 +162,10 @@ func (z Address) String() string {
 // Kind returns the kind byte of the address.
 func (z Address) Kind() byte {
 	return z.addr[kindOffset]
+}
+
+// Revalidate this address to ensure it is legitimate
+func (z Address) Revalidate() error {
+	_, err := Validate(z.addr)
+	return err
 }
