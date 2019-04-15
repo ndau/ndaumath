@@ -37,7 +37,12 @@ import (
 // Continuously compounded interest avoids that issue: both accounts will
 // see the same rate of return; the benefit of the one registered to the
 // frequent node is that it sees the increase more often.
-type Rate uint64
+//
+// We use a signed int so that json2msgp won't need type hints for encoding
+// rate tables in system variables.  If we use a rate denominator of 1e12,
+// corresponding to a rate of 100%, then 63 bits gives us enough room to
+// handle rates in the hundreds of millions of percents.
+type Rate int64
 
 var (
 	fracdigits int
