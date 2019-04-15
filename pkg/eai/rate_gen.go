@@ -24,8 +24,8 @@ func (z *RSRow) DecodeMsg(dc *msgp.Reader) (err error) {
 		return
 	}
 	{
-		var zb0002 uint64
-		zb0002, err = dc.ReadUint64()
+		var zb0002 int64
+		zb0002, err = dc.ReadInt64()
 		if err != nil {
 			err = msgp.WrapError(err, "Rate")
 			return
@@ -47,7 +47,7 @@ func (z *RSRow) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "Duration")
 		return
 	}
-	err = en.WriteUint64(uint64(z.Rate))
+	err = en.WriteInt64(int64(z.Rate))
 	if err != nil {
 		err = msgp.WrapError(err, "Rate")
 		return
@@ -65,7 +65,7 @@ func (z *RSRow) MarshalMsg(b []byte) (o []byte, err error) {
 		err = msgp.WrapError(err, "Duration")
 		return
 	}
-	o = msgp.AppendUint64(o, uint64(z.Rate))
+	o = msgp.AppendInt64(o, int64(z.Rate))
 	return
 }
 
@@ -87,8 +87,8 @@ func (z *RSRow) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		return
 	}
 	{
-		var zb0002 uint64
-		zb0002, bts, err = msgp.ReadUint64Bytes(bts)
+		var zb0002 int64
+		zb0002, bts, err = msgp.ReadInt64Bytes(bts)
 		if err != nil {
 			err = msgp.WrapError(err, "Rate")
 			return
@@ -101,7 +101,7 @@ func (z *RSRow) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *RSRow) Msgsize() (s int) {
-	s = 1 + z.Duration.Msgsize() + msgp.Uint64Size
+	s = 1 + z.Duration.Msgsize() + msgp.Int64Size
 	return
 }
 
@@ -123,8 +123,8 @@ func (z *RTRow) DecodeMsg(dc *msgp.Reader) (err error) {
 		return
 	}
 	{
-		var zb0002 uint64
-		zb0002, err = dc.ReadUint64()
+		var zb0002 int64
+		zb0002, err = dc.ReadInt64()
 		if err != nil {
 			err = msgp.WrapError(err, "Rate")
 			return
@@ -146,7 +146,7 @@ func (z *RTRow) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "From")
 		return
 	}
-	err = en.WriteUint64(uint64(z.Rate))
+	err = en.WriteInt64(int64(z.Rate))
 	if err != nil {
 		err = msgp.WrapError(err, "Rate")
 		return
@@ -164,7 +164,7 @@ func (z *RTRow) MarshalMsg(b []byte) (o []byte, err error) {
 		err = msgp.WrapError(err, "From")
 		return
 	}
-	o = msgp.AppendUint64(o, uint64(z.Rate))
+	o = msgp.AppendInt64(o, int64(z.Rate))
 	return
 }
 
@@ -186,8 +186,8 @@ func (z *RTRow) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		return
 	}
 	{
-		var zb0002 uint64
-		zb0002, bts, err = msgp.ReadUint64Bytes(bts)
+		var zb0002 int64
+		zb0002, bts, err = msgp.ReadInt64Bytes(bts)
 		if err != nil {
 			err = msgp.WrapError(err, "Rate")
 			return
@@ -200,15 +200,15 @@ func (z *RTRow) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *RTRow) Msgsize() (s int) {
-	s = 1 + z.From.Msgsize() + msgp.Uint64Size
+	s = 1 + z.From.Msgsize() + msgp.Int64Size
 	return
 }
 
 // DecodeMsg implements msgp.Decodable
 func (z *Rate) DecodeMsg(dc *msgp.Reader) (err error) {
 	{
-		var zb0001 uint64
-		zb0001, err = dc.ReadUint64()
+		var zb0001 int64
+		zb0001, err = dc.ReadInt64()
 		if err != nil {
 			err = msgp.WrapError(err)
 			return
@@ -220,7 +220,7 @@ func (z *Rate) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z Rate) EncodeMsg(en *msgp.Writer) (err error) {
-	err = en.WriteUint64(uint64(z))
+	err = en.WriteInt64(int64(z))
 	if err != nil {
 		err = msgp.WrapError(err)
 		return
@@ -231,15 +231,15 @@ func (z Rate) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z Rate) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	o = msgp.AppendUint64(o, uint64(z))
+	o = msgp.AppendInt64(o, int64(z))
 	return
 }
 
 // UnmarshalMsg implements msgp.Unmarshaler
 func (z *Rate) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	{
-		var zb0001 uint64
-		zb0001, bts, err = msgp.ReadUint64Bytes(bts)
+		var zb0001 int64
+		zb0001, bts, err = msgp.ReadInt64Bytes(bts)
 		if err != nil {
 			err = msgp.WrapError(err)
 			return
@@ -252,7 +252,7 @@ func (z *Rate) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z Rate) Msgsize() (s int) {
-	s = msgp.Uint64Size
+	s = msgp.Int64Size
 	return
 }
 
@@ -286,8 +286,8 @@ func (z *RateSlice) DecodeMsg(dc *msgp.Reader) (err error) {
 			return
 		}
 		{
-			var zb0004 uint64
-			zb0004, err = dc.ReadUint64()
+			var zb0004 int64
+			zb0004, err = dc.ReadInt64()
 			if err != nil {
 				err = msgp.WrapError(err, zb0001, "Rate")
 				return
@@ -316,7 +316,7 @@ func (z RateSlice) EncodeMsg(en *msgp.Writer) (err error) {
 			err = msgp.WrapError(err, zb0005, "Duration")
 			return
 		}
-		err = en.WriteUint64(uint64(z[zb0005].Rate))
+		err = en.WriteInt64(int64(z[zb0005].Rate))
 		if err != nil {
 			err = msgp.WrapError(err, zb0005, "Rate")
 			return
@@ -337,7 +337,7 @@ func (z RateSlice) MarshalMsg(b []byte) (o []byte, err error) {
 			err = msgp.WrapError(err, zb0005, "Duration")
 			return
 		}
-		o = msgp.AppendUint64(o, uint64(z[zb0005].Rate))
+		o = msgp.AppendInt64(o, int64(z[zb0005].Rate))
 	}
 	return
 }
@@ -372,8 +372,8 @@ func (z *RateSlice) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			return
 		}
 		{
-			var zb0004 uint64
-			zb0004, bts, err = msgp.ReadUint64Bytes(bts)
+			var zb0004 int64
+			zb0004, bts, err = msgp.ReadInt64Bytes(bts)
 			if err != nil {
 				err = msgp.WrapError(err, zb0001, "Rate")
 				return
@@ -389,7 +389,7 @@ func (z *RateSlice) UnmarshalMsg(bts []byte) (o []byte, err error) {
 func (z RateSlice) Msgsize() (s int) {
 	s = msgp.ArrayHeaderSize
 	for zb0005 := range z {
-		s += 1 + z[zb0005].Duration.Msgsize() + msgp.Uint64Size
+		s += 1 + z[zb0005].Duration.Msgsize() + msgp.Int64Size
 	}
 	return
 }
@@ -424,8 +424,8 @@ func (z *RateTable) DecodeMsg(dc *msgp.Reader) (err error) {
 			return
 		}
 		{
-			var zb0004 uint64
-			zb0004, err = dc.ReadUint64()
+			var zb0004 int64
+			zb0004, err = dc.ReadInt64()
 			if err != nil {
 				err = msgp.WrapError(err, zb0001, "Rate")
 				return
@@ -454,7 +454,7 @@ func (z RateTable) EncodeMsg(en *msgp.Writer) (err error) {
 			err = msgp.WrapError(err, zb0005, "From")
 			return
 		}
-		err = en.WriteUint64(uint64(z[zb0005].Rate))
+		err = en.WriteInt64(int64(z[zb0005].Rate))
 		if err != nil {
 			err = msgp.WrapError(err, zb0005, "Rate")
 			return
@@ -475,7 +475,7 @@ func (z RateTable) MarshalMsg(b []byte) (o []byte, err error) {
 			err = msgp.WrapError(err, zb0005, "From")
 			return
 		}
-		o = msgp.AppendUint64(o, uint64(z[zb0005].Rate))
+		o = msgp.AppendInt64(o, int64(z[zb0005].Rate))
 	}
 	return
 }
@@ -510,8 +510,8 @@ func (z *RateTable) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			return
 		}
 		{
-			var zb0004 uint64
-			zb0004, bts, err = msgp.ReadUint64Bytes(bts)
+			var zb0004 int64
+			zb0004, bts, err = msgp.ReadInt64Bytes(bts)
 			if err != nil {
 				err = msgp.WrapError(err, zb0001, "Rate")
 				return
@@ -527,7 +527,7 @@ func (z *RateTable) UnmarshalMsg(bts []byte) (o []byte, err error) {
 func (z RateTable) Msgsize() (s int) {
 	s = msgp.ArrayHeaderSize
 	for zb0005 := range z {
-		s += 1 + z[zb0005].From.Msgsize() + msgp.Uint64Size
+		s += 1 + z[zb0005].From.Msgsize() + msgp.Int64Size
 	}
 	return
 }
