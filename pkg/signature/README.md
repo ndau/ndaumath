@@ -38,11 +38,11 @@ The instructions below are for non-extended keys ONLY. The "extra" bytes that ap
         * secp256k1 public keys need 7 bytes
         * secp256k1 private keys need 3 bytes
     * calculate the checksum as the trailing n bytes of the sha224 checksum of the input bytes
-    * append the checksum to the end of the input bytes, making its length a multiple of 5
+    * append the checksum to the end of the input bytes, making the total length a multiple of 5
     * convert the input byte stream to base32 using the alphabet `abcdefghijkmnpqrstuvwxyz23456789`
     * add "npub" for public keys and "npvt" for private keys to the front of the string
 
-Sample checksum calculation:
+Sample checksum calculation in Go:
 
 ```go
 func cksumN(input []byte, n byte) []byte {
@@ -77,3 +77,34 @@ func cksumN(input []byte, n byte) []byte {
 
 
 # ndau signature format
+
+ndau signatures follow a similar pattern.
+
+## Signing transactions
+
+* Get the raw bytes of the private key
+* Generate the SignableBytes of the transaction (see below)
+* Sign the SignableBytes (do not hash it first) using the private key's standard signature algorithm
+* Calculate the checksum of the signature using the algorithm above
+* Generate the base32 representation using the same alphabet above
+
+## Signable Bytes
+
+A transaction must be signed, but the signature itself must not be part of the signed result. To calculate the collection of Signable Bytes for any transaction:
+
+* Sort the JSON field names alphabetically
+* Build a byte array concatenating all the bytes of each of the field types:
+    * If the field name matches the regular expression "[sS]ignature[s]?", it should be skipped
+    * String -- use the bytes of the string
+    * Positive integer and quantity of ndau -- store the 64-bit (8 bytes) representation of the quantity, highest-byte first. The value 258 would be stored as `00 00 00 00 00 00 01 02`. Note that JavaScript can't accurately represent more than 53 bits so care must be taken when using JS.
+    * Boolean -- true is 0x01, false is 0x00
+    * Duration -- store the bytes of the text representation of the duration (`1y5m17dt4h37m`)
+    * Nested objects -- treat recursively: sort the subkeys and record the concatenated values
+* The resulting byte array is the SignableBytes of the transaction
+
+## Verifying a transaction:
+
+* Get the raw bytes of the public key, decoding as necessary
+* Generate the SignableBytes of the transaction
+* Get the raw bytes of the signature
+* Verify the SignableBytes using the public key's standard verify algorithm
