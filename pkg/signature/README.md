@@ -38,15 +38,20 @@ The instructions below are for non-extended keys ONLY. The "extra" bytes that ap
         * secp256k1 public keys need 7 bytes
         * secp256k1 private keys need 3 bytes
     * calculate the checksum as the trailing n bytes of the sha224 checksum of the input bytes
+    * append the checksum to the end of the input bytes, making its length a multiple of 5
+    * convert the input byte stream to base32 using the alphabet `abcdefghijkmnpqrstuvwxyz23456789`
+    * add "npub" for public keys and "npvt" for private keys to the front of the string
+
+Sample checksum calculation:
+
 ```go
 func cksumN(input []byte, n byte) []byte {
 	sum := sha256.Sum224(input)
 	return sum[sha256.Size224-int(n):]
 }
 ```
-    * append the checksum to the end of the input bytes, making its length a multiple of 5
-    * convert the input byte stream to base32 using the alphabet `abcdefghijkmnpqrstuvwxyz23456789`
-    * add "npub" for public keys and "npvt" for private keys to the front of the string
+
+
 
 ### Examples
 
