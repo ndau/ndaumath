@@ -44,7 +44,7 @@ func (secp256k1) SignatureSize() int {
 // Generate creates a new keypair
 func (secp256k1) Generate(rand io.Reader) (public, private []byte, err error) {
 	// generate a seed of the recommended size
-	seed, err := bip32.GenerateSeed(bip32.RecommendedSeedLen, nil)
+	seed, err := bip32.GenerateSeed(bip32.RecommendedSeedLen, rand)
 	if err != nil {
 		return
 	}
