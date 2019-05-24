@@ -75,7 +75,23 @@ func ParseKind(i interface{}) (byte, error) {
 		if v == "" {
 			return b, fmt.Errorf("empty string is not a valid Kind")
 		}
-		b = byte(strings.ToLower(v)[0])
+		v = strings.ToLower(v)
+		switch v {
+		case "u", "user":
+			b = KindUser
+		case "ndau":
+			b = KindNdau
+		case "endowment":
+			b = KindEndowment
+		case "exchange":
+			b = KindExchange
+		case "bpc":
+			b = KindBPC
+		case "marketmaker":
+			b = KindMarketMaker
+		default:
+			b = byte(v[0])
+		}
 	case rune:
 		b = byte(strings.ToLower(string(v))[0])
 	case byte:
