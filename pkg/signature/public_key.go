@@ -42,7 +42,7 @@ var _ fmt.Stringer = (*PublicKey)(nil)
 var _ Key = (*PublicKey)(nil)
 
 // A PublicKey is the public half of a keypair
-type PublicKey keyBase
+type PublicKey struct{ keyBase }
 
 // RawPublicKey creates a PublicKey from raw data
 //
@@ -55,11 +55,11 @@ func RawPublicKey(al Algorithm, key, extra []byte) (*PublicKey, error) {
 	if extra == nil {
 		extra = []byte{}
 	}
-	pk := PublicKey{
+	pk := PublicKey{keyBase{
 		algorithm: al,
 		key:       key,
 		extra:     extra,
-	}
+	}}
 	if len(key) != pk.Size() {
 		return nil, fmt.Errorf("wrong public key length: have %d, want %d", len(key), pk.Size())
 	}
@@ -76,17 +76,12 @@ func (key PublicKey) Verify(message []byte, sig Signature) bool {
 	if NameOf(key.Algorithm()) != NameOf(sig.algorithm) {
 		return false
 	}
-	return key.Algorithm().Verify(keyBase(key).key, message, sig.data)
-}
-
-// Marshal marshals the PublicKey into a serialized binary format
-func (key PublicKey) Marshal() ([]byte, error) {
-	return keyBase(key).Marshal()
+	return key.Algorithm().Verify(key.key, message, sig.data)
 }
 
 // Unmarshal unmarshals the serialized bytes into the PublicKey pointer
 func (key *PublicKey) Unmarshal(serialized []byte) error {
-	err := (*keyBase)(key).Unmarshal(serialized)
+	err := key.keyBase.Unmarshal(serialized)
 	if err == nil {
 		if len(key.key) != key.Size() {
 			err = fmt.Errorf("Wrong size public key: expect len %d, have %d", key.Size(), len(key.key))
@@ -95,14 +90,9 @@ func (key *PublicKey) Unmarshal(serialized []byte) error {
 	return err
 }
 
-// MarshalMsg implements msgp.Marshaler
-func (key PublicKey) MarshalMsg(in []byte) (out []byte, err error) {
-	return keyBase(key).MarshalMsg(in)
-}
-
 // UnmarshalMsg implements msgp.Unmarshaler
 func (key *PublicKey) UnmarshalMsg(in []byte) (leftover []byte, err error) {
-	leftover, err = (*keyBase)(key).UnmarshalMsg(in)
+	leftover, err = key.keyBase.UnmarshalMsg(in)
 	if err == nil {
 		if len(key.key) != key.Size() {
 			err = fmt.Errorf("Wrong size public key: expect len %d, have %d", key.Size(), len(key.key))
@@ -127,7 +117,7 @@ func (key *PublicKey) Msgsize() (s int) {
 // PublicKeys encode like Keys, with the addition of a human-readable prefix
 // for easy identification.
 func (key PublicKey) MarshalText() ([]byte, error) {
-	bytes, err := keyBase(key).MarshalText()
+	bytes, err := key.keyBase.MarshalText()
 	bytes = append([]byte(PublicKeyPrefix), bytes...)
 	return bytes, err
 }
@@ -139,28 +129,13 @@ func (key *PublicKey) UnmarshalText(text []byte) error {
 	if !bytes.Equal(expectPrefix, text[:lep]) {
 		return fmt.Errorf("public key must begin with %q; got %q", PublicKeyPrefix, text[:lep])
 	}
-	err := (*keyBase)(key).UnmarshalText(text[lep:])
+	err := key.keyBase.UnmarshalText(text[lep:])
 	if err == nil {
 		if len(key.key) != key.Size() {
 			err = fmt.Errorf("Wrong size public key: expect len %d, have %d", key.Size(), len(key.key))
 		}
 	}
 	return err
-}
-
-// KeyBytes returns the key's data
-func (key PublicKey) KeyBytes() []byte {
-	return keyBase(key).KeyBytes()
-}
-
-// ExtraBytes returns the key's extra data
-func (key PublicKey) ExtraBytes() []byte {
-	return keyBase(key).ExtraBytes()
-}
-
-// Algorithm returns the key's algorithm
-func (key PublicKey) Algorithm() Algorithm {
-	return keyBase(key).Algorithm()
 }
 
 // String returns a shorthand for the key's data
@@ -172,7 +147,7 @@ func (key PublicKey) Algorithm() Algorithm {
 // This destructively truncates the key, but it is a useful format for
 // humans.
 func (key PublicKey) String() string {
-	return keyBase(key).String(PublicKeyPrefix)
+	return key.keyBase.String(PublicKeyPrefix)
 }
 
 // Truncate removes all extra data from this key.
@@ -191,9 +166,7 @@ func (key *PublicKey) Zeroize() {
 	if key == nil {
 		return
 	}
-	kkey := keyBase(*key)
-	kkey.Zeroize()
-	*key = PublicKey(kkey)
+	key.keyBase.Zeroize()
 }
 
 // MarshalString is like MarshalText, but to a string
