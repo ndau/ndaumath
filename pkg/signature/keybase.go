@@ -217,3 +217,8 @@ func (key *keyBase) Zeroize() {
 	key.key = nil
 	key.extra = nil
 }
+
+// IsZero is true when this key is the zero value
+func (key keyBase) IsZero() bool {
+	return (key.algorithm == nil || key.algorithm == Null) && len(key.key) == 0 && len(key.extra) == 0
+}
