@@ -1,7 +1,6 @@
 package types
 
 import (
-	"encoding"
 	"fmt"
 	gomath "math"
 	"regexp"
@@ -138,27 +137,4 @@ func ParseNdau(s string) (Ndau, error) {
 	}
 
 	return out, nil
-}
-
-// ensure Ndau implements TextMarshaler and TextUnmarshaler, because these
-// interfaces are used in several convenient contexts
-var _ encoding.TextMarshaler = (*Ndau)(nil)
-var _ encoding.TextUnmarshaler = (*Ndau)(nil)
-
-// MarshalText implements encoding.TextMarshaler
-func (n Ndau) MarshalText() ([]byte, error) {
-	return []byte(n.String()), nil
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler
-func (n *Ndau) UnmarshalText(text []byte) error {
-	if n == nil {
-		return errors.New("cannot unmarshal ndau into nil pointer")
-	}
-	ndau, err := ParseNdau(string(text))
-	if err != nil {
-		return err
-	}
-	*n = ndau
-	return nil
 }
