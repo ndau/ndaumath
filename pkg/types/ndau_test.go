@@ -162,3 +162,44 @@ func TestNdau_String(t *testing.T) {
 		})
 	}
 }
+
+func ndauize(n int) Ndau {
+	return Ndau(n * constants.NapuPerNdau)
+}
+
+func TestParseNdau(t *testing.T) {
+	tests := []struct {
+		name    string
+		in      string
+		want    Ndau
+		wantErr bool
+	}{
+		{"pct", "1%", Ndau(0), true},
+		{"1", "1", ndauize(1), false},
+		{"2", "2", ndauize(2), false},
+		{"1000", "1000", ndauize(1000), false},
+		{"1l", "1.00000000", ndauize(1), false},
+		{"2l", "2.00000000", ndauize(2), false},
+		{"1000l", "1000.00000000", ndauize(1000), false},
+		{"0.5l", "0.50000000", ndauize(1) / 2, false},
+		{"0.001l", "0.00100000", ndauize(1) / 1000, false},
+		{"1t", "1.0", ndauize(1), false},
+		{"2t", "2.0", ndauize(2), false},
+		{"1000t", "1000.0", ndauize(1000), false},
+		{"0.5t", "0.5", ndauize(1) / 2, false},
+		{"0.001t", "0.001", ndauize(1) / 1000, false},
+		{"too much precision", "1.000000001", ndauize(0), true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseNdau(tt.in)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseNdau() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ParseNdau() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
