@@ -178,6 +178,19 @@ func (key keyBase) Algorithm() Algorithm {
 	return key.algorithm
 }
 
+// FullString returns the full text serialization of the key's data
+//
+// It suppresses errors in favor of a human-readable error message.
+func (key keyBase) FullString(prefix string) string {
+	// we can't deal with errors in this function, so let's just ignore the
+	// error value and hope that we got at least something sensible back
+	text, _ := key.MarshalText()
+	if len(text) == 0 {
+		return "<unmarshalable>"
+	}
+	return prefix + string(text)
+}
+
 // String returns a shorthand for the key's data
 //
 // This returns the first 8 characters of the text serialization,
@@ -187,13 +200,7 @@ func (key keyBase) Algorithm() Algorithm {
 // This destructively truncates the key, but it is a useful format for
 // humans.
 func (key keyBase) String(prefix string) string {
-	// we can't deal with errors in this function, so let's just ignore the
-	// error value and hope that we got at least something sensible back
-	text, _ := key.MarshalText()
-	if len(text) == 0 {
-		return "<unmarshalable>"
-	}
-	s := prefix + string(text)
+	s := key.FullString(prefix)
 	if len(s) <= 15 {
 		return s
 	}

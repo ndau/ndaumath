@@ -138,6 +138,11 @@ func (key *PublicKey) UnmarshalText(text []byte) error {
 	return err
 }
 
+// FullString returns the key's human-readable serialization
+func (key PublicKey) FullString() string {
+	return key.keyBase.FullString(PublicKeyPrefix)
+}
+
 // String returns a shorthand for the key's data
 //
 // This returns the first 8 characters of the text serialization,
