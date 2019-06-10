@@ -19,8 +19,8 @@ type Nanocent int64
 
 const (
 	dollar       = 100000000000 // 10^11 nanocents
-	phaseBlocks  = 10000
-	SaleBlockQty = 1000
+	phaseBlocks  = 10000        // number of blocks in a phase
+	SaleBlockQty = 1000         // number of ndau in a block
 )
 
 // ApproxPriceAtUnit returns the price of the next ndau in USD given the number
@@ -118,18 +118,20 @@ func pow2(n int) uint64 {
 	return uint64(1) << uint(n)
 }
 
-// price in phase 1 has 14 doublings, from a starting point of $1 to a
-// finishing price of $16384 at the 10-millionth unit
+// price in phase 1 has 14 doublings, increasing every 1,000 ndau from a starting point
+// of $1 to a finishing price of $16384 at the 9,999,001st unit.
 //
-// The ratio between successive blocks is constant: 1.000970877049078
+// The ratio between successive blocks is constant: 1.00097097419
 //
-// To prevent excessive error, we pre-compute a table of doublings, and work
-// from there.
+// To prevent excessive error, we pre-compute a table of doublings, and
+// work from there. The 14 entries in this table are the prices of ndau when
+// 2 ^ (2 ^ (N - 1) * 14 / 9999) have been sold, where N = 1 to 14.
+
 func phase1(block uint64) (out Nanocent) {
 	doublings := []Nanocent{
-		100000000000, 100097087704, 100291545986, 100681596605, 101466254658,
-		103053964027, 106304303320, 113115764023, 128075986132, 164193839650,
-		269857914525, 728939964968, 5318693514199, 283159653540666,
+		100000000000, 100097097419, 100291575187, 100681665003, 101466402368,
+		103054274072, 106304953285, 113117158227, 128079155778, 164201982670,
+		269884708015, 729084792015, 5320807694887, 283384837710462,
 	}
 
 	if block <= 1 {
@@ -153,7 +155,7 @@ func phase1(block uint64) (out Nanocent) {
 	for i := uint64(0); i <= (block - pow2(dblock)); i++ {
 		nout, err = signed.MulDiv(
 			int64(out),
-			1000970877049078,
+			1000970974193617,
 			1000000000000000,
 		)
 		if err != nil {
