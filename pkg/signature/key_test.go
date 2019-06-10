@@ -80,7 +80,7 @@ func ExampleMarshalEd25519Public(t *testing.T) {
 	require.NoError(t, err)
 	var _ PublicKey = public
 	var _ PrivateKey = private
-	keydata, _ := keyBase(public).pack()
+	keydata, _ := public.pack()
 	b, _ := public.Marshal()
 	fmt.Printf(" raw key: `%x` (len %d)\nunpacked: `%x` (len %d)\n", keydata, len(keydata), b, len(b))
 	tx, _ := public.MarshalText()
@@ -92,7 +92,7 @@ func ExampleMarshalEd25519Private(t *testing.T) {
 	require.NoError(t, err)
 	var _ PublicKey = public
 	var _ PrivateKey = private
-	keydata, _ := keyBase(private).pack()
+	keydata, _ := private.pack()
 	b, _ := private.Marshal()
 	fmt.Printf(" raw key: `%x` (len %d)\nunpacked: `%x` (len %d)\n", keydata, len(keydata), b, len(b))
 	tx, _ := private.MarshalText()
@@ -104,7 +104,7 @@ func ExampleMarshalSecp256k1Public(t *testing.T) {
 	require.NoError(t, err)
 	var _ PublicKey = public
 	var _ PrivateKey = private
-	keydata, _ := keyBase(public).pack()
+	keydata, _ := public.pack()
 	b, _ := public.Marshal()
 	fmt.Printf(" raw key: `%x` (len %d)\nunpacked: `%x` (len %d)\n", keydata, len(keydata), b, len(b))
 	tx, _ := public.MarshalText()
@@ -116,7 +116,7 @@ func ExampleMarshalSecp256k1Private(t *testing.T) {
 	require.NoError(t, err)
 	var _ PublicKey = public
 	var _ PrivateKey = private
-	keydata, _ := keyBase(private).pack()
+	keydata, _ := private.pack()
 	b, _ := private.Marshal()
 	fmt.Printf(" raw key: `%x` (len %d)\nunpacked: `%x` (len %d)\n", keydata, len(keydata), b, len(b))
 	tx, _ := private.MarshalText()

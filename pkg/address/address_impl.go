@@ -67,6 +67,47 @@ func IsValidKind(k byte) bool {
 	return false
 }
 
+// ParseKind returns a Kind or an explanation of why the supplied value is not one.
+func ParseKind(i interface{}) (byte, error) {
+	b := byte(0)
+	switch v := i.(type) {
+	case string:
+		if v == "" {
+			return b, fmt.Errorf("empty string is not a valid Kind")
+		}
+		v = strings.ToLower(v)
+		switch v {
+		case "u", "user":
+			b = KindUser
+		case "ndau":
+			b = KindNdau
+		case "endowment":
+			b = KindEndowment
+		case "exchange":
+			b = KindExchange
+		case "bpc":
+			b = KindBPC
+		case "marketmaker":
+			b = KindMarketMaker
+		default:
+			b = byte(v[0])
+		}
+	case rune:
+		b = byte(strings.ToLower(string(v))[0])
+	case byte:
+		b = v
+	case int8:
+		b = byte(v)
+	default:
+		return b, fmt.Errorf("Kind cannot be parsed from %T", i)
+	}
+
+	if !IsValidKind(b) {
+		return b, fmt.Errorf("%q is not a valid Kind", string(b))
+	}
+	return b, nil
+}
+
 // HashTrim is the number of bytes that we trim the input hash to.
 //
 // We don't want any dead characters, so since we trim the generated

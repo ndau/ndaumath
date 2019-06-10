@@ -81,8 +81,8 @@ func unmarshalWithLeftovers(serialized []byte) (al Algorithm, data, leftovers []
 func Generate(al Algorithm, rdr io.Reader) (public PublicKey, private PrivateKey, err error) {
 	pubBytes, privBytes, err := al.Generate(rdr)
 	if err == nil {
-		public = PublicKey{algorithm: al, key: pubBytes, extra: []byte{}}
-		private = PrivateKey{algorithm: al, key: privBytes, extra: []byte{}}
+		public = PublicKey{keyBase{algorithm: al, key: pubBytes, extra: []byte{}}}
+		private = PrivateKey{keyBase{algorithm: al, key: privBytes, extra: []byte{}}}
 	}
 	return
 }
