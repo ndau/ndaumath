@@ -91,7 +91,7 @@ func init() {
 	fracdigits = int(gomath.Floor(gomath.Log10(constants.NapuPerNdau)))
 	// ndaure: parse a string into whole (before the decimal) and frac (after the decimal)
 	// strings, which can be used to regenerate the ndau
-	ndaure = regexp.MustCompile(fmt.Sprintf(`^\s*(?P<whole>\d+)(\.(?P<frac>\d{1,%d}))?\s*$`, fracdigits))
+	ndaure = regexp.MustCompile(fmt.Sprintf(`^\s*(?P<whole>\d*)(\.(?P<frac>\d{1,%d}))?\s*$`, fracdigits))
 }
 
 // ParseNdau inverts n.String(): it converts a quantity of ndau expressed as
@@ -110,6 +110,9 @@ func ParseNdau(s string) (Ndau, error) {
 	wholes, ok := result["whole"]
 	if !ok {
 		return 0, errors.New("failed to parse ndau")
+	}
+	if wholes == "" {
+		wholes = "0"
 	}
 	whole, err := strconv.ParseUint(wholes, 10, 64)
 	if err != nil {

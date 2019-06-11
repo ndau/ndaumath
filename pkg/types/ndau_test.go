@@ -189,6 +189,7 @@ func TestParseNdau(t *testing.T) {
 		{"0.5t", "0.5", ndauize(1) / 2, false},
 		{"0.001t", "0.001", ndauize(1) / 1000, false},
 		{"too much precision", "1.000000001", ndauize(0), true},
+		{"bare leading decimal", ".1", ndauize(1) / 10, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
