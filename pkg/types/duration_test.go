@@ -149,7 +149,19 @@ func randomQuantity() Ndau {
 	return n
 }
 
-func TestDuration_UpdateWeightedAverageAge_Fuzz(t *testing.T) {
+// TstDuration_UpdateWeightedAverageAge_Fuzz should be renamed by reinserting
+// the "e" to run it. What this test does is prove that the
+// UpdateWeightedAverageAge function is not robust across performing
+// calculations in different order for small values. It constructs a sample WAA
+// value and updates it twice, with two different quantities, at the same
+// timestamp. This is reflective of what happens when a single CreditEAI
+// transaction diverts EAI from two different accounts into the same target
+// account. Unfortunately, when the amounts are small and the times are small,
+// this calculation might be off slightly (so far we've only seen it differ by 1
+// microsecond). This causes a hash mismatch if different nodes do the
+// calculation in different order -- so we added code to CreditEAI's Apply
+// function to sort the list of accounts before iteration.
+func TstDuration_UpdateWeightedAverageAge_Fuzz(t *testing.T) {
 	ntests := 10
 	for i := 0; i < ntests; i++ {
 		dur := randomDuration()
