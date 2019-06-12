@@ -149,8 +149,7 @@ func randomQuantity() Ndau {
 	return n
 }
 
-// TstDuration_UpdateWeightedAverageAge_Fuzz should be renamed by reinserting
-// the "e" to run it. What this test does is prove that the
+// TestDuration_UpdateWeightedAverageAge_Fuzz proves that the
 // UpdateWeightedAverageAge function is not robust across performing
 // calculations in different order for small values. It constructs a sample WAA
 // value and updates it twice, with two different quantities, at the same
@@ -161,8 +160,9 @@ func randomQuantity() Ndau {
 // microsecond). This causes a hash mismatch if different nodes do the
 // calculation in different order -- so we added code to CreditEAI's Apply
 // function to sort the list of accounts before iteration.
-func TstDuration_UpdateWeightedAverageAge_Fuzz(t *testing.T) {
-	ntests := 10
+func TestDuration_UpdateWeightedAverageAge_Fuzz(t *testing.T) {
+	ntests := 100
+	failureCount := 0
 	for i := 0; i < ntests; i++ {
 		dur := randomDuration()
 		prev := randomQuantity()
@@ -196,8 +196,12 @@ func TstDuration_UpdateWeightedAverageAge_Fuzz(t *testing.T) {
 		}
 
 		if waaA != waaB {
-			t.Errorf("UpdateWeightedAverageAge didn't match:\n %d (%s) != %d (%s)\n dur=%d(%s) prev=%d, xfer1=%d, xfer2=%d\n",
+			failureCount++
+			t.Logf("UpdateWeightedAverageAge didn't match (expected):\n %d (%s) != %d (%s)\n dur=%d(%s) prev=%d, xfer1=%d, xfer2=%d\n",
 				waaA, waaA, waaB, waaB, dur, dur, prev, xfer1, xfer2)
 		}
+	}
+	if failureCount == 0 || failureCount > ntests/2 {
+		t.Errorf("UpdateWeightedAverageAge had a different number of failures than expected -- got %d, should have been 1-%d", failureCount, ntests/2)
 	}
 }
