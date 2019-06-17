@@ -96,3 +96,8 @@ func (secp256k1) Verify(public, message, signature []byte) bool {
 
 	return sig.Verify(hash(message), pub)
 }
+
+// Public generates a public key when given a private key
+func (secp256k1) Public(private []byte) []byte {
+	return bip32.PrivateToPublic(private)
+}

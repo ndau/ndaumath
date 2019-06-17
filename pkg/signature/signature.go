@@ -131,7 +131,7 @@ func (signature *Signature) UnmarshalText(text []byte) error {
 	var checksumOk bool
 	bytes, checksumOk = CheckChecksum(bytes)
 	if !checksumOk {
-		return errors.New("key unmarshal failure: bad checksum")
+		return errors.New("signature unmarshal failure: bad checksum")
 	}
 	return signature.Unmarshal(bytes)
 }
