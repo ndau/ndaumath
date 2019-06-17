@@ -43,3 +43,8 @@ func (e ed25519) Sign(private, message []byte) []byte {
 func (ed25519) Verify(public, message, sig []byte) bool {
 	return impl.Verify(impl.PublicKey(public), message, sig)
 }
+
+// Public generates a public key when given a private key
+func (ed25519) Public(private []byte) []byte {
+	return impl.PrivateKey(private).Public().(impl.PublicKey)
+}

@@ -20,6 +20,10 @@ type Algorithm interface {
 	PrivateKeySize() int
 	// SignatureSize is the size in bytes of this algorithm's signatures
 	SignatureSize() int
+
+	// Public generates a public key when given a private key
+	Public(private []byte) []byte
+
 	// Generate creates a new keypair
 	Generate(rand io.Reader) (public, private []byte, err error)
 	// Sign signs the message with privateKey and returns a signature
