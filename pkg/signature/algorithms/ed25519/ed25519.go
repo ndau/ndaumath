@@ -45,6 +45,6 @@ func (ed25519) Verify(public, message, sig []byte) bool {
 }
 
 // Public generates a public key when given a private key
-func (ed25519) Public(private []byte) (public []byte) {
+func (ed25519) Public(private []byte) []byte {
 	return impl.PrivateKey(private).Public().(impl.PublicKey)
 }
