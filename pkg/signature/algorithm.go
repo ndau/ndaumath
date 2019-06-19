@@ -34,6 +34,22 @@ type Algorithm interface {
 	Verify(public, message, sig []byte) bool
 }
 
+// SameAlgorithm returns true when two algorithms are in fact
+// the same algorithm, even if they are not the same instance.
+//
+// Unknown algorithms are never the same.
+func SameAlgorithm(a1 Algorithm, a2 Algorithm) bool {
+	id1, err := idOf(a1)
+	if err != nil {
+		return false
+	}
+	id2, err := idOf(a2)
+	if err != nil {
+		return false
+	}
+	return id1 == id2
+}
+
 // Marshal the given data into a serialized binary format which includes
 // a type byte for the algorithm.
 func marshal(al Algorithm, data []byte) (serialized []byte, err error) {
