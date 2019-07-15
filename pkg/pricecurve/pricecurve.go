@@ -121,7 +121,7 @@ func pow2(n int) uint64 {
 // price in phase 1 has 14 doublings, increasing every 1,000 ndau from a starting point
 // of $1 to a finishing price of $16384 at the 9,999,001st unit.
 //
-// The ratio between successive blocks is constant: 1.00097097419
+// The ratio between successive blocks is constant: 1.0009709741935142
 //
 // To prevent excessive error, we pre-compute a table of doublings, and
 // work from there. The 14 entries in this table are the prices of ndau when
