@@ -187,3 +187,20 @@ func TestAlgorithms(t *testing.T) {
 		})
 	}
 }
+
+func TestPublic(t *testing.T) {
+	algorithms := []Algorithm{&Ed25519, &Secp256k1}
+
+	for _, algorithm := range algorithms {
+		t.Run(NameOf(algorithm)+"_Public", func(t *testing.T) {
+			// verify that we can create a keypair and then generate the equivalent
+			// public key from the private key
+			public, private, err := Generate(algorithm, nil)
+			require.NoError(t, err)
+
+			pubFromPrivate := algorithm.Public(private.KeyBytes())
+			require.Equal(t, public.KeyBytes(), pubFromPrivate)
+		})
+	}
+
+}

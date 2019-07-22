@@ -110,7 +110,7 @@ func TestPhase1(t *testing.T) {
 		sold := block * constants.QuantaPerUnit * SaleBlockQty
 		apau := ApproxPriceAtUnit(types.Ndau(sold))
 		pau := phase1(block)
-		paud := float64(pau) / float64(dollar)
+		paud := float64(pau) / float64(Dollar)
 
 		epsilon := (apau - paud) / apau
 
@@ -157,7 +157,7 @@ func TestPhase23(t *testing.T) {
 		apau := ApproxPriceAtUnit(types.Ndau(sold))
 		pau, err := phase23(block)
 		require.NoError(t, err)
-		paud := float64(pau) / float64(dollar)
+		paud := float64(pau) / float64(Dollar)
 
 		epsilon := (apau - paud) / apau
 

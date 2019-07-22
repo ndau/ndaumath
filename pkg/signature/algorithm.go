@@ -20,6 +20,10 @@ type Algorithm interface {
 	PrivateKeySize() int
 	// SignatureSize is the size in bytes of this algorithm's signatures
 	SignatureSize() int
+
+	// Public generates a public key when given a private key
+	Public(private []byte) []byte
+
 	// Generate creates a new keypair
 	Generate(rand io.Reader) (public, private []byte, err error)
 	// Sign signs the message with privateKey and returns a signature
@@ -28,6 +32,22 @@ type Algorithm interface {
 	//
 	// Return true if the signature is valid
 	Verify(public, message, sig []byte) bool
+}
+
+// SameAlgorithm returns true when two algorithms are in fact
+// the same algorithm, even if they are not the same instance.
+//
+// Unknown algorithms are never the same.
+func SameAlgorithm(a1 Algorithm, a2 Algorithm) bool {
+	id1, err := idOf(a1)
+	if err != nil {
+		return false
+	}
+	id2, err := idOf(a2)
+	if err != nil {
+		return false
+	}
+	return id1 == id2
 }
 
 // Marshal the given data into a serialized binary format which includes
@@ -81,8 +101,8 @@ func unmarshalWithLeftovers(serialized []byte) (al Algorithm, data, leftovers []
 func Generate(al Algorithm, rdr io.Reader) (public PublicKey, private PrivateKey, err error) {
 	pubBytes, privBytes, err := al.Generate(rdr)
 	if err == nil {
-		public = PublicKey{algorithm: al, key: pubBytes, extra: []byte{}}
-		private = PrivateKey{algorithm: al, key: privBytes, extra: []byte{}}
+		public = PublicKey{keyBase{algorithm: al, key: pubBytes, extra: []byte{}}}
+		private = PrivateKey{keyBase{algorithm: al, key: privBytes, extra: []byte{}}}
 	}
 	return
 }

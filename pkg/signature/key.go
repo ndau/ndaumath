@@ -3,6 +3,7 @@ package signature
 import (
 	"encoding"
 	"fmt"
+	"math/rand"
 
 	"github.com/pkg/errors"
 	"github.com/tinylib/msgp/msgp"
@@ -63,4 +64,17 @@ func ParseKey(text string) (Key, error) {
 	default:
 		return nil, errors.New("text does not appear to be an ndau key")
 	}
+}
+
+// Match indicates whether or not given public and private keys match each other
+func Match(pub PublicKey, pvt PrivateKey) bool {
+	// it's kind of silly, but the best way we have to tell if the keys match
+	// is just to sign some data, and then attempt to verify it
+	data := make([]byte, 64)
+	_, err := rand.Read(data)
+	if err != nil {
+		return false
+	}
+	sig := pvt.Sign(data)
+	return pub.Verify(data, sig)
 }

@@ -43,3 +43,8 @@ func (n null) Sign(private, message []byte) []byte {
 func (null) Verify(public, message, sig []byte) bool {
 	return false
 }
+
+// Public generates a public key when given a private key
+func (null) Public(private []byte) []byte {
+	return []byte{}
+}

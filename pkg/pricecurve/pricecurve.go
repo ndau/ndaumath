@@ -9,18 +9,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate msgp
-
-// A Nanocent is one billionth of one hundredth of one USD.
-//
-// It is fundamentally an integer and is computed using only integer math, for
-// perfect determinism.
-type Nanocent int64
-
 const (
-	dollar       = 100000000000 // 10^11 nanocents
-	phaseBlocks  = 10000        // number of blocks in a phase
-	SaleBlockQty = 1000         // number of ndau in a block
+	phaseBlocks = 10000
+	// SaleBlockQty is the number of ndau in a sale block
+	SaleBlockQty = 1000
 )
 
 // ApproxPriceAtUnit returns the price of the next ndau in USD given the number
@@ -196,21 +188,21 @@ func phase23(block int64) (out Nanocent, err error) {
 	var iout int64
 
 	// zero-order term
-	iout = -a * dollar
+	iout = -a * Dollar
 
 	// first-order terms
 	order1, err := signed.MulDiv(block, b, bD)
 	if err != nil {
 		return 0, errors.Wrap(err, "order1")
 	}
-	iout -= order1 * dollar
+	iout -= order1 * Dollar
 
 	// second order term
 	order2, err := signed.MulDiv(block*block, c, cD)
 	if err != nil {
 		return 0, errors.Wrap(err, "order2")
 	}
-	iout += order2 * dollar
+	iout += order2 * Dollar
 
 	// third order term
 	// compute it over a few rounds to reduce the chance of overflow
@@ -225,7 +217,7 @@ func phase23(block int64) (out Nanocent, err error) {
 		return 0, errors.Wrap(err, "order3 phase 2")
 	}
 
-	iout -= order3 * dollar
+	iout -= order3 * Dollar
 
 	out = Nanocent(iout)
 	return
@@ -246,5 +238,5 @@ func PriceAtUnit(nunitsSold types.Ndau) (Nanocent, error) {
 
 	// after the end of phase 3 we don't sell any more ndau so just return the
 	// final price
-	return Nanocent(50045083 * (dollar / 100)), nil
+	return Nanocent(50045083 * (Dollar / 100)), nil
 }
