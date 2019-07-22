@@ -21,10 +21,10 @@ func ApproxPriceAtUnit(nunitsSold types.Ndau) float64 {
 	ndauSold := float64(nunitsSold / constants.QuantaPerUnit)
 	saleBlock := ndauSold / SaleBlockQty
 
-	if saleBlock <= phaseBlocks*1 {
+	if saleBlock < phaseBlocks*1 {
 		// price in phase 1 has 14 doublings, from a starting point of $1 to a
 		// finishing price of $16384 at the 10-millionth unit
-		var price1 = math.Pow(2.0, saleBlock*14/10000)
+		var price1 = math.Pow(2.0, saleBlock*14/9999)
 		return price1
 	}
 
