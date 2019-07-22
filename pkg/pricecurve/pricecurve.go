@@ -137,9 +137,15 @@ func phase1(block uint64) (out Nanocent) {
 	//  103054274072, 106304953285, 113117158227, 128079155775, 164201982670,
 	//  269884708015, 729084792015, 5320807694887, 283384837710463,
 	// ]
+	//
+	// Note that the final value differs by 1 from the python-calculated
+	// value. We're using Wolfram Alpha as the authoritative source for high-
+	// precision mathematics, and it comes up with this value:
+	//
+	// https://www.wolframalpha.com/input/?i=d%3D100000000000;+n%3D13;+round(d+*+2+%5E+(((2+**+n)+-+1)*14%2F9999))
 	doublings := []Nanocent{
 		100000000000, 100097097419, 100291575187, 100681665003, 101466402368,
-		103054274072, 106304953285, 113117158227, 128079155778, 164201982670,
+		103054274072, 106304953285, 113117158227, 128079155775, 164201982670,
 		269884708015, 729084792015, 5320807694887, 283384837710462,
 	}
 
