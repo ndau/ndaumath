@@ -46,10 +46,10 @@ const (
 	MaxQuantaPerAddress = math.MaxInt64
 
 	// TimestampFormat is the format string used to parse timestamps.
-	TimestampFormat = "2006-01-02T15:04:05Z"
+	TimestampFormat = "2006-01-02T15:04:05.000000Z"
 
 	// EpochStart is the text representation of the start time of our Epoch.
-	EpochStart = "2000-01-01T00:00:00Z"
+	EpochStart = "2000-01-01T00:00:00.000000Z"
 
 	// MaxTimestamp is the maximum value a timestamp can take on
 	MaxTimestamp = math.MaxInt64

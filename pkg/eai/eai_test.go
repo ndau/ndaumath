@@ -983,8 +983,8 @@ func TestCalculateRealWorld(t *testing.T) {
 
 func TestCalculateDebug(t *testing.T) {
 	// this test is mainly to make it easy to play with the calculations for EAI
-	enddate, _ := math.ParseTimestamp("2019-03-18T13:36:23Z")
-	chaindate, _ := math.ParseTimestamp("2017-11-27T00:00:00Z")
+	enddate, _ := math.ParseTimestamp("2019-03-18T13:36:23.000000Z")
+	chaindate, _ := math.ParseTimestamp("2017-11-27T00:00:00.000000Z")
 	lock, _ := math.ParseDuration("1y3m21dt13h36m23s")
 	tests := []realtest{
 		realtest{
@@ -1030,8 +1030,8 @@ func TestCalculateSequence(t *testing.T) {
 	// calculation at the same time and see how much difference has
 	// accumulated
 	startqty := math.Ndau(1000 * constants.QuantaPerUnit)
-	starttime, _ := math.ParseTimestamp("2017-11-27T00:00:00Z")
-	endtime, _ := math.ParseTimestamp("2019-03-18T13:36:23Z")
+	starttime, _ := math.ParseTimestamp("2017-11-27T00:00:00.000000Z")
+	endtime, _ := math.ParseTimestamp("2019-03-18T13:36:23.000000Z")
 	lock, _ := math.ParseDuration("1y3m21dt13h36m23s")
 	accts := []seqtest{
 		seqtest{
