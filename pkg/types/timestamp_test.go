@@ -51,6 +51,9 @@ func TestParseTimestamp(t *testing.T) {
 		{"b", args{"2000-01-18T14:21:00.000000Z"}, 1000000 * (24*60*60*17 + 14*60*60 + 21*60), false},
 		{"c", args{"1992-01-01T00:00:00.000000Z"}, 0, true},
 		{"d", args{"BLAH"}, 0, true},
+		{"e", args{"2000-01-01T00:00:00Z"}, 0, false},
+		{"f", args{"2000-01-18T14:21:00Z"}, 1000000 * (24*60*60*17 + 14*60*60 + 21*60), false},
+		{"g", args{"1992-01-01T00:00:00Z"}, 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

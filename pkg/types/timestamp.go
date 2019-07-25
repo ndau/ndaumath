@@ -25,7 +25,14 @@ var _ encoding.TextUnmarshaler = (*Timestamp)(nil)
 
 // ParseTimestamp creates a timestamp from an ISO-3933 string
 func ParseTimestamp(s string) (Timestamp, error) {
-	ts, err := time.Parse(constants.TimestampFormat, s)
+	err := errors.New("timestamp matched no known format")
+	var ts time.Time
+	for _, format := range []string{constants.TimestampFormat, time.RFC3339, time.RFC3339[:len(time.RFC3339)-5]} {
+		ts, err = time.Parse(format, s)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		return 0, err
 	}
