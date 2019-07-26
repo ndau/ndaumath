@@ -34,11 +34,13 @@ func Calculate(
 	weightedAverageAge math.Duration,
 	lock Lock,
 	ageTable RateTable,
+	fixUnlockBug bool,
 ) (math.Ndau, error) {
 	factor, err := calculateEAIFactor(
 		blockTime,
 		lastEAICalc, weightedAverageAge, lock,
 		ageTable,
+		fixUnlockBug,
 	)
 	if err != nil {
 		return 0, err
@@ -76,16 +78,29 @@ func calculateEAIFactor(
 	weightedAverageAge math.Duration,
 	lock Lock,
 	unlockedTable RateTable,
+	fixUnlockBug bool,
 ) (uint64, error) {
 	if lock != nil && lock.GetUnlocksOn() != nil && *lock.GetUnlocksOn() < blockTime {
-		// we need to treat this as two nested calls and return their product
+		// we may need to treat this as two nested calls and return their product
+		// however, we can ignore the lock entirely if we've already calculated EAI
+		// since it unlocked
 		unlockTs := *lock.GetUnlocksOn()
+		if fixUnlockBug && lastEAICalc > unlockTs {
+			return calculateEAIFactor(
+				blockTime, lastEAICalc,
+				weightedAverageAge,
+				nil,
+				unlockedTable,
+				fixUnlockBug,
+			)
+		}
 
 		atUnlock, err := calculateEAIFactor(
 			unlockTs, lastEAICalc,
 			weightedAverageAge-blockTime.Since(unlockTs),
 			lock,
 			unlockedTable,
+			fixUnlockBug,
 		)
 		if err != nil {
 			return 0, errors.Wrap(err, "calculating preUnlock")
@@ -96,6 +111,7 @@ func calculateEAIFactor(
 			weightedAverageAge,
 			nil,
 			unlockedTable,
+			fixUnlockBug,
 		)
 		if err != nil {
 			return 0, errors.Wrap(err, "calculating postUnlock")

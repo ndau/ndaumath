@@ -47,10 +47,13 @@ func TestParseTimestamp(t *testing.T) {
 		want    Timestamp
 		wantErr bool
 	}{
-		{"a", args{"2000-01-01T00:00:00Z"}, 0, false},
-		{"b", args{"2000-01-18T14:21:00Z"}, 1000000 * (24*60*60*17 + 14*60*60 + 21*60), false},
-		{"c", args{"1992-01-01T00:00:00Z"}, 0, true},
+		{"a", args{"2000-01-01T00:00:00.000000Z"}, 0, false},
+		{"b", args{"2000-01-18T14:21:00.000000Z"}, 1000000 * (24*60*60*17 + 14*60*60 + 21*60), false},
+		{"c", args{"1992-01-01T00:00:00.000000Z"}, 0, true},
 		{"d", args{"BLAH"}, 0, true},
+		{"e", args{"2000-01-01T00:00:00Z"}, 0, false},
+		{"f", args{"2000-01-18T14:21:00Z"}, 1000000 * (24*60*60*17 + 14*60*60 + 21*60), false},
+		{"g", args{"1992-01-01T00:00:00Z"}, 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -174,7 +177,7 @@ func TestTimestamp_String(t *testing.T) {
 		want string
 	}{
 		{"a", 0, constants.EpochStart},
-		{"b", 1000000 * (24*60*60*17 + 14*60*60 + 21*60), "2000-01-18T14:21:00Z"},
+		{"b", 1000000 * (24*60*60*17 + 14*60*60 + 21*60), "2000-01-18T14:21:00.000000Z"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -197,7 +200,7 @@ func TestTimestamp_UnmarshalText(t *testing.T) {
 	}{
 		{"nil", nil, "", true},
 		{"epoch", new(Timestamp), constants.EpochStart, false},
-		{"eighteenth", &ts0, "2000-01-18T14:21:00Z", false},
+		{"eighteenth", &ts0, "2000-01-18T14:21:00.000000Z", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

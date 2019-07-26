@@ -104,7 +104,7 @@ func TestEAIFactorUnlocked(t *testing.T) {
 	t.Run("0 rate", func(t *testing.T) {
 		zero, err := calculateEAIFactor(
 			blockTime, lastEAICalc, weightedAverageAge, nil,
-			DefaultUnlockedEAI,
+			DefaultUnlockedEAI, true,
 		)
 		require.NoError(t, err)
 		require.InEpsilon(t, expect(t, 0), zero, epsilon)
@@ -124,7 +124,7 @@ func TestEAIFactorUnlocked(t *testing.T) {
 
 			factor, err := calculateEAIFactor(
 				blockTime, lastEAICalc, weightedAverageAge, nil,
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			require.NoError(t, err)
 			expectValue := expect(t, rate.Rate)
@@ -201,7 +201,7 @@ func TestEAIFactorLocked(t *testing.T) {
 	t.Run("no lock bonus", func(t *testing.T) {
 		factor, err := calculateEAIFactor(
 			blockTime, lastEAICalc, weightedAverageAge, lock,
-			DefaultUnlockedEAI,
+			DefaultUnlockedEAI, true,
 		)
 		require.NoError(t, err)
 		require.InEpsilon(t, expect(lock), factor, epsilon)
@@ -213,7 +213,7 @@ func TestEAIFactorLocked(t *testing.T) {
 			lock = newTestLock(lockRate.From, DefaultLockBonusEAI)
 			factor, err := calculateEAIFactor(
 				blockTime, lastEAICalc, weightedAverageAge, lock,
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			require.NoError(t, err)
 			require.InEpsilon(t, expect(lock), factor, epsilon)
@@ -502,7 +502,7 @@ func TestEAIFactorSoundness(t *testing.T) {
 				blockTime,
 				lastEAICalc, weightedAverageAge,
 				lock,
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			require.NoError(t, err)
 
@@ -730,7 +730,7 @@ func TestSoundnessCustomDates(t *testing.T) {
 				scase.blockTime,
 				lastEAICalc, scase.weightedAverageAge,
 				lock,
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			require.NoError(t, err)
 
@@ -777,7 +777,7 @@ func TestCalculate(t *testing.T) {
 		1*constants.QuantaPerUnit,
 		blockTime, lastEAICalc, weightedAverageAge,
 		newTestLock(90*math.Day, DefaultLockBonusEAI),
-		DefaultUnlockedEAI,
+		DefaultUnlockedEAI, true,
 	)
 	require.NoError(t, err)
 
@@ -969,7 +969,7 @@ func TestCalculateRealWorld(t *testing.T) {
 				tt.quantity,
 				endts, tt.chainDate, waa,
 				newTestLock(tt.lockDuration, DefaultLockBonusEAI),
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			if err != nil {
 				t.Errorf("Calculate had a problem: %s", err)
@@ -983,8 +983,8 @@ func TestCalculateRealWorld(t *testing.T) {
 
 func TestCalculateDebug(t *testing.T) {
 	// this test is mainly to make it easy to play with the calculations for EAI
-	enddate, _ := math.ParseTimestamp("2019-03-18T13:36:23Z")
-	chaindate, _ := math.ParseTimestamp("2017-11-27T00:00:00Z")
+	enddate, _ := math.ParseTimestamp("2019-03-18T13:36:23.000000Z")
+	chaindate, _ := math.ParseTimestamp("2017-11-27T00:00:00.000000Z")
 	lock, _ := math.ParseDuration("1y3m21dt13h36m23s")
 	tests := []realtest{
 		realtest{
@@ -999,12 +999,12 @@ func TestCalculateDebug(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			waa := enddate.Since(tt.chainDate)
-			fmt.Printf("waa = %s", waa.String())
+			t.Logf("waa = %s", waa.String())
 			got, err := Calculate(
 				tt.quantity,
 				enddate, tt.chainDate, waa,
 				newTestLock(tt.lockDuration, DefaultLockBonusEAI),
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			if err != nil {
 				t.Errorf("Calculate had a problem: %s", err)
@@ -1030,8 +1030,8 @@ func TestCalculateSequence(t *testing.T) {
 	// calculation at the same time and see how much difference has
 	// accumulated
 	startqty := math.Ndau(1000 * constants.QuantaPerUnit)
-	starttime, _ := math.ParseTimestamp("2017-11-27T00:00:00Z")
-	endtime, _ := math.ParseTimestamp("2019-03-18T13:36:23Z")
+	starttime, _ := math.ParseTimestamp("2017-11-27T00:00:00.000000Z")
+	endtime, _ := math.ParseTimestamp("2019-03-18T13:36:23.000000Z")
 	lock, _ := math.ParseDuration("1y3m21dt13h36m23s")
 	accts := []seqtest{
 		seqtest{
@@ -1051,44 +1051,97 @@ func TestCalculateSequence(t *testing.T) {
 	for thistime := starttime + 300*math.Day; thistime < endtime; thistime += 3 * math.Day {
 		for i, tt := range accts {
 			waa := thistime.Since(starttime)
-			// fmt.Printf("waa = %s", waa.String())
+			// t.Logf("waa = %s", waa.String())
 			eai, err := Calculate(
 				tt.quantity,
 				thistime, tt.lastEAICalc, waa,
 				newTestLock(tt.lockDuration, DefaultLockBonusEAI),
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			if err != nil {
 				t.Errorf("Calculate had a problem: %s", err)
 			}
 			accts[i].quantity += eai
 			accts[i].lastEAICalc = thistime
-			fmt.Printf("%s: Added %d to %d to get %d\n", tt.name, eai, tt.quantity, accts[i].quantity)
+			t.Logf("%s: Added %d to %d to get %d\n", tt.name, eai, tt.quantity, accts[i].quantity)
 			// for the next account we want to advance the clock by a couple of minutes
 			thistime += 2 * math.Minute
 		}
 	}
 
-	fmt.Println(accts[0].quantity, accts[1].quantity)
+	t.Log(accts[0].quantity, accts[1].quantity)
 
 	t.Run("TestCalculateSequence result", func(t *testing.T) {
 		for i, tt := range accts {
 			waa := endtime.Since(tt.lastEAICalc)
-			// fmt.Printf("waa = %s\n", waa.String())
+			// t.Logf("waa = %s\n", waa.String())
 			eai, err := Calculate(
 				tt.quantity,
 				endtime, tt.lastEAICalc, waa,
 				newTestLock(tt.lockDuration, DefaultLockBonusEAI),
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			if err != nil {
 				t.Errorf("Calculate had a problem: %s", err)
 			}
 			accts[i].quantity += eai
-			fmt.Printf("%s: Added %d to %d to get %d\n", tt.name, eai, tt.quantity, accts[i].quantity)
+			t.Logf("%s: Added %d to %d to get %d\n", tt.name, eai, tt.quantity, accts[i].quantity)
 		}
 		if !withinEpsilon(accts[0].quantity, accts[1].quantity, math.Ndau(1)) {
 			t.Errorf("Calculate results didn't match: %v and %v", accts[0].quantity, accts[1].quantity)
 		}
 	})
+}
+
+func TestUnlockTimeIgnoredWhenEAICalcWasMoreRecent(t *testing.T) {
+	// If the last EAI calculation is newer than the unlock time, it is
+	// never correct to base the lower bound of the rate slice on the lock;
+	// it should date from the last EAI calculation in that case.
+	//
+	// Scenario:
+	// - block time: 14 months
+	// - Account created at time 0
+	// - Account was locked at time 0 for 1 year
+	// - Lock was notified at time 0
+	// - Lock is not yet cleared
+	// - EAI was previously calculated at 13 months
+	//
+	// Given this setup, we expect that the account earns the max unlocked rate
+	// (10%) for 1 month; the factor must be `e^(10%*30d)`
+	lock := newTestLock(math.Year, DefaultLockBonusEAI)
+	uo := math.Timestamp(math.Year)
+	lock.UnlocksOn = &uo
+
+	factor, err := calculateEAIFactor(
+		14*math.Month,
+		13*math.Month,
+		14*math.Month,
+		lock,
+		DefaultUnlockedEAI, true,
+	)
+	require.NoError(t, err)
+
+	// compute the expected factor
+	expected := decimal.WithContext(decimal.Context128)
+	percent := decimal.WithContext(decimal.Context128)
+	time := decimal.WithContext(decimal.Context128)
+
+	expected.SetUint64(1)
+
+	percent.SetUint64(10)
+	percent.Quo(percent, decimal.New(100, 0))
+
+	time.SetUint64(math.Month)
+	time.Quo(time, decimal.New(math.Year, 0))
+
+	percent.Mul(percent, time)
+	dmath.Exp(percent, percent)
+	expected.Mul(expected, percent)
+
+	// compare expected and actual results
+	expected.Mul(expected, decimal.New(constants.RateDenominator, 0))
+	expectedValue, ok := expected.Uint64()
+	require.True(t, ok)
+
+	require.InEpsilon(t, expectedValue, factor, epsilon)
 }
