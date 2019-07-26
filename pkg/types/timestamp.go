@@ -27,7 +27,7 @@ var _ encoding.TextUnmarshaler = (*Timestamp)(nil)
 func ParseTimestamp(s string) (Timestamp, error) {
 	err := errors.New("timestamp matched no known format")
 	var ts time.Time
-	for _, format := range []string{constants.TimestampFormat, time.RFC3339, time.RFC3339[:len(time.RFC3339)-5]} {
+	for _, format := range []string{constants.TimestampFormat, time.RFC3339[:len(time.RFC3339)-5]} {
 		ts, err = time.Parse(format, s)
 		if err == nil {
 			break
