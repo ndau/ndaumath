@@ -104,7 +104,7 @@ func TestEAIFactorUnlocked(t *testing.T) {
 	t.Run("0 rate", func(t *testing.T) {
 		zero, err := calculateEAIFactor(
 			blockTime, lastEAICalc, weightedAverageAge, nil,
-			DefaultUnlockedEAI,
+			DefaultUnlockedEAI, true,
 		)
 		require.NoError(t, err)
 		require.InEpsilon(t, expect(t, 0), zero, epsilon)
@@ -124,7 +124,7 @@ func TestEAIFactorUnlocked(t *testing.T) {
 
 			factor, err := calculateEAIFactor(
 				blockTime, lastEAICalc, weightedAverageAge, nil,
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			require.NoError(t, err)
 			expectValue := expect(t, rate.Rate)
@@ -201,7 +201,7 @@ func TestEAIFactorLocked(t *testing.T) {
 	t.Run("no lock bonus", func(t *testing.T) {
 		factor, err := calculateEAIFactor(
 			blockTime, lastEAICalc, weightedAverageAge, lock,
-			DefaultUnlockedEAI,
+			DefaultUnlockedEAI, true,
 		)
 		require.NoError(t, err)
 		require.InEpsilon(t, expect(lock), factor, epsilon)
@@ -213,7 +213,7 @@ func TestEAIFactorLocked(t *testing.T) {
 			lock = newTestLock(lockRate.From, DefaultLockBonusEAI)
 			factor, err := calculateEAIFactor(
 				blockTime, lastEAICalc, weightedAverageAge, lock,
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			require.NoError(t, err)
 			require.InEpsilon(t, expect(lock), factor, epsilon)
@@ -502,7 +502,7 @@ func TestEAIFactorSoundness(t *testing.T) {
 				blockTime,
 				lastEAICalc, weightedAverageAge,
 				lock,
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			require.NoError(t, err)
 
@@ -730,7 +730,7 @@ func TestSoundnessCustomDates(t *testing.T) {
 				scase.blockTime,
 				lastEAICalc, scase.weightedAverageAge,
 				lock,
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			require.NoError(t, err)
 
@@ -777,7 +777,7 @@ func TestCalculate(t *testing.T) {
 		1*constants.QuantaPerUnit,
 		blockTime, lastEAICalc, weightedAverageAge,
 		newTestLock(90*math.Day, DefaultLockBonusEAI),
-		DefaultUnlockedEAI,
+		DefaultUnlockedEAI, true,
 	)
 	require.NoError(t, err)
 
@@ -969,7 +969,7 @@ func TestCalculateRealWorld(t *testing.T) {
 				tt.quantity,
 				endts, tt.chainDate, waa,
 				newTestLock(tt.lockDuration, DefaultLockBonusEAI),
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			if err != nil {
 				t.Errorf("Calculate had a problem: %s", err)
@@ -1004,7 +1004,7 @@ func TestCalculateDebug(t *testing.T) {
 				tt.quantity,
 				enddate, tt.chainDate, waa,
 				newTestLock(tt.lockDuration, DefaultLockBonusEAI),
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			if err != nil {
 				t.Errorf("Calculate had a problem: %s", err)
@@ -1056,7 +1056,7 @@ func TestCalculateSequence(t *testing.T) {
 				tt.quantity,
 				thistime, tt.lastEAICalc, waa,
 				newTestLock(tt.lockDuration, DefaultLockBonusEAI),
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			if err != nil {
 				t.Errorf("Calculate had a problem: %s", err)
@@ -1079,7 +1079,7 @@ func TestCalculateSequence(t *testing.T) {
 				tt.quantity,
 				endtime, tt.lastEAICalc, waa,
 				newTestLock(tt.lockDuration, DefaultLockBonusEAI),
-				DefaultUnlockedEAI,
+				DefaultUnlockedEAI, true,
 			)
 			if err != nil {
 				t.Errorf("Calculate had a problem: %s", err)
@@ -1117,7 +1117,7 @@ func TestUnlockTimeIgnoredWhenEAICalcWasMoreRecent(t *testing.T) {
 		13*math.Month,
 		14*math.Month,
 		lock,
-		DefaultUnlockedEAI,
+		DefaultUnlockedEAI, true,
 	)
 	require.NoError(t, err)
 
