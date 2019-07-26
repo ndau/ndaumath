@@ -78,8 +78,18 @@ func calculateEAIFactor(
 	unlockedTable RateTable,
 ) (uint64, error) {
 	if lock != nil && lock.GetUnlocksOn() != nil && *lock.GetUnlocksOn() < blockTime {
-		// we need to treat this as two nested calls and return their product
+		// we may need to treat this as two nested calls and return their product
+		// however, we can ignore the lock entirely if we've already calculated EAI
+		// since it unlocked
 		unlockTs := *lock.GetUnlocksOn()
+		if lastEAICalc > unlockTs {
+			return calculateEAIFactor(
+				blockTime, lastEAICalc,
+				weightedAverageAge,
+				nil,
+				unlockedTable,
+			)
+		}
 
 		atUnlock, err := calculateEAIFactor(
 			unlockTs, lastEAICalc,
