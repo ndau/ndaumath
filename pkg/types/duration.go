@@ -135,11 +135,7 @@ func (d Duration) String() string {
 	return out
 }
 
-// UpdateWeightedAverageAge computes the weighted average age. Note that this
-// function may cause order-dependent behavior; it does integer division, and
-// for small values, the order in which updates to WAA are applied may be
-// significant. We found and fixed a bug related to this in the CreditEAI
-// calculation; see duration_test.go for details.
+// UpdateWeightedAverageAge computes the weighted average age
 func (d *Duration) UpdateWeightedAverageAge(
 	sinceLastUpdate Duration,
 	transferQty Ndau,

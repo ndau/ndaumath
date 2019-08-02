@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"math/rand"
 	"testing"
 
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
@@ -133,75 +132,5 @@ func TestDuration_UnmarshalText(t *testing.T) {
 				require.Equal(t, tt.text, remarshal)
 			}
 		})
-	}
-}
-
-// randomDuration returns a Duration weighted toward short timestamps
-func randomDuration() Duration {
-	x := 1.0 / (rand.Float64() * 1000)
-	return Duration(x*1000000+1) * Millisecond
-}
-
-func randomQuantity() Ndau {
-	x := 1.0 / (rand.Float64() * 10000)
-	n := Ndau(x*100000) * 1000
-	n += Ndau(rand.Intn(5) * 100000000)
-	return n
-}
-
-// TestDuration_UpdateWeightedAverageAge_Fuzz proves that the
-// UpdateWeightedAverageAge function is not robust across performing
-// calculations in different order for small values. It constructs a sample WAA
-// value and updates it twice, with two different quantities, at the same
-// timestamp. This is reflective of what happens when a single CreditEAI
-// transaction diverts EAI from two different accounts into the same target
-// account. Unfortunately, when the amounts are small and the times are small,
-// this calculation might be off slightly (so far we've only seen it differ by 1
-// microsecond). This causes a hash mismatch if different nodes do the
-// calculation in different order -- so we added code to CreditEAI's Apply
-// function to sort the list of accounts before iteration.
-func TestDuration_UpdateWeightedAverageAge_Fuzz(t *testing.T) {
-	ntests := 100
-	failureCount := 0
-	for i := 0; i < ntests; i++ {
-		dur := randomDuration()
-		prev := randomQuantity()
-
-		xfer1 := randomQuantity()
-		xfer2 := randomQuantity()
-
-		waaA := randomDuration()
-		waaB := waaA
-
-		bal := prev
-		err := waaA.UpdateWeightedAverageAge(dur, xfer1, bal)
-		if err != nil {
-			t.Errorf("UpdateWeightedAverageAge(1) returned err: %s", err.Error())
-		}
-		bal += xfer1
-		err = waaA.UpdateWeightedAverageAge(0, xfer2, bal)
-		if err != nil {
-			t.Errorf("UpdateWeightedAverageAge(2) returned err: %s", err.Error())
-		}
-
-		bal = prev
-		err = waaB.UpdateWeightedAverageAge(dur, xfer2, bal)
-		if err != nil {
-			t.Errorf("UpdateWeightedAverageAge(3) returned err: %s", err.Error())
-		}
-		bal += xfer2
-		err = waaB.UpdateWeightedAverageAge(0, xfer1, bal)
-		if err != nil {
-			t.Errorf("UpdateWeightedAverageAge(4) returned err: %s", err.Error())
-		}
-
-		if waaA != waaB {
-			failureCount++
-			t.Logf("UpdateWeightedAverageAge didn't match (expected):\n %d (%s) != %d (%s)\n dur=%d(%s) prev=%d, xfer1=%d, xfer2=%d\n",
-				waaA, waaA, waaB, waaB, dur, dur, prev, xfer1, xfer2)
-		}
-	}
-	if failureCount == 0 || failureCount > ntests/2 {
-		t.Errorf("UpdateWeightedAverageAge had a different number of failures than expected -- got %d, should have been 1-%d", failureCount, ntests/2)
 	}
 }
