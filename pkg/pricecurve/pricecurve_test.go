@@ -85,7 +85,7 @@ func Test_phase1_increases_monotonically(t *testing.T) {
 	var prev Nanocent
 	var curr Nanocent
 	for i := 0; i < 10000; i++ {
-		curr = phase1(uint64(i))
+		curr = phase1(uint64(i), true)
 		if curr <= prev {
 			t.Log("block:", i)
 			t.Log("curr: ", curr)
@@ -110,7 +110,7 @@ func TestPhase1(t *testing.T) {
 	for block := uint64(0); block < 10000; block++ {
 		sold := block * constants.QuantaPerUnit * SaleBlockQty
 		apau := ApproxPriceAtUnit(types.Ndau(sold))
-		pau := phase1(block)
+		pau := phase1(block, true)
 		paud := float64(pau) / float64(Dollar)
 
 		epsilon := (apau - paud) / apau
