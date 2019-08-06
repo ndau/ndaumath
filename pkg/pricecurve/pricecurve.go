@@ -21,10 +21,10 @@ func ApproxPriceAtUnit(nunitsSold types.Ndau) float64 {
 	ndauSold := float64(nunitsSold / constants.QuantaPerUnit)
 	saleBlock := ndauSold / SaleBlockQty
 
-	if saleBlock <= phaseBlocks*1 {
+	if saleBlock < phaseBlocks*1 {
 		// price in phase 1 has 14 doublings, from a starting point of $1 to a
 		// finishing price of $16384 at the 10-millionth unit
-		var price1 = math.Pow(2.0, saleBlock*14/10000)
+		var price1 = math.Pow(2.0, saleBlock*14/9999)
 		return price1
 	}
 
@@ -110,18 +110,52 @@ func pow2(n int) uint64 {
 	return uint64(1) << uint(n)
 }
 
-// price in phase 1 has 14 doublings, from a starting point of $1 to a
-// finishing price of $16384 at the 10-millionth unit
+// price in phase 1 has 14 doublings, increasing every 1,000 ndau from a starting point
+// of $1 to a finishing price of $16384 at the 9,999,001st unit.
 //
-// The ratio between successive blocks is constant: 1.000970877049078
-//
-// To prevent excessive error, we pre-compute a table of doublings, and work
-// from there.
-func phase1(block uint64) (out Nanocent) {
-	doublings := []Nanocent{
-		100000000000, 100097087704, 100291545986, 100681596605, 101466254658,
-		103053964027, 106304303320, 113115764023, 128075986132, 164193839650,
-		269857914525, 728939964968, 5318693514199, 283159653540666,
+// The ratio between successive blocks is constant: 1.000970974193617,
+// unless we use the (previously-used) 10000 endpoint, in which case the constant
+// is 1.000970877049078.
+func phase1(block uint64, use9999 bool) (out Nanocent) {
+	// To prevent excessive error, we pre-compute a table of doublings, and
+	// work from there. The 14 entries in this table are the prices of ndau when
+	// 2 ^ (2 ^ ((N - 1) * 14 / 9999)) have been sold, where N = 1 to 14.
+	//
+	// To verify this table in python:
+	//
+	// >>> denom = 100000000000
+	// >>> [round(denom * 2 ** (((2 ** n) - 1)*14/9999)) for n in range(14)]
+	// [
+	//	100000000000, 100097097419, 100291575187, 100681665003, 101466402368,
+	//  103054274072, 106304953285, 113117158227, 128079155775, 164201982670,
+	//  269884708015, 729084792015, 5320807694887, 283384837710463,
+	// ]
+	//
+	// Note that the final value differs by 1 from the python-calculated
+	// value. We're using Wolfram Alpha as the authoritative source for high-
+	// precision mathematics, and it comes up with this value:
+	//
+	// https://www.wolframalpha.com/input/?i=d%3D100000000000;+n%3D13;+round(d+*+2+%5E+(((2+**+n)+-+1)*14%2F9999))
+	var doublings []Nanocent
+	var ratio int64
+	if use9999 {
+		// use the proper price curve
+		doublings = []Nanocent{
+			100000000000, 100097097419, 100291575187, 100681665003, 101466402368,
+			103054274072, 106304953285, 113117158227, 128079155775, 164201982670,
+			269884708015, 729084792015, 5320807694887, 283384837710462,
+		}
+		ratio = 1000970974193617
+	} else {
+		// use the old price curve, based on a transition point of 10000
+		// >>> denom = 100000000000
+		// >>> [round(denom * 2 ** (((2 ** n) - 1)*14/10000)) for n in range(14)]
+		doublings = []Nanocent{
+			100000000000, 100097087704, 100291545986, 100681596605, 101466254658,
+			103053964027, 106304303320, 113115764023, 128075986132, 164193839650,
+			269857914525, 728939964968, 5318693514199, 283159653540666,
+		}
+		ratio = 1000970877049078
 	}
 
 	if block <= 1 {
@@ -145,7 +179,7 @@ func phase1(block uint64) (out Nanocent) {
 	for i := uint64(0); i <= (block - pow2(dblock)); i++ {
 		nout, err = signed.MulDiv(
 			int64(out),
-			1000970877049078,
+			ratio,
 			1000000000000000,
 		)
 		if err != nil {
@@ -208,11 +242,33 @@ func phase23(block int64) (out Nanocent, err error) {
 
 // PriceAtUnit returns the price of the next ndau given the number already sold
 func PriceAtUnit(nunitsSold types.Ndau) (Nanocent, error) {
+	return priceAtUnit(nunitsSold, true)
+}
+
+// PriceAtUnit9999 returns the price of the next ndau given the number already sold,
+// using the (correct) end-point of the 9999th block as the one at which the price
+// reaches 16384.
+func PriceAtUnit9999(nunitsSold types.Ndau) (Nanocent, error) {
+	return priceAtUnit(nunitsSold, true)
+}
+
+// PriceAtUnit10000 returns the price of the next ndau given the number already sold,
+// using the (incorrect) end-point of the 10000th block as the one at which the price
+// reaches 16384.
+//
+// This function is provided to ensure deterministic playback of early blocks.
+// It should _never_ be used in new code.
+func PriceAtUnit10000(nunitsSold types.Ndau) (Nanocent, error) {
+	return priceAtUnit(nunitsSold, false)
+}
+
+// PriceAtUnit returns the price of the next ndau given the number already sold
+func priceAtUnit(nunitsSold types.Ndau, use9999 bool) (Nanocent, error) {
 	ndauSold := nunitsSold / constants.QuantaPerUnit
 	block := uint64(ndauSold / SaleBlockQty)
 
 	if block <= phaseBlocks*1 {
-		return phase1(block), nil
+		return phase1(block, use9999), nil
 	}
 
 	if block < phaseBlocks*3 {
