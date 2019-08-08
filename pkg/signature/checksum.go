@@ -63,14 +63,20 @@ func AddChecksum(bytes []byte) []byte {
 // CheckChecksum validates the checksum of a summed byte slice.
 //
 // It returns the wrapped message stripped of checksum data and
+// a boolean that indicates if the checksum was correct; if the
+// boolean is false, the message is not valid.
 func CheckChecksum(checked []byte) (message []byte, checksumOk bool) {
 	if len(checked) < 1+ChecksumMinBytes {
 		return nil, false
 	}
 	n := checked[0]
-	message = checked[1 : len(checked)-int(n)]
+	end := len(checked) - int(n)
+	if end < 1 {
+		return nil, false
+	}
+	message = checked[1:end]
 
-	sumActual := checked[len(checked)-int(n):]
+	sumActual := checked[end:]
 	sumExpect := cksumN(message, n)
 	checksumOk = bytes.Equal(sumActual, sumExpect)
 	return

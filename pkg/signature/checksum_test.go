@@ -89,3 +89,28 @@ func TestChecksum(t *testing.T) {
 		})
 	}
 }
+
+// This test fails without the error checks added to CheckChecksum
+func TestChecksumFailCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   []byte
+		message []byte
+		valid   bool
+	}{
+		{"should fail", []byte("test"), nil, false},
+		{"test", AddChecksum([]byte("test")), []byte("test"), true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotMessage, gotChecksumOk := CheckChecksum(tt.input)
+			if !bytes.Equal(tt.message, gotMessage) {
+				t.Errorf("Checksum() gotMessage = %v, want %v", gotMessage, tt.message)
+			}
+			if gotChecksumOk != tt.valid {
+				t.Errorf("CheckChecksum() gotChecksumOk = %v, expected %v", gotChecksumOk, tt.valid)
+			}
+		})
+	}
+
+}
