@@ -1,0 +1,32 @@
+{
+  "name": "keyaddr",
+  "version": "0.0.1",
+  "description": "A set of key related utilities",
+  "scripts": {
+    "build": "GOOS=js GOARCH=wasm go build -o keyaddr.wasm",
+    "test": "mocha --require @babel/register tests.js",
+    "start": "python3 serve.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oneiro-ndev/ndaumath.git"
+  },
+  "keywords": [
+    "ndau"
+  ],
+  "author": "Josh Anderson <josh.anderson@oneiro.io>",
+  "bugs": {
+    "url": "https://github.com/oneiro-ndev/ndaumath/issues"
+  },
+  "homepage": "https://github.com/oneiro-ndev/ndaumath#readme",
+  "dependencies": {
+    "@babel/core": "^7.6.2",
+    "@babel/node": "^7.6.2",
+    "@babel/plugin-transform-runtime": "^7.6.2",
+    "@babel/preset-env": "^7.6.2",
+    "@babel/register": "^7.6.2",
+    "@babel/runtime": "^7.6.2",
+    "chai": "^4.2.0",
+    "mocha": "^6.2.0"
+  }
+}
