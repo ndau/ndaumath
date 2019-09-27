@@ -57,7 +57,7 @@ func FromString(s string) (*Key, error) {
 		if nerr == nil {
 			return key, nil
 		}
-		return nil, errors.Wrap(errors.Wrap(nerr, "error also trying old string method"), "couldn't unmarshal extended key from bytes")
+		return nil, errors.Wrap(nerr, "couldn't unmarshal extended key from bytes: error also trying old string method")
 	}
 
 	// re-marshal for reasons?
