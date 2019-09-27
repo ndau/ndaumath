@@ -4,7 +4,7 @@
   "description": "A set of key related utilities",
   "scripts": {
     "build": "GOOS=js GOARCH=wasm go build -o keyaddr.wasm",
-    "test": "mocha --require @babel/register tests.js",
+    "test": "mocha --require @babel/register ./tests.js",
     "start": "python3 serve.py"
   },
   "repository": {

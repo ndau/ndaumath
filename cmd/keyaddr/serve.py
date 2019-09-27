@@ -16,6 +16,7 @@ Handler.extensions_map = {
     '.svg':	'image/svg+xml',
     '.css':	'text/css',
     '.js':	'application/x-javascript',
+    # This is important. Javascript will refuse to use anything unless it comes back with application/wasm.
     '.wasm': 'application/wasm',
     '': 'application/octet-stream',  # Default
 }

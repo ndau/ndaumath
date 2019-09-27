@@ -5,7 +5,7 @@ package main
 Notes:
 
 * goroutines are required in each of the handlers to prevent Go from detecting deadlocks.
-* This WASM module loads into the javascriprt engine like a separate application, rather like a server. It does not import a library, like a normal javascript module would. It
+* This WASM module loads into the javascriprt engine like a separate application, rather like a server. It does not import a library, like a normal javascript module would.
 * Panics will shut down the wasm application and it will not automatically restart. @TODO, add a line to report a panic.
 * There is a global javascript function KeyaddrErrorHandler that can be overriden before this WASM module is loaded.
 
@@ -15,12 +15,12 @@ import (
 	"syscall/js"
 )
 
-// c is used to control keeping the process open, as well as closing on command.
-var c chan bool
+// waitChannel is used to control keeping the process open, as well as closing on command.
+var waitChannel chan struct{}
 
 func main() {
 	js.Global().Get("console").Call("log", "WASM Keyaddr starting")
-	c := make(chan bool)
+	waitChannel := make(chan bool)
 
 	// put go functions in a javascript object
 	obj := make(map[string]interface{})
@@ -47,7 +47,7 @@ func main() {
 		js.Global().Set("KeyaddrErrorHandler", js.FuncOf(errorHandler))
 	}
 
-	<-c // wait indefinitely
+	<-waitChannel // wait indefinitely
 
 	js.Global().Get("console").Call("log", "WASM Keyadder exiting")
 }
