@@ -40,7 +40,7 @@ func errorHandler(this js.Value, args []js.Value) interface{} {
 // js usage: newKey(recoveryBytes, cb)
 func newKey(this js.Value, args []js.Value) interface{} {
 
-	go func(this js.Value, args []js.Value) {
+	go func(args []js.Value) {
 
 		logInfo("newKey")
 		// clean args
@@ -61,13 +61,13 @@ func newKey(this js.Value, args []js.Value) interface{} {
 		// return result
 		callback.Invoke(nil, fmt.Sprintf("%s", key.Key))
 		return
-	}(this, args)
+	}(args)
 	return nil
 }
 
 // JS Usage: wordsToBytes(language, words, cb)
 func wordsToBytes(this js.Value, args []js.Value) interface{} {
-	go func(this js.Value, args []js.Value) {
+	go func(args []js.Value) {
 		logInfo("wordsToBytes")
 		// clean args
 		if !validCallback(args) {
@@ -95,14 +95,14 @@ func wordsToBytes(this js.Value, args []js.Value) interface{} {
 		// return result
 		callback.Invoke(nil, bs)
 		return
-	}(this, args)
+	}(args)
 	return nil
 }
 
 // JS Usage: deriveFrom(parentKey, parentPath, childPath, cb)
 func deriveFrom(this js.Value, args []js.Value) interface{} {
 
-	go func(this js.Value, args []js.Value) {
+	go func(args []js.Value) {
 		logInfo("deriveFrom")
 
 		// clean args
@@ -125,13 +125,13 @@ func deriveFrom(this js.Value, args []js.Value) interface{} {
 		callback.Invoke(nil, der.Key)
 
 		return
-	}(this, args)
+	}(args)
 	return nil
 }
 
 // JS usage: ndauAddress(privateKey, cb)
 func ndauAddress(this js.Value, args []js.Value) interface{} {
-	go func(this js.Value, args []js.Value) {
+	go func(args []js.Value) {
 		logInfo("ndauAddress")
 
 		// clean args
@@ -154,14 +154,14 @@ func ndauAddress(this js.Value, args []js.Value) interface{} {
 		callback.Invoke(nil, addr.Address)
 
 		return
-	}(this, args)
+	}(args)
 	return nil
 }
 
 // JS usage: toPublic(privateKey, cb)
 func toPublic(this js.Value, args []js.Value) interface{} {
 
-	go func(this js.Value, args []js.Value) {
+	go func(args []js.Value) {
 		logInfo("toPublic")
 
 		// clean args
@@ -185,7 +185,7 @@ func toPublic(this js.Value, args []js.Value) interface{} {
 		callback.Invoke(nil, pub.Key)
 
 		return
-	}(this, args)
+	}(args)
 
 	return nil
 }
@@ -193,7 +193,7 @@ func toPublic(this js.Value, args []js.Value) interface{} {
 // JS usage: child(privateKey, n)
 func child(this js.Value, args []js.Value) interface{} {
 
-	go func(this js.Value, args []js.Value) {
+	go func(args []js.Value) {
 		logInfo("child")
 
 		// clean args
@@ -230,14 +230,14 @@ func child(this js.Value, args []js.Value) interface{} {
 		callback.Invoke(nil, key.Key)
 
 		return
-	}(this, args)
+	}(args)
 	return nil
 }
 
 // js usage: sign(privateKey, base64Message, cb)
 func sign(this js.Value, args []js.Value) interface{} {
 
-	go func(this js.Value, args []js.Value) {
+	go func(args []js.Value) {
 		logInfo("sign")
 
 		// clean args
@@ -263,14 +263,14 @@ func sign(this js.Value, args []js.Value) interface{} {
 		// return result
 		callback.Invoke(nil, sig.Signature)
 		return
-	}(this, args)
+	}(args)
 
 	return nil
 }
 
 // JS Usage: hardenedChild(privateKey, n)
 func hardenedChild(this js.Value, args []js.Value) interface{} {
-	go func(this js.Value, args []js.Value) {
+	go func(args []js.Value) {
 		logInfo("hardenedChild")
 
 		// clean args
@@ -306,6 +306,6 @@ func hardenedChild(this js.Value, args []js.Value) interface{} {
 		callback.Invoke(nil, key.Key)
 
 		return
-	}(this, args)
+	}(args)
 	return nil
 }
