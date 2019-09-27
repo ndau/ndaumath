@@ -8,9 +8,18 @@ WebAssembly is a low level language meant to provide near native execution speed
 Building
 --------
 
-Run `yarn build.sh`
+From the project root
+
+```shell
+dep ensure
+```
+
+```shell
+yarn install
+yarn build.sh
+```
 
 Testing
 -------
 
-Run `yarn test`
+Build first then run `yarn test`.
