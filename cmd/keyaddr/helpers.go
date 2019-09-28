@@ -27,7 +27,7 @@ func dispatchError(msg string) {
 }
 
 func log(level, msg string) {
-	fmt.Printf("\n%s: %s\n", level, msg)
+	fmt.Printf("%s: %s\n", level, msg)
 }
 
 func logDebug(msg string) {
