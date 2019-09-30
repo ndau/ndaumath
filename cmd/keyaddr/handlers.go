@@ -83,7 +83,7 @@ func wordsToBytes(this js.Value, args []js.Value) interface{} {
 
 		re := regexp.MustCompile(" ")
 		matches := re.FindAllStringIndex(words, -1)
-		logDebug(fmt.Sprintf("number of words:%s lang:%s", len(matches), lang))
+		logDebug(fmt.Sprintf("number of words:%v lang:%s", len(matches), lang))
 
 		// do work
 		bs, err := keyaddr.WordsToBytes(lang, words)

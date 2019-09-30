@@ -1,9 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"syscall/js"
 )
+
+type LogEntry struct {
+	Level   string `json:"lvl"`
+	Message string `json:"msg"`
+	Source  string `json:"src"`
+}
 
 // validCallback returns true if the last argument is a function.
 // Also dispatches an error to the error handler.
@@ -26,16 +33,29 @@ func dispatchError(msg string) {
 	js.Global().Call("KeyaddrErrorHandler", msg)
 }
 
-func log(level, msg string) {
-	fmt.Printf("%s: %s\n", level, msg)
+func log(l LogEntry) {
+	logJSON, _ := json.Marshal(l)
+	fmt.Printf("%s\n", string(logJSON))
 }
 
 func logDebug(msg string) {
-	log("KEYADDR DEBUG", msg)
+	log(LogEntry{
+		Source:  "KEYADDR",
+		Level:   "D",
+		Message: msg,
+	})
 }
 func logError(msg string) {
-	log("KEYADDR ERROR", msg)
+	log(LogEntry{
+		Source:  "KEYADDR",
+		Level:   "E",
+		Message: msg,
+	})
 }
 func logInfo(msg string) {
-	log("KEYADDR INFO", msg)
+	log(LogEntry{
+		Source:  "KEYADDR",
+		Level:   "I",
+		Message: msg,
+	})
 }
