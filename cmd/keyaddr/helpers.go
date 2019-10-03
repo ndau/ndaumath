@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"syscall/js"
+
+	"github.com/pkg/errors"
 )
 
 type LogEntry struct {
@@ -12,20 +14,29 @@ type LogEntry struct {
 	Source  string `json:"src"`
 }
 
-// validCallback returns true if the last argument is a function.
-// Also dispatches an error to the error handler.
-func validCallback(args []js.Value) bool {
-	obj := getCallback(args)
-	if obj.Type() == js.TypeFunction {
-		return true
-	}
-	dispatchError("Last argument must be a callback function.")
-	return false
-}
+// handleArgs returns a callback and remaining arguments.
+// It also prints and returns error messages.
+// when this function returns err != nil, the handler should end asap.
+func handleArgs(args []js.Value, expected int, source string) (js.Value, []js.Value, error) {
 
-// getCallback returns the last argument of the argument array.
-func getCallback(args []js.Value) js.Value {
-	return args[len(args)-1]
+	// check that callback is a function
+	cb := args[len(args)-1]
+	if cb.Type() != js.TypeFunction {
+		msg := fmt.Sprintf("couldn't parse %s arguments: last argument must be a callback function.", source)
+		dispatchError(msg)
+		return js.Value{}, []js.Value{}, errors.New(msg)
+	}
+
+	// check argument length
+	// ignores callback
+	if len(args) != expected+1 {
+		msg := fmt.Sprintf("couldn't parse %s arguments: incorrect amount of arguments", source)
+		cb.Invoke(msg, nil)
+		return js.Value{}, []js.Value{}, errors.New(msg)
+	}
+
+	remainder := args[:len(args)-1]
+	return cb, remainder, nil
 }
 
 // dispatchError passes an error message to the javascript overrideable error handler.

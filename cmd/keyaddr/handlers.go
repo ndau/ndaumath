@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"syscall/js"
 
@@ -10,22 +11,19 @@ import (
 
 // exit will quit the go program, causing the application to no longer respond to function calls.
 func exit(this js.Value, args []js.Value) interface{} {
-
 	go func() {
+		logInfo("keyaddr exiting...")
 
-		logInfo("exit")
 		// clean args
-		if !validCallback(args) {
+		callback, _, err := handleArgs(args, 0, "exit") // _ are remaining args but we're not expecting any
+		if err != nil {
 			return
 		}
-		callback := getCallback(args)
-
-		// return callback
 		callback.Invoke(nil, "keyaddr exiting...")
-		// cause main to exit
-		waitChannel <- struct{}{}
-
+		// cause main to be unblocked waiting for channel input and exit
+		close(waitChannel)
 		return
+
 	}()
 	return nil
 }
@@ -39,17 +37,17 @@ func errorHandler(this js.Value, args []js.Value) interface{} {
 
 // js usage: newKey(recoveryBytes, cb)
 func newKey(this js.Value, args []js.Value) interface{} {
-
 	go func(args []js.Value) {
 
 		logInfo("newKey")
+
 		// clean args
-		if !validCallback(args) {
+		callback, remainder, err := handleArgs(args, 1, "newKey")
+		if err != nil {
 			return
 		}
-		callback := getCallback(args)
 
-		recoveryBytes := args[0].String()
+		recoveryBytes := remainder[0].String()
 
 		// do work
 		key, err := keyaddr.NewKey(recoveryBytes)
@@ -59,27 +57,28 @@ func newKey(this js.Value, args []js.Value) interface{} {
 		}
 
 		// return result
-		callback.Invoke(nil, fmt.Sprintf("%s", key.Key))
+		callback.Invoke(nil, key.Key)
 		return
 	}(args)
 	return nil
 }
 
 // JS Usage: wordsToBytes(language, words, cb)
+// language defaults to en if not specified.
 func wordsToBytes(this js.Value, args []js.Value) interface{} {
 	go func(args []js.Value) {
 		logInfo("wordsToBytes")
 		// clean args
-		if !validCallback(args) {
+		callback, remainder, err := handleArgs(args, 2, "wordsToBytes")
+		if err != nil {
 			return
 		}
-		callback := getCallback(args)
 
-		lang := "en"
-		if args[0].Type() != js.TypeUndefined {
-			lang = args[0].String()
+		lang := "en" // default to english if language not specified
+		if remainder[0].Type() != js.TypeUndefined {
+			lang = remainder[0].String()
 		}
-		words := args[1].String()
+		words := remainder[1].String()
 
 		re := regexp.MustCompile(" ")
 		matches := re.FindAllStringIndex(words, -1)
@@ -101,18 +100,17 @@ func wordsToBytes(this js.Value, args []js.Value) interface{} {
 
 // JS Usage: deriveFrom(parentKey, parentPath, childPath, cb)
 func deriveFrom(this js.Value, args []js.Value) interface{} {
-
 	go func(args []js.Value) {
 		logInfo("deriveFrom")
-
 		// clean args
-		if !validCallback(args) {
+		callback, remainder, err := handleArgs(args, 3, "deriveFrom")
+		if err != nil {
 			return
 		}
-		callback := getCallback(args)
-		parentKey := args[0].String()
-		parentPath := args[1].String()
-		childPath := args[2].String()
+
+		parentKey := remainder[0].String()
+		parentPath := remainder[1].String()
+		childPath := remainder[2].String()
 
 		// do work
 		der, err := keyaddr.DeriveFrom(parentKey, parentPath, childPath)
@@ -133,15 +131,14 @@ func deriveFrom(this js.Value, args []js.Value) interface{} {
 func ndauAddress(this js.Value, args []js.Value) interface{} {
 	go func(args []js.Value) {
 		logInfo("ndauAddress")
-
 		// clean args
-		if !validCallback(args) {
+		callback, remainder, err := handleArgs(args, 1, "ndauAddress")
+		if err != nil {
 			return
 		}
-		callback := getCallback(args)
 
 		k := &keyaddr.Key{
-			Key: args[0].String(),
+			Key: remainder[0].String(),
 		}
 
 		// do work
@@ -160,18 +157,16 @@ func ndauAddress(this js.Value, args []js.Value) interface{} {
 
 // JS usage: toPublic(privateKey, cb)
 func toPublic(this js.Value, args []js.Value) interface{} {
-
 	go func(args []js.Value) {
 		logInfo("toPublic")
-
 		// clean args
-		if !validCallback(args) {
+		callback, remainder, err := handleArgs(args, 1, "toPublic")
+		if err != nil {
 			return
 		}
-		callback := getCallback(args)
 
 		k := &keyaddr.Key{
-			Key: args[0].String(),
+			Key: remainder[0].String(),
 		}
 
 		// do work
@@ -192,27 +187,25 @@ func toPublic(this js.Value, args []js.Value) interface{} {
 
 // JS usage: child(privateKey, n)
 func child(this js.Value, args []js.Value) interface{} {
-
 	go func(args []js.Value) {
 		logInfo("child")
-
 		// clean args
-		if !validCallback(args) {
+		callback, remainder, err := handleArgs(args, 2, "child")
+		if err != nil {
 			return
 		}
-		callback := getCallback(args)
 
 		k := &keyaddr.Key{
-			Key: args[0].String(),
+			Key: remainder[0].String(),
 		}
 
-		if args[1].Type() != js.TypeNumber {
+		if remainder[1].Type() != js.TypeNumber {
 			callback.Invoke("n must be of type Number", nil)
 			return
 		}
 
-		n := args[1].Int()
-		if n < -2147483648 || n > 2147483647 {
+		n := remainder[1].Int()
+		if n < math.MinInt32 || n > math.MaxInt32 {
 			callback.Invoke("n must not overflow int32")
 			return
 		}
@@ -236,21 +229,19 @@ func child(this js.Value, args []js.Value) interface{} {
 
 // js usage: sign(privateKey, base64Message, cb)
 func sign(this js.Value, args []js.Value) interface{} {
-
 	go func(args []js.Value) {
 		logInfo("sign")
-
 		// clean args
-		if !validCallback(args) {
+		callback, remainder, err := handleArgs(args, 2, "sign")
+		if err != nil {
 			return
 		}
-		callback := getCallback(args)
 
 		k := keyaddr.Key{
-			Key: args[0].String(),
+			Key: remainder[0].String(),
 		}
 
-		msg := args[1].String()
+		msg := remainder[1].String()
 
 		// do work
 		sig, err := k.Sign(msg)
@@ -264,7 +255,6 @@ func sign(this js.Value, args []js.Value) interface{} {
 		callback.Invoke(nil, sig.Signature)
 		return
 	}(args)
-
 	return nil
 }
 
@@ -272,25 +262,24 @@ func sign(this js.Value, args []js.Value) interface{} {
 func hardenedChild(this js.Value, args []js.Value) interface{} {
 	go func(args []js.Value) {
 		logInfo("hardenedChild")
-
 		// clean args
-		if !validCallback(args) {
+		callback, remainder, err := handleArgs(args, 2, "hardenedChild")
+		if err != nil {
 			return
 		}
-		callback := getCallback(args)
 
 		k := &keyaddr.Key{
-			Key: args[0].String(),
+			Key: remainder[0].String(),
 		}
 
-		if args[1].Type() != js.TypeNumber {
+		if remainder[1].Type() != js.TypeNumber {
 			callback.Invoke("n must be of type Number", nil)
 			return
 		}
 
-		n := args[1].Int()
-		if n < -2147483648 || n > 2147483647 {
-			callback.Invoke("n must not overflow int32")
+		n := remainder[1].Int()
+		if n < math.MinInt32 || n > math.MaxInt32 {
+			callback.Invoke("n must not overflow int32", nil)
 			return
 		}
 

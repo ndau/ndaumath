@@ -4,10 +4,16 @@ package main
 
 Notes:
 
-* goroutines are required in each of the handlers to prevent Go from detecting deadlocks.
+* goroutines are required in each of the handlers to prevent Go from flagging the program as deadlocked.
 * This WASM module loads into the javascriprt engine like a separate application, rather like a server. It does not import a library, like a normal javascript module would.
 * Panics will shut down the wasm application and it will not automatically restart. @TODO, add a line to report a panic.
 * There is a global javascript function KeyaddrErrorHandler that can be overriden before this WASM module is loaded.
+* There are three different levels of errors here
+	* Panics which are avoided by code and should not ever occur. A @todo is mentioned above to handle reporting for this case.
+	* Errors that are sent back through the callback. They are given as the first argument in the node-style
+		callbacks, which `promisify` can put into promises, which can be handled with chained `.catch()` methods
+		or the `try`/`catch` blocks.
+	* Application level errors that cannot be sent to a callback. This can be because a callback was not provided, or an error occured that prevented a callback from being used. `dispatchError` and `KeyaddrErrorHandler` is used for these cases.
 
 */
 
@@ -20,20 +26,21 @@ var waitChannel chan struct{}
 
 func main() {
 	js.Global().Get("console").Call("log", "WASM Keyaddr starting")
-	waitChannel := make(chan bool)
+
+	waitChannel = make(chan struct{})
 
 	// put go functions in a javascript object
-	obj := make(map[string]interface{})
-	obj["newKey"] = js.FuncOf(newKey)
-	obj["wordsToBytes"] = js.FuncOf(wordsToBytes)
-	obj["deriveFrom"] = js.FuncOf(deriveFrom)
-	obj["ndauAddress"] = js.FuncOf(ndauAddress)
-	obj["toPublic"] = js.FuncOf(toPublic)
-	obj["child"] = js.FuncOf(child)
-	obj["sign"] = js.FuncOf(sign)
-	obj["hardenedChild"] = js.FuncOf(hardenedChild)
-	obj["newKey"] = js.FuncOf(newKey)
-	obj["exit"] = js.FuncOf(exit)
+	obj := map[string]interface{}{
+		"newKey":        js.FuncOf(newKey),
+		"wordsToBytes":  js.FuncOf(wordsToBytes),
+		"deriveFrom":    js.FuncOf(deriveFrom),
+		"ndauAddress":   js.FuncOf(ndauAddress),
+		"toPublic":      js.FuncOf(toPublic),
+		"child":         js.FuncOf(child),
+		"sign":          js.FuncOf(sign),
+		"hardenedChild": js.FuncOf(hardenedChild),
+		"exit":          js.FuncOf(exit),
+	}
 
 	// Register all functions globally under KeyaddrNS. Either `window` in browsers, or
 	// `global` in node. NS stands for node style and refers to the functions which use
