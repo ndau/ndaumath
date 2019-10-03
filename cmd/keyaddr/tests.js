@@ -46,8 +46,12 @@ before(done => {
         newKey: promisify(KeyaddrNS.newKey),
         exit: promisify(KeyaddrNS.exit)
       }
+      done()
     })
-    .then(done)
+    .catch(err => {
+      console.log('something went wrong loading', err)
+      done()
+    })
 })
 
 const language = 'en'
@@ -72,6 +76,13 @@ const firstHardenedGrandchildPrivateKey =
   'npvta8jaftcjedampmhj9tybxp78m3dp67fppc53cmezvyu3ree9qnj7ywsvq7cqgbjzyxuiaaaaahx7w9s5zktt9efze3xtaysg2vydrnrpq68wp2cpuu7ep4veibgq3rvtjc2nsuqy'
 
 describe('Keyaddr', () => {
+  it('it should error for incorrect number of arguments', done => {
+    Keyaddr.wordsToBytes().catch(err => {
+      expect(err).to.be.ok
+      done()
+    })
+  })
+
   it('it gets recovery bytes from a recovery phrase', done => {
     Keyaddr.wordsToBytes(language, recoveryPhrase)
       .then(resp => {
