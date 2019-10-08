@@ -1,0 +1,82 @@
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <script src="wasm_exec.js"></script>
+  <script>
+
+
+    const main = () => {
+
+    }
+
+    const byId = (id) => document.getElementById(id)
+
+    // event handlers
+    const onNewKey = () => {
+      const val = byId('recoveryBytes').value
+      newKey(val, (err, resp) => {
+        if (err) {
+          console.error(err)
+          return
+        }
+
+        console.log("response", resp)
+        byId('newKey').value = resp
+      })
+    }
+
+    const onWordsToBytes = () => {
+      const lang = byId("lang").value
+      const words = byId("words").value
+      wordsToBytes(lang, words, (err, resp) => {
+        if (err) {
+          console.error(err)
+          return
+        }
+
+        console.log("response", resp)
+        byId('newBytes').value = resp
+      })
+    }
+
+    // Make wasm more friendly
+    const go = new Go()
+
+    // boot then run main
+    WebAssembly.instantiateStreaming(fetch('keyaddr.wasm'), go.importObject).then(function (result) {
+      go.run(result.instance)
+    }).then(main)
+  </script>
+</head>
+
+<body>
+  <h1>keyAddr demo</h1>
+
+  <h2>newKey</h2>
+  <div>
+    <label>Recovery bytes
+      <small>(e.g. AAECAwQFBgcICQoLDA0ODw==)</small>
+      <input id="recoveryBytes">
+    </label>
+    <label>New key
+      <textarea id="newKey" readonly rows="4"></textarea>
+    </label>
+    <button onclick="onNewKey()">Go</button>
+  </div>
+  <h2>wordsToBytes</h2>
+  <div>
+    <label>Language
+      <input id="lang">
+    </label>
+    <label>Words
+      <input id="words">
+    </label>
+    <label>Bytes
+      <textarea id="newBytes"></textarea>
+    </label>
+    <button onclick="onWordsToBytes()">Go</button>
+  </div>
+</body>
+
+</html>

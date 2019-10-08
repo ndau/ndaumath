@@ -38,11 +38,11 @@ type Key struct {
 func NewKey(seedstr string) (*Key, error) {
 	seed, err := base64.StdEncoding.DecodeString(seedstr)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error decoding base64 string")
 	}
 	mk, err := key.NewMaster([]byte(seed))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error creating new master")
 	}
 	return KeyFromExtended(mk)
 }
@@ -55,9 +55,9 @@ func FromString(s string) (*Key, error) {
 	if err != nil {
 		key, nerr := FromOldString(s)
 		if nerr == nil {
-			return key, nerr
+			return key, nil
 		}
-		return nil, err
+		return nil, errors.Wrap(nerr, "couldn't unmarshal extended key from bytes: error also trying old string method")
 	}
 
 	// re-marshal for reasons?
@@ -71,7 +71,7 @@ func FromString(s string) (*Key, error) {
 func FromOldString(s string) (*Key, error) {
 	ekey, err := key.FromOldSerialization(s)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error parsing old key serialization format")
 	}
 	return KeyFromExtended(ekey)
 }
@@ -83,11 +83,11 @@ func FromOldString(s string) (*Key, error) {
 func DeriveFrom(parentKey string, parentPath, childPath string) (*Key, error) {
 	k, err := FromString(parentKey)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error getting key from string")
 	}
 	e, err := k.ToExtended()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "")
 	}
 	e, err = e.DeriveFrom(parentPath, childPath)
 	if err != nil {
@@ -160,15 +160,15 @@ func (k *Key) HardenedChild(n int32) (*Key, error) {
 func (k *Key) Sign(msgstr string) (*Signature, error) {
 	msg, err := base64.StdEncoding.DecodeString(msgstr)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error decoding string")
 	}
 	ekey, err := k.ToExtended()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error converting to extended")
 	}
 	pk, err := ekey.SPrivKey()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error getting private key")
 	}
 	sig := pk.Sign(msg)
 	return SignatureFrom(sig)
