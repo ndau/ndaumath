@@ -1,7 +1,13 @@
+// ----- ---- --- -- -
+// Copyright 2018, 2019 Oneiro NA, Inc. All Rights Reserved.
+//
+// Licensed under the Apache License 2.0 (the "License").  You may not use
+// this file except in compliance with the License.  You can obtain a copy
+// in the file LICENSE in the source distribution or at
+// https://www.apache.org/licenses/LICENSE-2.0.txt
+// - -- --- ---- -----
+
 // Copyright (c) 2014-2016 The btcsuite developers
-// Copyright (c) 2018 Oneiro, LLC
-// Use of this source code is governed by an ISC
-// license that can be found in the LICENSE file.
 
 // This source code is basically a subset of some of btcsuite/bctd. As ndau is
 // not bitcoin, there are many things in btcd that are unnecessary for ndau and
