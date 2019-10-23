@@ -1,8 +1,10 @@
-import { expect } from 'chai'
+import chai, { expect } from 'chai'
 import fs from 'fs'
 import { promisify } from 'util'
+import chaiAsPromised from 'chai-as-promised'
 require('./wasm_exec')
 const readFile = promisify(fs.readFile)
+chai.use(chaiAsPromised)
 
 const toUint8Array = b => {
   var u = new Uint8Array(b.length)
@@ -27,9 +29,9 @@ const instantiateStreaming = (source, importObject) => {
     })
 }
 
-before(done => {
+before(() => {
   const go = new Go()
-  instantiateStreaming(readFile('./keyaddr.wasm'), go.importObject)
+  return instantiateStreaming(readFile('./keyaddr.wasm'), go.importObject)
     .then(function (result) {
       go.run(result.instance)
     })
@@ -43,22 +45,24 @@ before(done => {
         child: promisify(KeyaddrNS.child),
         sign: promisify(KeyaddrNS.sign),
         hardenedChild: promisify(KeyaddrNS.hardenedChild),
-        newKey: promisify(KeyaddrNS.newKey),
+        wordsFromPrefix: promisify(KeyaddrNS.wordsFromPrefix),
+        isPrivate: promisify(KeyaddrNS.isPrivate),
+        fromString: promisify(KeyaddrNS.fromString),
+        wordsFromBytes: promisify(KeyaddrNS.wordsFromBytes),
         exit: promisify(KeyaddrNS.exit)
       }
-      done()
-    })
-    .catch(err => {
-      console.log('something went wrong loading', err)
-      done()
     })
 })
 
 const language = 'en'
 const recoveryPhrase = 'eye eye eye eye eye eye eye eye eye eye eye eye'
 const recoveryBytes = 'USolRKiVEqJUSolRKiVEqA=='
+const recoveryBytesDifferent = 'USolRKiVEqJUTolRKiVEqA=='
+const recoveryPhraseDifferent =
+  'eye eye eye eye eye eye eye spell eye eye eye exotic'
 const privateKey =
   'npvta8jaftcjebhe9pi57hji5yrt3yc3f2gn3ih56rys38qxt52945vuf8xqu4jfkaaaaaaaaaaaacz6d28v6zwuqm6c7jt4yqcjk4ujvw53jqehafkm5xxvh39jjep58u7pw33dd7cc'
+const badPrivateKey = 'foo' + privateKey
 const parentPath = `/`
 const childPath = `/44'/20036'/100/1`
 const firstChildPrivateKey =
@@ -76,101 +80,192 @@ const firstHardenedGrandchildPrivateKey =
   'npvta8jaftcjedampmhj9tybxp78m3dp67fppc53cmezvyu3ree9qnj7ywsvq7cqgbjzyxuiaaaaahx7w9s5zktt9efze3xtaysg2vydrnrpq68wp2cpuu7ep4veibgq3rvtjc2nsuqy'
 
 describe('Keyaddr', () => {
-  it('it should error for incorrect number of arguments', done => {
-    Keyaddr.wordsToBytes().catch(err => {
-      expect(err).to.be.ok
-      done()
+  before(() => {
+    global.KeyaddrLogLevel = global.KeyaddrLogLevelDebug
+  })
+
+  describe('wordsToBytes', () => {
+    it('it should error for incorrect number of arguments', () => {
+      expect(Keyaddr.wordsToBytes()).to.eventually.be.rejected
+    })
+
+    it('it gets recovery bytes from a recovery phrase', async () => {
+      const bytes = await Keyaddr.wordsToBytes(language, recoveryPhrase)
+      expect(bytes).to.equal(recoveryBytes)
     })
   })
 
-  it('it gets recovery bytes from a recovery phrase', done => {
-    Keyaddr.wordsToBytes(language, recoveryPhrase)
-      .then(resp => {
-        expect(resp).to.equal(recoveryBytes)
-        done()
-      })
-      .catch(err => done(new Error(err)))
-  })
-  it('gets a new key from recovery bytes', done => {
-    Keyaddr.newKey(recoveryBytes)
-      .then(resp => {
-        expect(resp).to.equal(privateKey)
-        done()
-      })
-      .catch(err => done(new Error(err)))
+  describe('newKey', () => {
+    it('gets a new key from recovery bytes', async () => {
+      const key = await Keyaddr.newKey(recoveryBytes)
+      expect(key).to.equal(privateKey)
+    })
+    it('errors with bad recovery bytes', async () => {
+      return await expect(Keyaddr.newKey(recoveryBytes + '42')).to.eventually.be
+        .rejected
+    })
   })
 
-  it('derives a new address from the root private key', done => {
-    Keyaddr.deriveFrom(privateKey, parentPath, childPath)
-      .then(resp => {
-        expect(resp).to.equal(firstChildPrivateKey)
-        done()
-      })
-      .catch(err => done(new Error(err)))
+  describe('deriveFrom', () => {
+    it('derives a new key from the root private key', async () => {
+      const key = await Keyaddr.deriveFrom(privateKey, parentPath, childPath)
+      expect(key).to.equal(firstChildPrivateKey)
+    })
+    it('errors with missing arguments', async () => {
+      return await expect(Keyaddr.deriveFrom()).to.eventually.be.rejected
+    })
+    it('errors with bad private key', async () => {
+      return await expect(
+        Keyaddr.deriveFrom(badPrivateKey, parentPath, childPath)
+      ).to.eventually.be.rejected
+    })
+    it('errors with bad parentPath', async () => {
+      return await expect(Keyaddr.deriveFrom(privateKey, 'foo', childPath)).to
+        .eventually.be.rejected
+    })
+    it('errors with bad childPath', async () => {
+      return await expect(Keyaddr.deriveFrom(privateKey, parentPath, 'foo')).to
+        .eventually.be.rejected
+    })
   })
 
-  it(`gets the address of the child's private key`, done => {
-    Keyaddr.ndauAddress(firstChildPrivateKey)
-      .then(resp => {
-        expect(resp).to.equal(firstChildAddress)
-        done()
-      })
-      .catch(err => done(new Error(err)))
+  describe('ndauAddress', () => {
+    it(`gets the address of the child's private key`, async () => {
+      const address = await Keyaddr.ndauAddress(firstChildPrivateKey)
+      expect(address).to.equal(firstChildAddress)
+    })
+    it(`errors with a bad private key`, async () => {
+      return await expect(Keyaddr.ndauAddress(badPrivateKey)).to.eventually.be
+        .rejected
+    })
   })
 
-  it('gets a public key from a private one', done => {
-    Keyaddr.toPublic(firstChildPrivateKey)
-      .then(resp => {
-        expect(resp).to.equal(firstChildPublicKey)
-        done()
-      })
-      .catch(err => done(new Error(err)))
+  describe('toPublic', () => {
+    it('gets a public key from a private one', async () => {
+      const pubKey = await Keyaddr.toPublic(firstChildPrivateKey)
+      expect(pubKey).to.equal(firstChildPublicKey)
+    })
+    it(`errors with a bad private key`, async () => {
+      return await expect(Keyaddr.toPublic(badPrivateKey)).to.eventually.be
+        .rejected
+    })
   })
 
-  it(`gets grandchild's private key`, done => {
-    Keyaddr.child(firstChildPrivateKey, firstGrandchildN)
-      .then(resp => {
-        expect(resp).to.equal(firstGrandchildPrivateKey)
-        done()
-      })
-      .catch(err => done(new Error(err)))
+  describe('child', () => {
+    it(`gets grandchild's private key`, async () => {
+      const key = await Keyaddr.child(firstChildPrivateKey, firstGrandchildN)
+      expect(key).to.equal(firstGrandchildPrivateKey)
+    })
+    it(`errors with a bad private key`, async () => {
+      return await expect(Keyaddr.child(badPrivateKey)).to.eventually.be
+        .rejected
+    })
   })
 
-  it('signs a message', done => {
-    Keyaddr.sign(firstGrandchildPrivateKey, msg)
-      .then(resp => {
-        expect(resp).to.equal(firstGrandchildSignature)
-        done()
-      })
-      .catch(err => done(new Error(err)))
+  describe('sign', () => {
+    it('signs a message', async () => {
+      const sig = await Keyaddr.sign(firstGrandchildPrivateKey, msg)
+      expect(sig).to.equal(firstGrandchildSignature)
+    })
+    it(`errors with a bad private key`, async () => {
+      return await expect(Keyaddr.sign(badPrivateKey, msg)).to.eventually.be
+        .rejected
+    })
   })
 
-  it('creates a hardened child private key', done => {
-    Keyaddr.hardenedChild(firstChildPrivateKey, firstGrandchildN)
-      .then(resp => {
-        expect(resp).to.equal(firstHardenedGrandchildPrivateKey)
-        done()
-      })
-      .catch(err => done(new Error(err)))
+  describe('hardenedChild', () => {
+    it('creates a hardened child private key', async () => {
+      const key = await Keyaddr.hardenedChild(
+        firstChildPrivateKey,
+        firstGrandchildN
+      )
+      expect(key).to.equal(firstHardenedGrandchildPrivateKey)
+    })
+    it(`errors with a bad private key`, async () => {
+      return await expect(
+        Keyaddr.hardenedChild(badPrivateKey, firstGrandchildN)
+      ).to.eventually.be.rejected
+    })
   })
 
-  it('exits the wasm program', done => {
-    Keyaddr.exit()
-      .then(resp => {
-        console.log(resp)
-        done()
-      })
-      .catch(err => done(new Error(err)))
+  describe('wordsFromPrefix', () => {
+    it('gets list of words from a prefix', async () => {
+      const words = await Keyaddr.wordsFromPrefix('en', 'gir', 100)
+      expect(words).to.equal('giraffe girl')
+    })
+    it('gets a truncated list of words', async () => {
+      const resp = await Keyaddr.wordsFromPrefix('en', 'g', 2)
+      expect(resp.split(' ').length).to.equal(2)
+    })
   })
-  it('should no longer handle function calls', done => {
-    Keyaddr.newKey(recoveryBytes)
-      .then(resp => {
-        expect(true).to.equal(false) // should never get here
-        done()
+
+  describe('isPrivate', () => {
+    it('tests a public key for privacy', async () => {
+      const isPrivate = await Keyaddr.isPrivate(firstChildPublicKey)
+      expect(isPrivate).to.equal(false)
+    })
+    it('tests a private key for privacy', async () => {
+      const isPrivate = await Keyaddr.isPrivate(firstChildPrivateKey)
+      expect(isPrivate).to.equal(true)
+    })
+    it('tests a private key for privacy', async () => {
+      expect(Keyaddr.isPrivate(badPrivateKey)).to.eventually.be.rejected
+    })
+  })
+
+  describe('fromString', () => {
+    it('creates a key from a public key string', async () => {
+      const key = await Keyaddr.fromString(firstChildPublicKey)
+      expect(key).to.deep.equal({
+        key: firstChildPublicKey
       })
-      .catch(err => {
-        expect(err).to.be.ok
-        done()
+    })
+    it('creates a key from a private key string', async () => {
+      const key = await Keyaddr.fromString(firstChildPrivateKey)
+      expect(key).to.deep.equal({
+        key: firstChildPrivateKey
       })
+    })
+    it('errors trying to create a key from a bad string', () => {
+      return expect(Keyaddr.fromString(badPrivateKey)).to.eventually.be.rejected
+    })
+  })
+
+  it('converts bytes to words', async () => {
+    const words = await Keyaddr.wordsFromBytes('en', recoveryBytes)
+    expect(words).to.equal(recoveryPhrase)
+  })
+  it('converts bytes to words with different bytes', async () => {
+    const words = await Keyaddr.wordsFromBytes('en', recoveryBytesDifferent)
+    expect(words).to.equal(recoveryPhraseDifferent)
+  })
+  it('errors for bad bytes', () => {
+    expect(Keyaddr.wordsFromBytes('en', 'foobar')).to.eventually.be.rejected
+  })
+})
+
+describe('simple memory test', () => {
+  it('should not run out of memory', async () => {
+    const bytes = await Keyaddr.wordsToBytes(language, recoveryPhrase)
+    const key = await Keyaddr.newKey(bytes)
+    const oldLogLevel = global.KeyaddrLogLevel // save previous log level
+    global.KeyaddrLogLevel = global.KeyaddrLogLevelError // turn off excessive logs
+    for (let i = 1; i < 1000; i++) {
+      const newKey = await Keyaddr.deriveFrom(key, '/', `/44'/20036'/100/${i}`)
+      const addy = await Keyaddr.ndauAddress(newKey)
+    }
+    global.KeyaddrLogLevel = oldLogLevel // restore log level
+    return Promise.resolve()
+  })
+})
+
+// these have to go on the bottom for...obvious reasons
+describe('exiting the wasm application', () => {
+  it('exits the wasm program', async () => {
+    const msg = await Keyaddr.exit()
+    console.log(msg)
+  })
+  it('should no longer handle function calls', async () => {
+    expect(Keyaddr.newKey(recoveryBytes)).to.be.rejected
   })
 })

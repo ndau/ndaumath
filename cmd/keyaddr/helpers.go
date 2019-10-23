@@ -49,24 +49,44 @@ func log(l LogEntry) {
 	fmt.Printf("%s\n", string(logJSON))
 }
 
+// TODO: add log levels
+var levels = map[string]int{
+	"D": 0,
+	"I": 1,
+	"E": 2,
+	"":  0, // default to 0
+}
+
+const (
+	levelDebug = "D"
+	levelInfo  = "I"
+	levelError = "E"
+)
+
 func logDebug(msg string) {
-	log(LogEntry{
-		Source:  "KEYADDR",
-		Level:   "D",
-		Message: msg,
-	})
+	if levels[js.Global().Get("KeyaddrLogLevel").String()] <= levels[levelDebug] {
+		log(LogEntry{
+			Source:  "KEYADDR",
+			Level:   levelDebug,
+			Message: msg,
+		})
+	}
 }
 func logError(msg string) {
-	log(LogEntry{
-		Source:  "KEYADDR",
-		Level:   "E",
-		Message: msg,
-	})
+	if levels[js.Global().Get("KeyaddrLogLevel").String()] <= levels[levelError] {
+		log(LogEntry{
+			Source:  "KEYADDR",
+			Level:   levelError,
+			Message: msg,
+		})
+	}
 }
 func logInfo(msg string) {
-	log(LogEntry{
-		Source:  "KEYADDR",
-		Level:   "I",
-		Message: msg,
-	})
+	if levels[js.Global().Get("KeyaddrLogLevel").String()] <= levels[levelInfo] {
+		log(LogEntry{
+			Source:  "KEYADDR",
+			Level:   levelInfo,
+			Message: msg,
+		})
+	}
 }

@@ -35,11 +35,10 @@ func errorHandler(this js.Value, args []js.Value) interface{} {
 	return nil
 }
 
-// js usage: newKey(recoveryBytes, cb)
+// JS Usage: newKey(recoveryBytes, cb)
 func newKey(this js.Value, args []js.Value) interface{} {
 	go func(args []js.Value) {
-
-		logInfo("newKey")
+		logDebug("newKey")
 
 		// clean args
 		callback, remainder, err := handleArgs(args, 1, "newKey")
@@ -67,7 +66,7 @@ func newKey(this js.Value, args []js.Value) interface{} {
 // language defaults to en if not specified.
 func wordsToBytes(this js.Value, args []js.Value) interface{} {
 	go func(args []js.Value) {
-		logInfo("wordsToBytes")
+		logDebug("wordsToBytes")
 		// clean args
 		callback, remainder, err := handleArgs(args, 2, "wordsToBytes")
 		if err != nil {
@@ -101,7 +100,7 @@ func wordsToBytes(this js.Value, args []js.Value) interface{} {
 // JS Usage: deriveFrom(parentKey, parentPath, childPath, cb)
 func deriveFrom(this js.Value, args []js.Value) interface{} {
 	go func(args []js.Value) {
-		logInfo("deriveFrom")
+		logDebug("deriveFrom")
 		// clean args
 		callback, remainder, err := handleArgs(args, 3, "deriveFrom")
 		if err != nil {
@@ -127,10 +126,124 @@ func deriveFrom(this js.Value, args []js.Value) interface{} {
 	return nil
 }
 
-// JS usage: ndauAddress(privateKey, cb)
+// JS Usage: wordsFromPrefix(lang, prefix, max, cb)
+func wordsFromPrefix(this js.Value, args []js.Value) interface{} {
+	go func(args []js.Value) {
+		logDebug("wordsFromPrefix")
+		// clean args
+		callback, remainder, err := handleArgs(args, 3, "wordsFromPrefix")
+		if err != nil {
+			return
+		}
+
+		lang := remainder[0].String()
+		prefix := remainder[1].String()
+		max := remainder[2].Int()
+
+		// do work
+		words := keyaddr.WordsFromPrefix(lang, prefix, max)
+
+		// return result
+		callback.Invoke(nil, words)
+
+		return
+	}(args)
+	return nil
+}
+
+// JS Usage: isPrivate(key, cb)
+func isPrivate(this js.Value, args []js.Value) interface{} {
+	go func(args []js.Value) {
+		logDebug("isPrivate")
+		// clean args
+		callback, remainder, err := handleArgs(args, 1, "isPrivate")
+		if err != nil {
+			return
+		}
+
+		k := &keyaddr.Key{
+			Key: remainder[0].String(),
+		}
+
+		// do work
+		isPrivateResult, err := k.IsPrivate()
+		if err != nil {
+			callback.Invoke(fmt.Sprintf("error testing key type: %s", err), nil)
+			return
+		}
+
+		// return result
+		callback.Invoke(nil, isPrivateResult)
+
+		return
+	}(args)
+	return nil
+}
+
+// constructs a key from a string. Possibly to check for validity?
+// JS Usage: fromString(key, cb)
+func fromString(this js.Value, args []js.Value) interface{} {
+	go func(args []js.Value) {
+		logDebug("fromString")
+		// clean args
+		callback, remainder, err := handleArgs(args, 1, "fromString")
+		if err != nil {
+			return
+		}
+
+		str := remainder[0].String()
+
+		// do work
+		key, err := keyaddr.FromString(str)
+		if err != nil {
+			callback.Invoke(fmt.Sprintf("error constructing a key from a string: %s", err), nil)
+			return
+		}
+
+		// Make an map[string]interface{} so syscall will turn it into a js object.
+		obj := make(map[string]interface{})
+		obj["key"] = key.Key
+
+		// return result
+		callback.Invoke(nil, js.ValueOf(obj))
+
+		return
+	}(args)
+	return nil
+}
+
+// JS Usage: wordsFromBytes(lang, base64bytes, cb)
+func wordsFromBytes(this js.Value, args []js.Value) interface{} {
+	go func(args []js.Value) {
+		logDebug("wordsFromBytes")
+		// clean args
+		callback, remainder, err := handleArgs(args, 2, "wordsFromBytes")
+		if err != nil {
+			return
+		}
+
+		lang := remainder[0].String()
+		bs := remainder[1].String()
+
+		// do work
+		words, err := keyaddr.WordsFromBytes(lang, bs)
+		if err != nil {
+			callback.Invoke(fmt.Sprintf("error converting bytes to words: %s", err), nil)
+			return
+		}
+
+		// return result
+		callback.Invoke(nil, words)
+
+		return
+	}(args)
+	return nil
+}
+
+// JS Usage: ndauAddress(privateKey, cb)
 func ndauAddress(this js.Value, args []js.Value) interface{} {
 	go func(args []js.Value) {
-		logInfo("ndauAddress")
+		logDebug("ndauAddress")
 		// clean args
 		callback, remainder, err := handleArgs(args, 1, "ndauAddress")
 		if err != nil {
@@ -155,10 +268,10 @@ func ndauAddress(this js.Value, args []js.Value) interface{} {
 	return nil
 }
 
-// JS usage: toPublic(privateKey, cb)
+// JS Usage: toPublic(privateKey, cb)
 func toPublic(this js.Value, args []js.Value) interface{} {
 	go func(args []js.Value) {
-		logInfo("toPublic")
+		logDebug("toPublic")
 		// clean args
 		callback, remainder, err := handleArgs(args, 1, "toPublic")
 		if err != nil {
@@ -185,10 +298,10 @@ func toPublic(this js.Value, args []js.Value) interface{} {
 	return nil
 }
 
-// JS usage: child(privateKey, n)
+// JS Usage: child(privateKey, n, cb)
 func child(this js.Value, args []js.Value) interface{} {
 	go func(args []js.Value) {
-		logInfo("child")
+		logDebug("child")
 		// clean args
 		callback, remainder, err := handleArgs(args, 2, "child")
 		if err != nil {
@@ -227,10 +340,10 @@ func child(this js.Value, args []js.Value) interface{} {
 	return nil
 }
 
-// js usage: sign(privateKey, base64Message, cb)
+// JS Usage: sign(privateKey, base64Message, cb)
 func sign(this js.Value, args []js.Value) interface{} {
 	go func(args []js.Value) {
-		logInfo("sign")
+		logDebug("sign")
 		// clean args
 		callback, remainder, err := handleArgs(args, 2, "sign")
 		if err != nil {
@@ -258,10 +371,10 @@ func sign(this js.Value, args []js.Value) interface{} {
 	return nil
 }
 
-// JS Usage: hardenedChild(privateKey, n)
+// JS Usage: hardenedChild(privateKey, n, cb)
 func hardenedChild(this js.Value, args []js.Value) interface{} {
 	go func(args []js.Value) {
-		logInfo("hardenedChild")
+		logDebug("hardenedChild")
 		// clean args
 		callback, remainder, err := handleArgs(args, 2, "hardenedChild")
 		if err != nil {
