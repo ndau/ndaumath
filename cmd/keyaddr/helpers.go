@@ -49,7 +49,7 @@ func log(l LogEntry) {
 	fmt.Printf("%s\n", string(logJSON))
 }
 
-// TODO: add log levels
+// these are also available in the JS environment as KeyaddrLogLevelDebug, KeyaddrLogLevelInfo, KeyaddrLogLevelError
 var levels = map[string]int{
 	"D": 0,
 	"I": 1,

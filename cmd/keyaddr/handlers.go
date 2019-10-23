@@ -79,9 +79,11 @@ func wordsToBytes(this js.Value, args []js.Value) interface{} {
 		}
 		words := remainder[1].String()
 
+		// checks for a space character to count words
 		re := regexp.MustCompile(" ")
-		matches := re.FindAllStringIndex(words, -1)
-		logDebug(fmt.Sprintf("number of words:%v lang:%s", len(matches), lang))
+		wc := len(re.FindAllStringIndex(words, -1)) + 1
+
+		logDebug(fmt.Sprintf("number of words:%v lang:%s", wc, lang))
 
 		// do work
 		bs, err := keyaddr.WordsToBytes(lang, words)
