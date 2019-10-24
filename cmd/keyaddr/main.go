@@ -40,15 +40,19 @@ func main() {
 
 	// put go functions in a javascript object
 	obj := map[string]interface{}{
-		"newKey":        js.FuncOf(newKey),
-		"wordsToBytes":  js.FuncOf(wordsToBytes),
-		"deriveFrom":    js.FuncOf(deriveFrom),
-		"ndauAddress":   js.FuncOf(ndauAddress),
-		"toPublic":      js.FuncOf(toPublic),
-		"child":         js.FuncOf(child),
-		"sign":          js.FuncOf(sign),
-		"hardenedChild": js.FuncOf(hardenedChild),
-		"exit":          js.FuncOf(exit),
+		"newKey":          js.FuncOf(newKey),
+		"wordsToBytes":    js.FuncOf(wordsToBytes),
+		"deriveFrom":      js.FuncOf(deriveFrom),
+		"ndauAddress":     js.FuncOf(ndauAddress),
+		"toPublic":        js.FuncOf(toPublic),
+		"child":           js.FuncOf(child),
+		"sign":            js.FuncOf(sign),
+		"hardenedChild":   js.FuncOf(hardenedChild),
+		"wordsFromPrefix": js.FuncOf(wordsFromPrefix),
+		"isPrivate":       js.FuncOf(isPrivate),
+		"wordsFromBytes":  js.FuncOf(wordsFromBytes),
+		"fromString":      js.FuncOf(fromString),
+		"exit":            js.FuncOf(exit),
 	}
 
 	// Register all functions globally under KeyaddrNS. Either `window` in browsers, or
@@ -56,6 +60,16 @@ func main() {
 	// callbacks instead of promises. In node, the functions may be easily turned into
 	// promisified functions with `util.promisify`.
 	js.Global().Set("KeyaddrNS", js.ValueOf(obj))
+
+	// Give the JS environment some constants to set the log level
+	js.Global().Set("KeyaddrLogLevelDebug", js.ValueOf(levelDebug))
+	js.Global().Set("KeyaddrLogLevelInfo", js.ValueOf(levelInfo))
+	js.Global().Set("KeyaddrLogLevelError", js.ValueOf(levelError))
+
+	// Set the log level to info if not already set
+	if js.Global().Get("KeyaddrLogLevel").Type() == js.TypeUndefined {
+		js.Global().Set("KeyaddrLogLevel", js.ValueOf(levelInfo))
+	}
 
 	// register default error handler if error handler doesn't already exist
 	if js.Global().Get("KeyaddrErrorHandler").Truthy() == false {

@@ -31,16 +31,15 @@ import (
 	"crypto/sha512"
 	"encoding"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"math/big"
 	"unicode/utf8"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/signature"
-
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/oneiro-ndev/ndaumath/pkg/b32"
 	"github.com/oneiro-ndev/ndaumath/pkg/bip32"
+	"github.com/oneiro-ndev/ndaumath/pkg/signature"
+	"github.com/pkg/errors"
 )
 
 // bip32 constants are described in bip32 documentation
@@ -352,7 +351,7 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 		// public key.
 		pubKey, err := btcec.ParsePubKey(k.key, btcec.S256())
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "could not parse public key")
 		}
 
 		// Add the intermediate public key to the parent public key to
@@ -401,7 +400,8 @@ func (k *ExtendedKey) Public() (*ExtendedKey, error) {
 func (k *ExtendedKey) HardenedChild(n uint32) (*ExtendedKey, error) {
 	ndx := n + HardenedKeyStart
 	nk, err := k.Child(ndx)
-	return nk, err
+	return nk, errors.Wrap(err, "could not get child key")
+
 }
 
 // ECPubKey converts the extended key to a btcec public key and returns it.
@@ -427,11 +427,11 @@ func (k *ExtendedKey) ECPrivKey() (*btcec.PrivateKey, error) {
 func (k *ExtendedKey) SPubKey() (*signature.PublicKey, error) {
 	pub, err := k.Public()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not get public key")
 	}
 	sk, err := pub.AsSignatureKey()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not get public key as signature key")
 	}
 	return sk.(*signature.PublicKey), err
 }
@@ -448,7 +448,7 @@ func (k *ExtendedKey) SPrivKey() (*signature.PrivateKey, error) {
 
 	sk, err := k.AsSignatureKey()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not get private key as signature key")
 	}
 	return sk.(*signature.PrivateKey), err
 }
@@ -531,7 +531,7 @@ func (k *ExtendedKey) Zero() {
 func NewMaster(seed []byte) (*ExtendedKey, error) {
 	secretKey, chainCode, err := bip32.NewMaster(seed)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not get new master from seed")
 	}
 
 	parentFP := []byte{0x00, 0x00, 0x00}
@@ -545,7 +545,8 @@ func NewMaster(seed []byte) (*ExtendedKey, error) {
 // The recommended length is 32 (256 bits) as defined by the RecommendedSeedLen
 // constant.
 func GenerateSeed(length uint8) ([]byte, error) {
-	return bip32.GenerateSeed(length, nil)
+	seed, err := bip32.GenerateSeed(length, nil)
+	return seed, errors.Wrap(err, fmt.Sprintf("could not generate seed of length %v", length))
 }
 
 // Bytes returns the bytes of the key
@@ -569,6 +570,9 @@ func (k *ExtendedKey) FromSignatureKey(key signature.Key) (err error) {
 	k.isPrivate = signature.IsPrivate(key)
 	k.key = key.KeyBytes()
 	err = k.parseExtra(key.ExtraBytes())
+	if err != nil {
+		return errors.Wrap(err, "could not parse extra")
+	}
 	return
 }
 
@@ -576,6 +580,9 @@ func (k *ExtendedKey) FromSignatureKey(key signature.Key) (err error) {
 func FromSignatureKey(key signature.Key) (ek *ExtendedKey, err error) {
 	ek = new(ExtendedKey)
 	err = ek.FromSignatureKey(key)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get extended key from signature key")
+	}
 	return
 }
 
@@ -583,17 +590,23 @@ func FromSignatureKey(key signature.Key) (ek *ExtendedKey, err error) {
 func (k ExtendedKey) AsSignatureKey() (signature.Key, error) {
 	if k.isPrivate {
 		priv, err := signature.RawPrivateKey(signature.Secp256k1, k.key, k.extra())
-		return priv, err
+		if err != nil {
+			return errors.Wrap(err, "could not get signature from private key")
+		}
+		return priv, nil
 	}
 	pub, err := signature.RawPublicKey(signature.Secp256k1, k.key, k.extra())
-	return pub, err
+	if err != nil {
+		return errors.Wrap(err, "could not get signature from public key")
+	}
+	return pub, nil
 }
 
 // MarshalText implements encoding.TextMarshaler
 func (k ExtendedKey) MarshalText() ([]byte, error) {
 	key, err := k.AsSignatureKey()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not get key from extended key")
 	}
 	return key.MarshalText()
 }
@@ -607,7 +620,7 @@ func (k *ExtendedKey) UnmarshalText(text []byte) (err error) {
 	k.Zero()
 	key, err := signature.ParseKey(string(text))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "could not parse key")
 	}
 	return k.FromSignatureKey(key)
 }
