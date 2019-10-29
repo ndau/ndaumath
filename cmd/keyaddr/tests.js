@@ -127,6 +127,11 @@ describe('Keyaddr', () => {
       return await expect(Keyaddr.deriveFrom(privateKey, parentPath, 'foo')).to
         .eventually.be.rejected
     })
+    it('errors with test case data', async () => {
+      return await expect(
+        Keyaddr.deriveFrom('ZWEQAwQFBgcICQoLDA0ODw==', '/', '/1')
+      ).to.eventually.be.rejected
+    })
   })
 
   describe('ndauAddress', () => {
