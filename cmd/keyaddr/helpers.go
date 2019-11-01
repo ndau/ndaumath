@@ -46,7 +46,7 @@ type LogEntry struct {
 	Timestamp int    `json:"ts"`
 }
 
-// log marshalls a message to json and
+// log marshalls a message to json and output's to the console
 func log(l LogEntry) {
 	logJSON, _ := json.Marshal(l)
 	js.Global().Get("console").Call("log", fmt.Sprintf("%s", string(logJSON)))
