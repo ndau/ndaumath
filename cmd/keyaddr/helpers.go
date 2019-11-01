@@ -22,7 +22,7 @@ func handleArgs(args []js.Value, expected int, source string) (js.Value, []js.Va
 	}
 
 	// check argument length
-	// +1 ignores callback
+	// The expression below (expected+1) makes this check ignore the callback
 	if len(args) != expected+1 {
 		msg := fmt.Sprintf("couldn't parse %s arguments: incorrect amount of arguments", source)
 		cb.Invoke(msg, nil)
@@ -46,8 +46,14 @@ type LogEntry struct {
 	Timestamp int    `json:"ts"`
 }
 
-// log marshalls a message to json and output's to the console
-func log(l LogEntry) {
+// log marshalls a message to json and outputs to the console
+func log(level string, msg string) {
+	l := LogEntry{
+		Source:    "KEYADDR",
+		Level:     level,
+		Message:   msg,
+		Timestamp: js.Global().Get("Date").Call("now").Int(),
+	}
 	logJSON, _ := json.Marshal(l)
 	js.Global().Get("console").Call("log", fmt.Sprintf("%s", string(logJSON)))
 }
@@ -66,37 +72,28 @@ const (
 	levelError = "E"
 )
 
+func checkLevel(level string) bool {
+	return levels[js.Global().Get("KeyaddrLogLevel").String()] <= levels[level]
+}
+
 // logInfo logs with a 'debug' level
 func logDebug(msg string) {
-	if levels[js.Global().Get("KeyaddrLogLevel").String()] <= levels[levelDebug] {
-		log(LogEntry{
-			Source:    "KEYADDR",
-			Level:     levelDebug,
-			Message:   msg,
-			Timestamp: js.Global().Get("Date").Call("now").Int(),
-		})
+	if checkLevel(levelDebug) {
+		log(levelDebug, msg)
 	}
 }
 
 // logError logs with an 'error' level
 func logError(msg string) {
-	if levels[js.Global().Get("KeyaddrLogLevel").String()] <= levels[levelError] {
-		log(LogEntry{
-			Source:  "KEYADDR",
-			Level:   levelError,
-			Message: msg,
-		})
+	if checkLevel(levelError) {
+		log(levelError, msg)
 	}
 }
 
 // logInfo logs with an 'info' level
 func logInfo(msg string) {
-	if levels[js.Global().Get("KeyaddrLogLevel").String()] <= levels[levelInfo] {
-		log(LogEntry{
-			Source:  "KEYADDR",
-			Level:   levelInfo,
-			Message: msg,
-		})
+	if checkLevel(levelInfo) {
+		log(levelInfo, msg)
 	}
 }
 
