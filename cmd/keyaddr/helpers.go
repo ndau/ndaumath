@@ -17,12 +17,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type LogEntry struct {
-	Level   string `json:"lvl"`
-	Message string `json:"msg"`
-	Source  string `json:"src"`
-}
-
 // handleArgs returns a callback and remaining arguments.
 // It also prints and returns error messages.
 // when this function returns err != nil, the handler should end asap.
@@ -37,7 +31,7 @@ func handleArgs(args []js.Value, expected int, source string) (js.Value, []js.Va
 	}
 
 	// check argument length
-	// ignores callback
+	// The expression below (expected+1) makes this check ignore the callback
 	if len(args) != expected+1 {
 		msg := fmt.Sprintf("couldn't parse %s arguments: incorrect amount of arguments", source)
 		cb.Invoke(msg, nil)
@@ -53,12 +47,27 @@ func dispatchError(msg string) {
 	js.Global().Call("KeyaddrErrorHandler", msg)
 }
 
-func log(l LogEntry) {
-	logJSON, _ := json.Marshal(l)
-	fmt.Printf("%s\n", string(logJSON))
+// LogEntry represents a log message for json marshalling.
+type LogEntry struct {
+	Level     string `json:"lvl"`
+	Message   string `json:"msg"`
+	Source    string `json:"src"`
+	Timestamp int    `json:"ts"`
 }
 
-// these are also available in the JS environment as KeyaddrLogLevelDebug, KeyaddrLogLevelInfo, KeyaddrLogLevelError
+// log marshalls a message to json and outputs to the console
+func log(level string, msg string) {
+	l := LogEntry{
+		Source:    "KEYADDR",
+		Level:     level,
+		Message:   msg,
+		Timestamp: js.Global().Get("Date").Call("now").Int(),
+	}
+	logJSON, _ := json.Marshal(l)
+	js.Global().Get("console").Call("log", fmt.Sprintf("%s", string(logJSON)))
+}
+
+// `levels` values are also available in the JS environment as KeyaddrLogLevelDebug, KeyaddrLogLevelInfo, KeyaddrLogLevelError
 var levels = map[string]int{
 	"D": 0,
 	"I": 1,
@@ -72,30 +81,35 @@ const (
 	levelError = "E"
 )
 
+func checkLevel(level string) bool {
+	return levels[js.Global().Get("KeyaddrLogLevel").String()] <= levels[level]
+}
+
+// logInfo logs with a 'debug' level
 func logDebug(msg string) {
-	if levels[js.Global().Get("KeyaddrLogLevel").String()] <= levels[levelDebug] {
-		log(LogEntry{
-			Source:  "KEYADDR",
-			Level:   levelDebug,
-			Message: msg,
-		})
+	if checkLevel(levelDebug) {
+		log(levelDebug, msg)
 	}
 }
+
+// logError logs with an 'error' level
 func logError(msg string) {
-	if levels[js.Global().Get("KeyaddrLogLevel").String()] <= levels[levelError] {
-		log(LogEntry{
-			Source:  "KEYADDR",
-			Level:   levelError,
-			Message: msg,
-		})
+	if checkLevel(levelError) {
+		log(levelError, msg)
 	}
 }
+
+// logInfo logs with an 'info' level
 func logInfo(msg string) {
-	if levels[js.Global().Get("KeyaddrLogLevel").String()] <= levels[levelInfo] {
-		log(LogEntry{
-			Source:  "KEYADDR",
-			Level:   levelInfo,
-			Message: msg,
-		})
+	if checkLevel(levelInfo) {
+		log(levelInfo, msg)
 	}
+}
+
+// jsLogReject returns a JS error to the callback and logs the error
+func jsLogReject(cb js.Value, str string, sprintfArgs ...interface{}) {
+	msg := fmt.Sprintf(str, sprintfArgs...)
+	jsErr := js.Global().Get("Error").Invoke(msg)
+	logError(msg)
+	cb.Invoke(jsErr, nil)
 }

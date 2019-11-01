@@ -60,7 +60,7 @@ func newKey(this js.Value, args []js.Value) interface{} {
 		// do work
 		key, err := keyaddr.NewKey(recoveryBytes)
 		if err != nil {
-			callback.Invoke(fmt.Sprintf("error creating new key: %s", err), nil)
+			jsLogReject(callback, "error creating new key: %s", err)
 			return
 		}
 
@@ -97,7 +97,8 @@ func wordsToBytes(this js.Value, args []js.Value) interface{} {
 		// do work
 		bs, err := keyaddr.WordsToBytes(lang, words)
 		if err != nil {
-			callback.Invoke(fmt.Sprintf("error converting words to bytes: %s", err), nil)
+
+			jsLogReject(callback, "error converting words to bytes: %s", err)
 			return
 		}
 
@@ -125,7 +126,7 @@ func deriveFrom(this js.Value, args []js.Value) interface{} {
 		// do work
 		der, err := keyaddr.DeriveFrom(parentKey, parentPath, childPath)
 		if err != nil {
-			callback.Invoke(fmt.Sprintf("error deriving new key: %s", err), nil)
+			jsLogReject(callback, "error deriving new key: %s", err)
 			return
 		}
 
@@ -179,7 +180,7 @@ func isPrivate(this js.Value, args []js.Value) interface{} {
 		// do work
 		isPrivateResult, err := k.IsPrivate()
 		if err != nil {
-			callback.Invoke(fmt.Sprintf("error testing key type: %s", err), nil)
+			jsLogReject(callback, "error testing key type: %s", err)
 			return
 		}
 
@@ -207,7 +208,7 @@ func fromString(this js.Value, args []js.Value) interface{} {
 		// do work
 		key, err := keyaddr.FromString(str)
 		if err != nil {
-			callback.Invoke(fmt.Sprintf("error constructing a key from a string: %s", err), nil)
+			jsLogReject(callback, "error constructing a key from a string: %s", err)
 			return
 		}
 
@@ -239,7 +240,7 @@ func wordsFromBytes(this js.Value, args []js.Value) interface{} {
 		// do work
 		words, err := keyaddr.WordsFromBytes(lang, bs)
 		if err != nil {
-			callback.Invoke(fmt.Sprintf("error converting bytes to words: %s", err), nil)
+			jsLogReject(callback, "error converting bytes to words: %s", err)
 			return
 		}
 
@@ -268,7 +269,7 @@ func ndauAddress(this js.Value, args []js.Value) interface{} {
 		// do work
 		addr, err := k.NdauAddress()
 		if err != nil {
-			callback.Invoke(fmt.Sprintf("error getting ndau address: %s", err), nil)
+			jsLogReject(callback, "error getting ndau address: %s", err)
 			return
 		}
 		// return result
@@ -296,7 +297,7 @@ func toPublic(this js.Value, args []js.Value) interface{} {
 		// do work
 		pub, err := k.ToPublic()
 		if err != nil {
-			callback.Invoke(fmt.Sprintf("error converting to public key: %s", err), nil)
+			jsLogReject(callback, "error converting to public key: %s", err)
 			return
 		}
 
@@ -324,13 +325,13 @@ func child(this js.Value, args []js.Value) interface{} {
 		}
 
 		if remainder[1].Type() != js.TypeNumber {
-			callback.Invoke("n must be of type Number", nil)
+			jsLogReject(callback, "n must be of type Number")
 			return
 		}
 
 		n := remainder[1].Int()
 		if n < math.MinInt32 || n > math.MaxInt32 {
-			callback.Invoke("n must not overflow int32")
+			jsLogReject(callback, "n must not overflow int32")
 			return
 		}
 
@@ -339,7 +340,7 @@ func child(this js.Value, args []js.Value) interface{} {
 		// do work
 		key, err := k.Child(int32(n32))
 		if err != nil {
-			callback.Invoke(fmt.Sprintf("error creating child key: %s", err), nil)
+			jsLogReject(callback, "error creating child key: %s", err)
 			return
 		}
 
@@ -370,8 +371,8 @@ func sign(this js.Value, args []js.Value) interface{} {
 		// do work
 		sig, err := k.Sign(msg)
 		if err != nil {
-			logError(fmt.Sprintf("key length: %s, msg: %s, err: %s", len(k.Key), msg, err.Error()))
-			callback.Invoke(fmt.Sprintf("error creating signature: %s", err), nil)
+			logError(fmt.Sprintf("error creating signature: key length: %s, msg: %s, err: %s", len(k.Key), msg, err.Error()))
+			jsLogReject(callback, "error creating signature: %s", err)
 			return
 		}
 
@@ -397,13 +398,13 @@ func hardenedChild(this js.Value, args []js.Value) interface{} {
 		}
 
 		if remainder[1].Type() != js.TypeNumber {
-			callback.Invoke("n must be of type Number", nil)
+			jsLogReject(callback, "n must be of type Number")
 			return
 		}
 
 		n := remainder[1].Int()
 		if n < math.MinInt32 || n > math.MaxInt32 {
-			callback.Invoke("n must not overflow int32", nil)
+			jsLogReject(callback, "n must not overflow int32")
 			return
 		}
 
@@ -412,7 +413,7 @@ func hardenedChild(this js.Value, args []js.Value) interface{} {
 		// do work
 		key, err := k.HardenedChild(n32)
 		if err != nil {
-			callback.Invoke(fmt.Sprintf("error hardening child: %s", err), nil)
+			jsLogReject(callback, "error hardening child: %s", err)
 			return
 		}
 		// return result
