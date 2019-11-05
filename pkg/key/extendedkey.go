@@ -590,16 +590,12 @@ func FromSignatureKey(key signature.Key) (ek *ExtendedKey, err error) {
 func (k ExtendedKey) AsSignatureKey() (signature.Key, error) {
 	if k.isPrivate {
 		priv, err := signature.RawPrivateKey(signature.Secp256k1, k.key, k.extra())
-		if err != nil {
-			return errors.Wrap(err, "could not get signature from private key")
-		}
-		return priv, nil
+		err = errors.Wrap(err, "could not convert private key")
+		return priv, err
 	}
 	pub, err := signature.RawPublicKey(signature.Secp256k1, k.key, k.extra())
-	if err != nil {
-		return errors.Wrap(err, "could not get signature from public key")
-	}
-	return pub, nil
+	err = errors.Wrap(err, "could not convert public key")
+	return pub, err
 }
 
 // MarshalText implements encoding.TextMarshaler
