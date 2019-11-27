@@ -12,7 +12,7 @@ package signed
 import (
 	"testing"
 
-	"github.com/ericlagergren/decimal"
+	"github.com/ericlagergren/decimal/v3"
 	dmath "github.com/ericlagergren/decimal/math"
 )
 

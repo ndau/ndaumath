@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ericlagergren/decimal"
+	"github.com/ericlagergren/decimal/v3"
 )
 
 func TestAdd(t *testing.T) {

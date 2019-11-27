@@ -10,7 +10,7 @@ package unsigned
 // - -- --- ---- -----
 
 import (
-	"github.com/ericlagergren/decimal"
+	"github.com/ericlagergren/decimal/v3"
 	"github.com/oneiro-ndev/ndaumath/pkg/ndauerr"
 )
 

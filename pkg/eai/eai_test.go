@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ericlagergren/decimal"
+	"github.com/ericlagergren/decimal/v3"
 	dmath "github.com/ericlagergren/decimal/math"
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
