@@ -10,65 +10,49 @@ package unsigned
 // - -- --- ---- -----
 
 import (
-	"github.com/ericlagergren/decimal/v3"
+	"math/big"
+
 	"github.com/oneiro-ndev/ndaumath/pkg/ndauerr"
 )
 
-// makeDecimal constructs a decimal object from a uint64
-func makeDecimal(n uint64) *decimal.Big {
-	return decimal.WithContext(decimal.Context128).SetUint64(n)
+func bigu(x uint64) *big.Int {
+	b := new(big.Int)
+	b.SetUint64(x)
+	return b
 }
 
-// Add adds two uint64s and errors if there is an overflow
+func op(a, b uint64, operand func(*big.Int, *big.Int) *big.Int) (uint64, error) {
+	x := bigu(a)
+	y := bigu(b)
+	x = operand(x, y)
+	if !x.IsUint64() {
+		return 0, ndauerr.ErrOverflow
+	}
+	return x.Uint64(), nil
+}
+
+// Add adds two int64s and errors if there is an overflow
 func Add(a, b uint64) (uint64, error) {
-	x := makeDecimal(a)
-	y := makeDecimal(b)
-	x.Add(x, y)
-	ret, ok := x.Uint64()
-	if !ok {
-		return 0, ndauerr.ErrOverflow
-	}
-	return ret, nil
+	return op(a, b, func(x, y *big.Int) *big.Int { return x.Add(x, y) })
 }
 
-// Sub adds two uint64s and errors if there is an overflow
+// Sub subtracts two int64s and errors if there is an overflow
 func Sub(a, b uint64) (uint64, error) {
-	x := makeDecimal(a)
-	y := makeDecimal(b)
-	x.Sub(x, y)
-	ret, ok := x.Uint64()
-	if !ok {
-		return 0, ndauerr.ErrOverflow
-	}
-	return ret, nil
+	return op(a, b, func(x, y *big.Int) *big.Int { return x.Sub(x, y) })
 }
 
-// Mul multiplies two uint64s and errors if there is an overflow
+// Mul multiplies two int64s and errors if there is an overflow
 func Mul(a, b uint64) (uint64, error) {
-	x := makeDecimal(a)
-	y := makeDecimal(b)
-	x.Mul(x, y)
-	ret, ok := x.Uint64()
-	if !ok {
-		return 0, ndauerr.ErrOverflow
-	}
-	return ret, nil
+	return op(a, b, func(x, y *big.Int) *big.Int { return x.Mul(x, y) })
 }
 
-// Div divides two uint64s and throws errors if there are problems
+// Div divides two int64s and throws errors if there are problems
 func Div(a, b uint64) (uint64, error) {
 	if b == 0 {
 		return 0, ndauerr.ErrDivideByZero
 	}
 
-	x := makeDecimal(a)
-	y := makeDecimal(b)
-	x.QuoInt(x, y)
-	ret, ok := x.Uint64()
-	if !ok {
-		return 0, ndauerr.ErrMath
-	}
-	return ret, nil
+	return op(a, b, func(x, y *big.Int) *big.Int { return x.Div(x, y) })
 }
 
 // Mod calculates the remainder of dividing a by b and returns errors
@@ -78,14 +62,7 @@ func Mod(a, b uint64) (uint64, error) {
 		return 0, ndauerr.ErrDivideByZero
 	}
 
-	x := makeDecimal(a)
-	y := makeDecimal(b)
-	x.Rem(x, y)
-	ret, ok := x.Uint64()
-	if !ok {
-		return 0, ndauerr.ErrMath
-	}
-	return ret, nil
+	return op(a, b, func(x, y *big.Int) *big.Int { return x.Mod(x, y) })
 }
 
 // DivMod calculates the quotient and the remainder of dividing a by b,
@@ -95,18 +72,13 @@ func DivMod(a, b uint64) (uint64, uint64, error) {
 		return 0, 0, ndauerr.ErrDivideByZero
 	}
 
-	x := makeDecimal(a)
-	y := makeDecimal(b)
-	x.QuoRem(x, y, y)
-	q, ok := x.Uint64()
-	if !ok {
-		return 0, 0, ndauerr.ErrMath
+	x := bigu(a)
+	y := bigu(b)
+	q, r := x.QuoRem(x, y, big.NewInt(0))
+	if !q.IsUint64() || !r.IsUint64() {
+		return 0, 0, ndauerr.ErrOverflow
 	}
-	r, ok := y.Uint64()
-	if !ok {
-		return 0, 0, ndauerr.ErrMath
-	}
-	return q, r, nil
+	return q.Uint64(), r.Uint64(), nil
 }
 
 // MulDiv multiplies a uint64 value by the ratio n/d without overflowing the uint64,
@@ -117,14 +89,13 @@ func MulDiv(v, n, d uint64) (uint64, error) {
 		return 0, ndauerr.ErrDivideByZero
 	}
 
-	x := makeDecimal(v)
-	y := makeDecimal(n)
-	z := makeDecimal(d)
-	x.Mul(x, y)
-	x.QuoInt(x, z)
-	ret, ok := x.Uint64()
-	if !ok {
+	x := bigu(v)
+	y := bigu(n)
+	z := bigu(d)
+	x = x.Mul(x, y)
+	x = x.Quo(x, z)
+	if !x.IsUint64() {
 		return 0, ndauerr.ErrOverflow
 	}
-	return ret, nil
+	return x.Uint64(), nil
 }

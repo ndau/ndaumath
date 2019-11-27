@@ -10,44 +10,34 @@ package signed
 // - -- --- ---- -----
 
 import (
-	"github.com/ericlagergren/decimal/v3"
+	"math/big"
+
 	"github.com/oneiro-ndev/ndaumath/pkg/ndauerr"
 )
 
-// Add adds two int64s and errors if there is an overflow
-func Add(a, b int64) (int64, error) {
-	x := decimal.WithContext(decimal.Context128).SetMantScale(a, 0)
-	y := decimal.WithContext(decimal.Context128).SetMantScale(b, 0)
-	x.Add(x, y)
-	ret, ok := x.Int64()
-	if !ok {
+func op(a, b int64, operand func(*big.Int, *big.Int) *big.Int) (int64, error) {
+	x := big.NewInt(a)
+	y := big.NewInt(b)
+	x = operand(x, y)
+	if !x.IsInt64() {
 		return 0, ndauerr.ErrOverflow
 	}
-	return ret, nil
+	return x.Int64(), nil
+}
+
+// Add adds two int64s and errors if there is an overflow
+func Add(a, b int64) (int64, error) {
+	return op(a, b, func(x, y *big.Int) *big.Int { return x.Add(x, y) })
 }
 
 // Sub subtracts two int64s and errors if there is an overflow
 func Sub(a, b int64) (int64, error) {
-	x := decimal.WithContext(decimal.Context128).SetMantScale(a, 0)
-	y := decimal.WithContext(decimal.Context128).SetMantScale(b, 0)
-	x.Sub(x, y)
-	ret, ok := x.Int64()
-	if !ok {
-		return 0, ndauerr.ErrOverflow
-	}
-	return ret, nil
+	return op(a, b, func(x, y *big.Int) *big.Int { return x.Sub(x, y) })
 }
 
 // Mul multiplies two int64s and errors if there is an overflow
 func Mul(a, b int64) (int64, error) {
-	x := decimal.WithContext(decimal.Context128).SetMantScale(a, 0)
-	y := decimal.WithContext(decimal.Context128).SetMantScale(b, 0)
-	x.Mul(x, y)
-	ret, ok := x.Int64()
-	if !ok {
-		return 0, ndauerr.ErrOverflow
-	}
-	return ret, nil
+	return op(a, b, func(x, y *big.Int) *big.Int { return x.Mul(x, y) })
 }
 
 // Div divides two int64s and throws errors if there are problems
@@ -56,14 +46,7 @@ func Div(a, b int64) (int64, error) {
 		return 0, ndauerr.ErrDivideByZero
 	}
 
-	x := decimal.WithContext(decimal.Context128).SetMantScale(a, 0)
-	y := decimal.WithContext(decimal.Context128).SetMantScale(b, 0)
-	x.QuoInt(x, y)
-	ret, ok := x.Int64()
-	if !ok {
-		return 0, ndauerr.ErrMath
-	}
-	return ret, nil
+	return op(a, b, func(x, y *big.Int) *big.Int { return x.Div(x, y) })
 }
 
 // Mod calculates the remainder of dividing a by b and returns errors
@@ -73,14 +56,7 @@ func Mod(a, b int64) (int64, error) {
 		return 0, ndauerr.ErrDivideByZero
 	}
 
-	x := decimal.WithContext(decimal.Context128).SetMantScale(a, 0)
-	y := decimal.WithContext(decimal.Context128).SetMantScale(b, 0)
-	x.Rem(x, y)
-	ret, ok := x.Int64()
-	if !ok {
-		return 0, ndauerr.ErrMath
-	}
-	return ret, nil
+	return op(a, b, func(x, y *big.Int) *big.Int { return x.Mod(x, y) })
 }
 
 // DivMod calculates the quotient and the remainder of dividing a by b,
@@ -90,18 +66,13 @@ func DivMod(a, b int64) (int64, int64, error) {
 		return 0, 0, ndauerr.ErrDivideByZero
 	}
 
-	x := decimal.WithContext(decimal.Context128).SetMantScale(a, 0)
-	y := decimal.WithContext(decimal.Context128).SetMantScale(b, 0)
-	x.QuoRem(x, y, y)
-	q, ok := x.Int64()
-	if !ok {
-		return 0, 0, ndauerr.ErrMath
+	x := big.NewInt(a)
+	y := big.NewInt(b)
+	q, r := x.QuoRem(x, y, big.NewInt(0))
+	if !q.IsInt64() || !r.IsInt64() {
+		return 0, 0, ndauerr.ErrOverflow
 	}
-	r, ok := y.Int64()
-	if !ok {
-		return 0, 0, ndauerr.ErrMath
-	}
-	return q, r, nil
+	return q.Int64(), r.Int64(), nil
 }
 
 // MulDiv multiplies a int64 value by the ratio n/d without overflowing the int64,
@@ -112,14 +83,13 @@ func MulDiv(v, n, d int64) (int64, error) {
 		return 0, ndauerr.ErrDivideByZero
 	}
 
-	x := decimal.WithContext(decimal.Context128).SetMantScale(v, 0)
-	y := decimal.WithContext(decimal.Context128).SetMantScale(n, 0)
-	z := decimal.WithContext(decimal.Context128).SetMantScale(d, 0)
-	x.Mul(x, y)
-	x.QuoInt(x, z)
-	ret, ok := x.Int64()
-	if !ok {
+	x := big.NewInt(v)
+	y := big.NewInt(n)
+	z := big.NewInt(d)
+	x = x.Mul(x, y)
+	x = x.Quo(x, z)
+	if !x.IsInt64() {
 		return 0, ndauerr.ErrOverflow
 	}
-	return ret, nil
+	return x.Int64(), nil
 }

@@ -11,14 +11,11 @@ package eai
 
 import (
 	"encoding/csv"
-	"fmt"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 
-	"github.com/ericlagergren/decimal/v3"
-	dmath "github.com/ericlagergren/decimal/math"
 	"github.com/oneiro-ndev/ndaumath/pkg/constants"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 	"github.com/stretchr/testify/require"
@@ -65,699 +62,707 @@ func (l *testLock) GetBonusRate() Rate {
 
 var _ Lock = (*testLock)(nil)
 
-func TestEAIFactorUnlocked(t *testing.T) {
-	// simple tests that the eai factor for unlocked accounts is e ** (rate * time)
-	// there is no period in the rate table shorter than a month, so using a few days
-	// should be fine.
+// NOTE: we had to get rid of these tests because the ericlagergren/decimal
+// library, which we used to validate our math, is incompatible with go modules,
+// and the built-in math/big library doesn't provide an Exp implementation;
+// we _can't_ just use the standard library in this case. That said, the tests
+// weren't removed for two reasons:
+//   1. the cases include a lot of documentation which is valuable as-is
+//   2. hopefully we can restore the tests with a different library in the future
 
-	// use decimal library to compute the expected values to double-check
-	// ourselves.
-	//
-	// time is set at a constant 1 day, because that's what's used in this test.
-	expect := func(t *testing.T, rate Rate) uint64 {
-		time := 1 * math.Day
-		// get the applicable rate
-		// compute time as fraction of year
-		ti := decimal.WithContext(decimal.Context128)
-		ti.SetUint64(uint64(time))
-		ti.Quo(ti, decimal.New(1*math.Year, 0))
+// func TestEAIFactorUnlocked(t *testing.T) {
+// 	// simple tests that the eai factor for unlocked accounts is e ** (rate * time)
+// 	// there is no period in the rate table shorter than a month, so using a few days
+// 	// should be fine.
 
-		// big representation of rate denominator
-		rd := decimal.New(constants.RateDenominator, 0)
+// 	// use decimal library to compute the expected values to double-check
+// 	// ourselves.
+// 	//
+// 	// time is set at a constant 1 day, because that's what's used in this test.
+// 	expect := func(t *testing.T, rate Rate) uint64 {
+// 		time := 1 * math.Day
+// 		// get the applicable rate
+// 		// compute time as fraction of year
+// 		ti := decimal.WithContext(decimal.Context128)
+// 		ti.SetUint64(uint64(time))
+// 		ti.Quo(ti, decimal.New(1*math.Year, 0))
 
-		e := decimal.WithContext(decimal.Context128)
-		e.SetUint64(uint64(rate))
-		// divide by rd to get the proper fractional rate
-		e.Quo(e, rd)
-		e.Mul(e, ti)
-		dmath.Exp(e, e)
-		// multiply by rd to get the integer style again
-		e.Mul(e, rd)
-		// truncate dust
-		e.RoundToInt()
+// 		// big representation of rate denominator
+// 		rd := decimal.New(constants.RateDenominator, 0)
 
-		// generating expect in this way raises condition flags
-		t.Log("expect conditions:", e.Context.Conditions.Error())
-		e.Context.Conditions = 0
+// 		e := decimal.WithContext(decimal.Context128)
+// 		e.SetUint64(uint64(rate))
+// 		// divide by rd to get the proper fractional rate
+// 		e.Quo(e, rd)
+// 		e.Mul(e, ti)
+// 		dmath.Exp(e, e)
+// 		// multiply by rd to get the integer style again
+// 		e.Mul(e, rd)
+// 		// truncate dust
+// 		e.RoundToInt()
 
-		// compute and return the expected value
-		v, ok := e.Uint64()
-		require.True(t, ok)
-		return v
-	}
+// 		// generating expect in this way raises condition flags
+// 		t.Log("expect conditions:", e.Context.Conditions.Error())
+// 		e.Context.Conditions = 0
 
-	// special case for 0 rate
-	blockTime := math.Timestamp(DefaultUnlockedEAI[0].From - 1)
-	lastEAICalc := blockTime.Sub(1 * math.Day)
-	weightedAverageAge := math.Duration(2 * math.Day)
-	t.Run("0 rate", func(t *testing.T) {
-		zero, err := calculateEAIFactor(
-			blockTime, lastEAICalc, weightedAverageAge, nil,
-			DefaultUnlockedEAI, true,
-		)
-		require.NoError(t, err)
-		require.InEpsilon(t, expect(t, 0), zero, epsilon)
-	})
+// 		// compute and return the expected value
+// 		v, ok := e.Uint64()
+// 		require.True(t, ok)
+// 		return v
+// 	}
 
-	// now test each particular rate
-	for idx, rate := range DefaultUnlockedEAI {
-		blockTime := math.Timestamp(rate.From + (2 * math.Day))
-		weightedAverageAge = math.Duration(blockTime)
-		lastEAICalc = blockTime.Sub(1 * math.Day)
+// 	// special case for 0 rate
+// 	blockTime := math.Timestamp(DefaultUnlockedEAI[0].From - 1)
+// 	lastEAICalc := blockTime.Sub(1 * math.Day)
+// 	weightedAverageAge := math.Duration(2 * math.Day)
+// 	t.Run("0 rate", func(t *testing.T) {
+// 		zero, err := calculateEAIFactor(
+// 			blockTime, lastEAICalc, weightedAverageAge, nil,
+// 			DefaultUnlockedEAI, true,
+// 		)
+// 		require.NoError(t, err)
+// 		require.InEpsilon(t, expect(t, 0), zero, epsilon)
+// 	})
 
-		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			t.Logf("block time: %s", blockTime.String())
-			t.Logf("last eai:   %s", lastEAICalc.String())
-			t.Logf("WAA:        %s", weightedAverageAge.String())
-			t.Logf("rate:       %d", rate.Rate)
+// 	// now test each particular rate
+// 	for idx, rate := range DefaultUnlockedEAI {
+// 		blockTime := math.Timestamp(rate.From + (2 * math.Day))
+// 		weightedAverageAge = math.Duration(blockTime)
+// 		lastEAICalc = blockTime.Sub(1 * math.Day)
 
-			factor, err := calculateEAIFactor(
-				blockTime, lastEAICalc, weightedAverageAge, nil,
-				DefaultUnlockedEAI, true,
-			)
-			require.NoError(t, err)
-			expectValue := expect(t, rate.Rate)
+// 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+// 			t.Logf("block time: %s", blockTime.String())
+// 			t.Logf("last eai:   %s", lastEAICalc.String())
+// 			t.Logf("WAA:        %s", weightedAverageAge.String())
+// 			t.Logf("rate:       %d", rate.Rate)
 
-			t.Logf("expect:     %d", expectValue)
-			t.Logf("actual:     %d", factor)
+// 			factor, err := calculateEAIFactor(
+// 				blockTime, lastEAICalc, weightedAverageAge, nil,
+// 				DefaultUnlockedEAI, true,
+// 			)
+// 			require.NoError(t, err)
+// 			expectValue := expect(t, rate.Rate)
 
-			require.InEpsilon(t, expectValue, factor, epsilon)
-		})
-	}
-}
+// 			t.Logf("expect:     %d", expectValue)
+// 			t.Logf("actual:     %d", factor)
 
-func TestEAIFactorLocked(t *testing.T) {
-	// simple tests that the eai factor for locked accounts is e ** (rate * time),
-	// where rate is the unlocked rate of the lock period plus the lock duration,
-	// plus the lock bonus rate.
-	// there is no period in the lock rate table shorter than a month, so using a few days
-	// should be fine.
+// 			require.InEpsilon(t, expectValue, factor, epsilon)
+// 		})
+// 	}
+// }
 
-	// for each of these cases we're going to use a WAA old enough to get the
-	// max rate anyway, so we don't have to deal with the complexity of including
-	// the lock duration in the base rate calculation.
-	createdAt := math.Timestamp(0)
-	blockTime := math.Timestamp(
-		DefaultUnlockedEAI[len(DefaultUnlockedEAI)-1].From + (2 * math.Day),
-	)
-	lastEAICalc := blockTime.Sub(1 * math.Day)
-	weightedAverageAge := blockTime.Since(createdAt)
-	rate := DefaultUnlockedEAI[len(DefaultUnlockedEAI)-1].Rate
+// func TestEAIFactorLocked(t *testing.T) {
+// 	// simple tests that the eai factor for locked accounts is e ** (rate * time),
+// 	// where rate is the unlocked rate of the lock period plus the lock duration,
+// 	// plus the lock bonus rate.
+// 	// there is no period in the lock rate table shorter than a month, so using a few days
+// 	// should be fine.
 
-	// use decimal library to compute the expected values to double-check
-	// ourselves.
-	//
-	// time is set at a constant 1 day, because that's what's used in this test.
-	expect := func(lock Lock) uint64 {
-		time := 1 * math.Day
-		// get the applicable rate
-		// compute time as fraction of year
-		ti := decimal.WithContext(decimal.Context128)
-		ti.SetUint64(uint64(time))
-		ti.Quo(ti, decimal.New(1*math.Year, 0))
+// 	// for each of these cases we're going to use a WAA old enough to get the
+// 	// max rate anyway, so we don't have to deal with the complexity of including
+// 	// the lock duration in the base rate calculation.
+// 	createdAt := math.Timestamp(0)
+// 	blockTime := math.Timestamp(
+// 		DefaultUnlockedEAI[len(DefaultUnlockedEAI)-1].From + (2 * math.Day),
+// 	)
+// 	lastEAICalc := blockTime.Sub(1 * math.Day)
+// 	weightedAverageAge := blockTime.Since(createdAt)
+// 	rate := DefaultUnlockedEAI[len(DefaultUnlockedEAI)-1].Rate
 
-		// big representation of rate denominator
-		rd := decimal.New(constants.RateDenominator, 0)
+// 	// use decimal library to compute the expected values to double-check
+// 	// ourselves.
+// 	//
+// 	// time is set at a constant 1 day, because that's what's used in this test.
+// 	expect := func(lock Lock) uint64 {
+// 		time := 1 * math.Day
+// 		// get the applicable rate
+// 		// compute time as fraction of year
+// 		ti := decimal.WithContext(decimal.Context128)
+// 		ti.SetUint64(uint64(time))
+// 		ti.Quo(ti, decimal.New(1*math.Year, 0))
 
-		e := decimal.WithContext(decimal.Context128)
-		e.SetUint64(uint64(rate))
-		e.Add(
-			e,
-			decimal.WithContext(decimal.Context128).SetUint64(uint64(lock.GetBonusRate())),
-		)
+// 		// big representation of rate denominator
+// 		rd := decimal.New(constants.RateDenominator, 0)
 
-		// divide by rd to get the proper fractional rate
-		e.Quo(e, rd)
-		e.Mul(e, ti)
-		dmath.Exp(e, e)
-		// multiply by rd to get the integer style again
-		e.Mul(e, rd)
-		// truncate dust
-		e.RoundToInt()
+// 		e := decimal.WithContext(decimal.Context128)
+// 		e.SetUint64(uint64(rate))
+// 		e.Add(
+// 			e,
+// 			decimal.WithContext(decimal.Context128).SetUint64(uint64(lock.GetBonusRate())),
+// 		)
 
-		// generating expect in this way raises condition flags
-		t.Log("expect conditions:", e.Context.Conditions.Error())
-		e.Context.Conditions = 0
+// 		// divide by rd to get the proper fractional rate
+// 		e.Quo(e, rd)
+// 		e.Mul(e, ti)
+// 		dmath.Exp(e, e)
+// 		// multiply by rd to get the integer style again
+// 		e.Mul(e, rd)
+// 		// truncate dust
+// 		e.RoundToInt()
 
-		// compute and return the expected value
-		v, ok := e.Uint64()
-		require.True(t, ok)
-		return v
-	}
+// 		// generating expect in this way raises condition flags
+// 		t.Log("expect conditions:", e.Context.Conditions.Error())
+// 		e.Context.Conditions = 0
 
-	// special case for 0 lock rate
-	lock := newTestLock(DefaultLockBonusEAI[0].From-math.Day, DefaultLockBonusEAI)
-	t.Run("no lock bonus", func(t *testing.T) {
-		factor, err := calculateEAIFactor(
-			blockTime, lastEAICalc, weightedAverageAge, lock,
-			DefaultUnlockedEAI, true,
-		)
-		require.NoError(t, err)
-		require.InEpsilon(t, expect(lock), factor, epsilon)
-	})
+// 		// compute and return the expected value
+// 		v, ok := e.Uint64()
+// 		require.True(t, ok)
+// 		return v
+// 	}
 
-	// now test each particular lock bonus rate
-	for idx, lockRate := range DefaultLockBonusEAI {
-		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			lock = newTestLock(lockRate.From, DefaultLockBonusEAI)
-			factor, err := calculateEAIFactor(
-				blockTime, lastEAICalc, weightedAverageAge, lock,
-				DefaultUnlockedEAI, true,
-			)
-			require.NoError(t, err)
-			require.InEpsilon(t, expect(lock), factor, epsilon)
-		})
-	}
-}
+// 	// special case for 0 lock rate
+// 	lock := newTestLock(DefaultLockBonusEAI[0].From-math.Day, DefaultLockBonusEAI)
+// 	t.Run("no lock bonus", func(t *testing.T) {
+// 		factor, err := calculateEAIFactor(
+// 			blockTime, lastEAICalc, weightedAverageAge, lock,
+// 			DefaultUnlockedEAI, true,
+// 		)
+// 		require.NoError(t, err)
+// 		require.InEpsilon(t, expect(lock), factor, epsilon)
+// 	})
 
-func TestEAIFactorSoundness(t *testing.T) {
-	// note: all cases below have us certain constants:
-	// - block time: 1 year
-	// - waa: 123 days
+// 	// now test each particular lock bonus rate
+// 	for idx, lockRate := range DefaultLockBonusEAI {
+// 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+// 			lock = newTestLock(lockRate.From, DefaultLockBonusEAI)
+// 			factor, err := calculateEAIFactor(
+// 				blockTime, lastEAICalc, weightedAverageAge, lock,
+// 				DefaultUnlockedEAI, true,
+// 			)
+// 			require.NoError(t, err)
+// 			require.InEpsilon(t, expect(lock), factor, epsilon)
+// 		})
+// 	}
+// }
 
-	days34 := math.Duration(34 * math.Day)
-	days90 := math.Duration(90 * math.Day)
-	days165 := math.Duration(165 * math.Day)
-	days180 := math.Duration(180 * math.Day)
+// func TestEAIFactorSoundness(t *testing.T) {
+// 	// note: all cases below have us certain constants:
+// 	// - block time: 1 year
+// 	// - waa: 123 days
 
-	type ec struct {
-		rate uint64
-		days uint64
-	}
-	type soundnessCase struct {
-		expectCalc       []ec
-		lastEAIOffset    math.Duration
-		lockPeriod       *math.Duration
-		lockNotifyOffset *math.Duration
-	}
+// 	days34 := math.Duration(34 * math.Day)
+// 	days90 := math.Duration(90 * math.Day)
+// 	days165 := math.Duration(165 * math.Day)
+// 	days180 := math.Duration(180 * math.Day)
 
-	cases := []soundnessCase{
-		//  Case 1: What happens if an account is:
-		//
-		// - locked for 90 days
-		// - not notified
-		// - 84 days since last EAI update
-		// - current actual weighted average age is 123 days
-		//
-		// The span of effective average age we care about for the unlocked
-		// portion runs from day 174 to day 213. Using the example table:
-		//
-		//  8%                             ┌────x...
-		//  7%                     ┌───────┘
-		//  6%             ┌───────┘
-		//  5%      ──x────┘
-		//          _______________________________
-		//  actual    39   60      90     120  123
-		//  effect.  129  150     180     210  213
-		//  month    (4)  (5)     (6)     (7)
-		//
-		// Because the account was locked for 90 days, and 90 days has a bonus
-		// rate of 1%, the actual rate used for that period should increase by
-		// a constant rate of 1%. We thus get the following calculation to
-		// compute the EAI multiplier:
-		//
-		//    e^(6% * 21 days)
-		//  * e^(7% * 30 days)
-		//  * e^(8% * 30 days)
-		//  * e^(9% *  3 days)
-		soundnessCase{
-			expectCalc: []ec{
-				{6, 21},
-				{7, 30},
-				{8, 30},
-				{9, 3},
-			},
-			lastEAIOffset: 84 * math.Day,
-			lockPeriod:    &days90,
-		},
-		// Case 2: What happens if an account is:
-		//
-		// - locked for 90 days
-		// - notified to unlock 34 days from now
-		// - 84 days since last EAI update
-		// - current actual weighted average age is 123 days
-		//
-		// The difference from case 1 is that the rate freezes the moment the
-		// unlock goes through, but time keeps passing and interest keeps
-		// accumulating during the notice period.
-		//
-		// The span of effective average age we care about for the unlocked
-		// portion runs from actual day 39 to actual day 123. The notify happens
-		// on actual day 67. It expires on actual day 157. At that point, the
-		// rate will drop back to the actual weighted average age.
-		//
-		// The effective period begins on day 129, and runs forward normally
-		// until effective day 157. Effective time freezes at that point. On
-		// actual day 157, the notice period ends and calculations resume using
-		// the actual weighted average age.
-		//
-		// Dashed lines in the following graph indicate points in the future,
-		// assuming no further transactions are issued.
-		//
-		//  6%              ┌─────|────────────────x-------
-		//  5%      ──x─────┘     |
-		//         _________________________________________
-		//  actual    39    60    67              123   157
-		//  effect.  129   150   157..............157...157
-		//  month    (4)   (5)                          (5)
-		//
-		// Because the account was locked for 90 days, and 90 days has a bonus
-		// rate of 1%, the actual rate used during the lock and notification
-		// periods should increase by a constant rate of 1%.
-		// We thus get the following calculation to compute the EAI multiplier:
-		//
-		//    e^(6% * 21 days)
-		//  * e^(7% * 63 days)
-		//
-		// The 63 days of the final term are simply the seven unnotified days
-		// of the rate period plus the 56 days notified to date.
-		soundnessCase{
-			expectCalc: []ec{
-				{6, 21},
-				{7, 63},
-			},
-			lastEAIOffset:    84 * math.Day,
-			lockPeriod:       &days90,
-			lockNotifyOffset: &days34,
-		},
-		// Case 3: What happens if an account is:
-		//
-		// - locked for 180 days
-		// - notified to unlock 165 days from now
-		// - 84 days since last EAI update
-		// - current actual weighted average age is 123 days
-		//
-		// The difference from case 2 is that there are three steps in the
-		// function, and the bonus EAI is 2% instead of 1%.
-		//
-		// The span of effective average age we care about for the unlocked
-		// portion runs from actual day 39 to actual day 123. The notify happens
-		// on actual day 108. It expires on actual day 288. At that point, the
-		// rate will drop back to the actual weighted average age.
-		//
-		// The effective period begins on day 129, and runs forward normally
-		// until effective day 157. Effective time freezes at that point. On
-		// actual day 157, the notice period ends and calculations resume using
-		// the actual weighted average age.
-		//
-		// Dashed lines in the following graph indicate points in the future,
-		// assuming no further transactions are issued.
-		//
-		// 10%                     ┌────────|────────x-------
-		//  9%              ┌──────┘        |
-		//  8%      ──x─────┘               |
-		//         ___________________________________________
-		//  actual    39    60     90      108      123   288
-		//  effect.  219   240    270      288......288...288
-		//  month    (7)   (8)    (9)                     (9)
-		//
-		// Because the account was locked for 180 days, and 180 days has a bonus
-		// rate of 2%, the actual rate used during the lock and notification
-		// periods should increase by a constant rate of 2%.
-		// We thus get the following calculation to compute the EAI multiplier:
-		//
-		//    e^(10% * 21 days)
-		//  * e^(11% * 30 days)
-		//  * e^(12% * 33 days)
-		//
-		// The 33 days of the final term are simply the 18 unnotified days
-		// of the rate period plus the 15 days notified to date.
-		soundnessCase{
-			expectCalc: []ec{
-				{10, 21},
-				{11, 30},
-				{12, 33},
-			},
-			lastEAIOffset:    84 * math.Day,
-			lockPeriod:       &days180,
-			lockNotifyOffset: &days165,
-		},
-		// Case 4: What happens if an account is:
-		//
-		// - locked for 90 days
-		// - notified to unlock 34 days from now
-		// - 4 days since last EAI update
-		// - current actual weighted average age is 123 days
-		//
-		// The difference from case 2 is that the we've calculated recently,
-		// so the rate freeze happens before the last update.
-		//
-		// Dashed lines in the following graph indicate points in the future,
-		// assuming no further transactions are issued.
-		//
-		//  6%              ┌─────|───────────x────x-------
-		//  5%      ────────┘     |
-		//         _________________________________________
-		//  actual    39    60    67         119  123   157
-		//  effect.  129   150   157.........157..157...157
-		//  month    (4)   (5)                          (5)
-		//
-		// Because the account was locked for 90 days, and 90 days has a bonus
-		// rate of 1%, the actual rate used during the lock and notification
-		// periods should increase by a constant rate of 1%.
-		// We thus get the following calculation to compute the EAI multiplier:
-		//
-		//    e^(7% * 4 days)
-		soundnessCase{
-			expectCalc: []ec{
-				{7, 4},
-			},
-			lastEAIOffset:    4 * math.Day,
-			lockPeriod:       &days90,
-			lockNotifyOffset: &days34,
-		},
-		// Case 5: What happens if an account is:
-		//
-		// - unlocked
-		// - 84 days since last EAI update
-		// - current actual weighted average age is 123 days
-		//
-		// This differs from case 1 in that the account is not locked.
-		//
-		// The span of effective average age we care about for the unlocked
-		// portion runs from day 39 to day 123. Using the example table:
-		//
-		//  5%                             ┌────x...
-		//  4%                     ┌───────┘
-		//  3%             ┌───────┘
-		//  2%      ──x────┘
-		//          _______________________________
-		//  actual    39   60      90     120  123
-		//  month    (1)  (2)     (3)     (4)
-		//
-		// Because the account is unlocked, there is no bonus EAI. Our calculation:
-		//
-		//    e^(2% * 21 days)
-		//  * e^(3% * 30 days)
-		//  * e^(4% * 30 days)
-		//  * e^(5% *  3 days)
-		soundnessCase{
-			expectCalc: []ec{
-				{2, 21},
-				{3, 30},
-				{4, 30},
-				{5, 3},
-			},
-			lastEAIOffset: 84 * math.Day,
-		},
-	}
+// 	type ec struct {
+// 		rate uint64
+// 		days uint64
+// 	}
+// 	type soundnessCase struct {
+// 		expectCalc       []ec
+// 		lastEAIOffset    math.Duration
+// 		lockPeriod       *math.Duration
+// 		lockNotifyOffset *math.Duration
+// 	}
 
-	for i, scase := range cases {
-		name := fmt.Sprintf("case %d", i+1)
-		t.Run(name, func(t *testing.T) {
-			expected := decimal.WithContext(decimal.Context128)
-			percent := decimal.WithContext(decimal.Context128)
-			time := decimal.WithContext(decimal.Context128)
+// 	cases := []soundnessCase{
+// 		//  Case 1: What happens if an account is:
+// 		//
+// 		// - locked for 90 days
+// 		// - not notified
+// 		// - 84 days since last EAI update
+// 		// - current actual weighted average age is 123 days
+// 		//
+// 		// The span of effective average age we care about for the unlocked
+// 		// portion runs from day 174 to day 213. Using the example table:
+// 		//
+// 		//  8%                             ┌────x...
+// 		//  7%                     ┌───────┘
+// 		//  6%             ┌───────┘
+// 		//  5%      ──x────┘
+// 		//          _______________________________
+// 		//  actual    39   60      90     120  123
+// 		//  effect.  129  150     180     210  213
+// 		//  month    (4)  (5)     (6)     (7)
+// 		//
+// 		// Because the account was locked for 90 days, and 90 days has a bonus
+// 		// rate of 1%, the actual rate used for that period should increase by
+// 		// a constant rate of 1%. We thus get the following calculation to
+// 		// compute the EAI multiplier:
+// 		//
+// 		//    e^(6% * 21 days)
+// 		//  * e^(7% * 30 days)
+// 		//  * e^(8% * 30 days)
+// 		//  * e^(9% *  3 days)
+// 		soundnessCase{
+// 			expectCalc: []ec{
+// 				{6, 21},
+// 				{7, 30},
+// 				{8, 30},
+// 				{9, 3},
+// 			},
+// 			lastEAIOffset: 84 * math.Day,
+// 			lockPeriod:    &days90,
+// 		},
+// 		// Case 2: What happens if an account is:
+// 		//
+// 		// - locked for 90 days
+// 		// - notified to unlock 34 days from now
+// 		// - 84 days since last EAI update
+// 		// - current actual weighted average age is 123 days
+// 		//
+// 		// The difference from case 1 is that the rate freezes the moment the
+// 		// unlock goes through, but time keeps passing and interest keeps
+// 		// accumulating during the notice period.
+// 		//
+// 		// The span of effective average age we care about for the unlocked
+// 		// portion runs from actual day 39 to actual day 123. The notify happens
+// 		// on actual day 67. It expires on actual day 157. At that point, the
+// 		// rate will drop back to the actual weighted average age.
+// 		//
+// 		// The effective period begins on day 129, and runs forward normally
+// 		// until effective day 157. Effective time freezes at that point. On
+// 		// actual day 157, the notice period ends and calculations resume using
+// 		// the actual weighted average age.
+// 		//
+// 		// Dashed lines in the following graph indicate points in the future,
+// 		// assuming no further transactions are issued.
+// 		//
+// 		//  6%              ┌─────|────────────────x-------
+// 		//  5%      ──x─────┘     |
+// 		//         _________________________________________
+// 		//  actual    39    60    67              123   157
+// 		//  effect.  129   150   157..............157...157
+// 		//  month    (4)   (5)                          (5)
+// 		//
+// 		// Because the account was locked for 90 days, and 90 days has a bonus
+// 		// rate of 1%, the actual rate used during the lock and notification
+// 		// periods should increase by a constant rate of 1%.
+// 		// We thus get the following calculation to compute the EAI multiplier:
+// 		//
+// 		//    e^(6% * 21 days)
+// 		//  * e^(7% * 63 days)
+// 		//
+// 		// The 63 days of the final term are simply the seven unnotified days
+// 		// of the rate period plus the 56 days notified to date.
+// 		soundnessCase{
+// 			expectCalc: []ec{
+// 				{6, 21},
+// 				{7, 63},
+// 			},
+// 			lastEAIOffset:    84 * math.Day,
+// 			lockPeriod:       &days90,
+// 			lockNotifyOffset: &days34,
+// 		},
+// 		// Case 3: What happens if an account is:
+// 		//
+// 		// - locked for 180 days
+// 		// - notified to unlock 165 days from now
+// 		// - 84 days since last EAI update
+// 		// - current actual weighted average age is 123 days
+// 		//
+// 		// The difference from case 2 is that there are three steps in the
+// 		// function, and the bonus EAI is 2% instead of 1%.
+// 		//
+// 		// The span of effective average age we care about for the unlocked
+// 		// portion runs from actual day 39 to actual day 123. The notify happens
+// 		// on actual day 108. It expires on actual day 288. At that point, the
+// 		// rate will drop back to the actual weighted average age.
+// 		//
+// 		// The effective period begins on day 129, and runs forward normally
+// 		// until effective day 157. Effective time freezes at that point. On
+// 		// actual day 157, the notice period ends and calculations resume using
+// 		// the actual weighted average age.
+// 		//
+// 		// Dashed lines in the following graph indicate points in the future,
+// 		// assuming no further transactions are issued.
+// 		//
+// 		// 10%                     ┌────────|────────x-------
+// 		//  9%              ┌──────┘        |
+// 		//  8%      ──x─────┘               |
+// 		//         ___________________________________________
+// 		//  actual    39    60     90      108      123   288
+// 		//  effect.  219   240    270      288......288...288
+// 		//  month    (7)   (8)    (9)                     (9)
+// 		//
+// 		// Because the account was locked for 180 days, and 180 days has a bonus
+// 		// rate of 2%, the actual rate used during the lock and notification
+// 		// periods should increase by a constant rate of 2%.
+// 		// We thus get the following calculation to compute the EAI multiplier:
+// 		//
+// 		//    e^(10% * 21 days)
+// 		//  * e^(11% * 30 days)
+// 		//  * e^(12% * 33 days)
+// 		//
+// 		// The 33 days of the final term are simply the 18 unnotified days
+// 		// of the rate period plus the 15 days notified to date.
+// 		soundnessCase{
+// 			expectCalc: []ec{
+// 				{10, 21},
+// 				{11, 30},
+// 				{12, 33},
+// 			},
+// 			lastEAIOffset:    84 * math.Day,
+// 			lockPeriod:       &days180,
+// 			lockNotifyOffset: &days165,
+// 		},
+// 		// Case 4: What happens if an account is:
+// 		//
+// 		// - locked for 90 days
+// 		// - notified to unlock 34 days from now
+// 		// - 4 days since last EAI update
+// 		// - current actual weighted average age is 123 days
+// 		//
+// 		// The difference from case 2 is that the we've calculated recently,
+// 		// so the rate freeze happens before the last update.
+// 		//
+// 		// Dashed lines in the following graph indicate points in the future,
+// 		// assuming no further transactions are issued.
+// 		//
+// 		//  6%              ┌─────|───────────x────x-------
+// 		//  5%      ────────┘     |
+// 		//         _________________________________________
+// 		//  actual    39    60    67         119  123   157
+// 		//  effect.  129   150   157.........157..157...157
+// 		//  month    (4)   (5)                          (5)
+// 		//
+// 		// Because the account was locked for 90 days, and 90 days has a bonus
+// 		// rate of 1%, the actual rate used during the lock and notification
+// 		// periods should increase by a constant rate of 1%.
+// 		// We thus get the following calculation to compute the EAI multiplier:
+// 		//
+// 		//    e^(7% * 4 days)
+// 		soundnessCase{
+// 			expectCalc: []ec{
+// 				{7, 4},
+// 			},
+// 			lastEAIOffset:    4 * math.Day,
+// 			lockPeriod:       &days90,
+// 			lockNotifyOffset: &days34,
+// 		},
+// 		// Case 5: What happens if an account is:
+// 		//
+// 		// - unlocked
+// 		// - 84 days since last EAI update
+// 		// - current actual weighted average age is 123 days
+// 		//
+// 		// This differs from case 1 in that the account is not locked.
+// 		//
+// 		// The span of effective average age we care about for the unlocked
+// 		// portion runs from day 39 to day 123. Using the example table:
+// 		//
+// 		//  5%                             ┌────x...
+// 		//  4%                     ┌───────┘
+// 		//  3%             ┌───────┘
+// 		//  2%      ──x────┘
+// 		//          _______________________________
+// 		//  actual    39   60      90     120  123
+// 		//  month    (1)  (2)     (3)     (4)
+// 		//
+// 		// Because the account is unlocked, there is no bonus EAI. Our calculation:
+// 		//
+// 		//    e^(2% * 21 days)
+// 		//  * e^(3% * 30 days)
+// 		//  * e^(4% * 30 days)
+// 		//  * e^(5% *  3 days)
+// 		soundnessCase{
+// 			expectCalc: []ec{
+// 				{2, 21},
+// 				{3, 30},
+// 				{4, 30},
+// 				{5, 3},
+// 			},
+// 			lastEAIOffset: 84 * math.Day,
+// 		},
+// 	}
 
-			expected.SetUint64(1)
+// 	for i, scase := range cases {
+// 		name := fmt.Sprintf("case %d", i+1)
+// 		t.Run(name, func(t *testing.T) {
+// 			expected := decimal.WithContext(decimal.Context128)
+// 			percent := decimal.WithContext(decimal.Context128)
+// 			time := decimal.WithContext(decimal.Context128)
 
-			var period int
-			calc := func(rate uint64, days uint64) {
-				t.Logf("Period %d:", period)
-				period++
-				time.SetUint64(days * math.Day)
-				time.Quo(time, decimal.New(1*math.Year, 0))
-				t.Logf(" Duration: %s (%d days)", time, days)
-				percent.SetUint64(rate)
-				percent.Quo(
-					percent,
-					decimal.WithContext(decimal.Context128).SetUint64(100),
-				)
-				t.Logf(" Rate: %s", percent)
-				percent.Mul(percent, time)
-				dmath.Exp(percent, percent)
-				expected.Mul(expected, percent)
-				t.Logf(" Factor: %s", percent)
-			}
+// 			expected.SetUint64(1)
 
-			for _, ec := range scase.expectCalc {
-				calc(ec.rate, ec.days)
-			}
-			t.Logf("Total factor:  %s", expected)
+// 			var period int
+// 			calc := func(rate uint64, days uint64) {
+// 				t.Logf("Period %d:", period)
+// 				period++
+// 				time.SetUint64(days * math.Day)
+// 				time.Quo(time, decimal.New(1*math.Year, 0))
+// 				t.Logf(" Duration: %s (%d days)", time, days)
+// 				percent.SetUint64(rate)
+// 				percent.Quo(
+// 					percent,
+// 					decimal.WithContext(decimal.Context128).SetUint64(100),
+// 				)
+// 				t.Logf(" Rate: %s", percent)
+// 				percent.Mul(percent, time)
+// 				dmath.Exp(percent, percent)
+// 				expected.Mul(expected, percent)
+// 				t.Logf(" Factor: %s", percent)
+// 			}
 
-			// calculate the actual value
-			blockTime := math.Timestamp(1 * math.Year)
-			lastEAICalc := blockTime.Sub(scase.lastEAIOffset)
-			weightedAverageAge := math.Duration(123 * math.Day)
-			var lock *testLock
-			if scase.lockPeriod != nil {
-				lock = newTestLock(*scase.lockPeriod, DefaultLockBonusEAI)
-				if scase.lockNotifyOffset != nil {
-					uo := blockTime.Add(*scase.lockNotifyOffset)
-					lock.UnlocksOn = &uo
-				}
-			}
-			actual, err := calculateEAIFactor(
-				blockTime,
-				lastEAICalc, weightedAverageAge,
-				lock,
-				DefaultUnlockedEAI, true,
-			)
-			require.NoError(t, err)
+// 			for _, ec := range scase.expectCalc {
+// 				calc(ec.rate, ec.days)
+// 			}
+// 			t.Logf("Total factor:  %s", expected)
 
-			// log the actual factor
-			actualF := decimal.WithContext(decimal.Context128)
-			actualF.SetUint64(actual)
-			actualF.Quo(actualF, decimal.New(constants.RateDenominator, 0))
-			t.Logf("Actual factor: %s", actualF)
+// 			// calculate the actual value
+// 			blockTime := math.Timestamp(1 * math.Year)
+// 			lastEAICalc := blockTime.Sub(scase.lastEAIOffset)
+// 			weightedAverageAge := math.Duration(123 * math.Day)
+// 			var lock *testLock
+// 			if scase.lockPeriod != nil {
+// 				lock = newTestLock(*scase.lockPeriod, DefaultLockBonusEAI)
+// 				if scase.lockNotifyOffset != nil {
+// 					uo := blockTime.Add(*scase.lockNotifyOffset)
+// 					lock.UnlocksOn = &uo
+// 				}
+// 			}
+// 			actual, err := calculateEAIFactor(
+// 				blockTime,
+// 				lastEAICalc, weightedAverageAge,
+// 				lock,
+// 				DefaultUnlockedEAI, true,
+// 			)
+// 			require.NoError(t, err)
 
-			// convert to same format as actual
-			expected.Mul(expected, decimal.New(constants.RateDenominator, 0))
-			expectedValue, ok := expected.Uint64()
-			require.True(t, ok)
+// 			// log the actual factor
+// 			actualF := decimal.WithContext(decimal.Context128)
+// 			actualF.SetUint64(actual)
+// 			actualF.Quo(actualF, decimal.New(constants.RateDenominator, 0))
+// 			t.Logf("Actual factor: %s", actualF)
 
-			require.InEpsilon(t, expectedValue, actual, epsilon)
-		})
-	}
-}
+// 			// convert to same format as actual
+// 			expected.Mul(expected, decimal.New(constants.RateDenominator, 0))
+// 			expectedValue, ok := expected.Uint64()
+// 			require.True(t, ok)
+
+// 			require.InEpsilon(t, expectedValue, actual, epsilon)
+// 		})
+// 	}
+// }
 
 // we need some custom cases to test situations with different assumptions
-func TestSoundnessCustomDates(t *testing.T) {
-	daysn35 := math.Duration(-35 * math.Day)
-	daysn15 := math.Duration(-15 * math.Day)
-	days90 := math.Duration(90 * math.Day)
-	days365 := math.Duration(math.Year)
+// func TestSoundnessCustomDates(t *testing.T) {
+// 	daysn35 := math.Duration(-35 * math.Day)
+// 	daysn15 := math.Duration(-15 * math.Day)
+// 	days90 := math.Duration(90 * math.Day)
+// 	days365 := math.Duration(math.Year)
 
-	type ec struct {
-		rate uint64
-		days uint64
-	}
-	type customDateCase struct {
-		expectCalc         []ec
-		lastEAIOffset      math.Duration
-		lockPeriod         *math.Duration
-		unlocksOnOffset    *math.Duration
-		blockTime          math.Timestamp
-		weightedAverageAge math.Duration
-	}
+// 	type ec struct {
+// 		rate uint64
+// 		days uint64
+// 	}
+// 	type customDateCase struct {
+// 		expectCalc         []ec
+// 		lastEAIOffset      math.Duration
+// 		lockPeriod         *math.Duration
+// 		unlocksOnOffset    *math.Duration
+// 		blockTime          math.Timestamp
+// 		weightedAverageAge math.Duration
+// 	}
 
-	// note: all cases below have a fixed block time of 1 year and must be
-	// constructed such that things make sense given that constraint.
-	cases := []customDateCase{
-		//  Case 1: What happens if an account is:
-		//
-		// - locked for 365 days
-		// - notified immediately
-		// - 400 days since last EAI update
-		// - current actual weighted average age is 400 days
-		//
-		// In other words, can we correctly handle the case that a genesis
-		// account is first processed after it has already unlocked?
-		//
-		// The span of effective average age we care about for the unlocked
-		// portion runs from day 0 to day 400. Using the example table:
-		//
-		//  13%       x────────────────┐
-		//  10%                        x───────x--
-		//          _______________________________
-		//  actual    0               365     400
-		//  effect.  365              365     400
-		//
-		// Because the account was locked for 365 days, and 365 days has a bonus
-		// rate of 3%, the actual rate used for that period should increase by
-		// a constant rate of 3%. At the end of the lock period, the bonus expires,
-		// returning the account to the basic unlocked rate for its age: 10%.
-		// We thus get the following calculation to
-		// compute the EAI multiplier:
-		//
-		//    e^(13% * 365 days)
-		//  * e^(10% *  35 days)
-		customDateCase{
-			expectCalc: []ec{
-				{13, 365},
-				{10, 35},
-			},
-			lastEAIOffset:      400 * math.Day,
-			lockPeriod:         &days365,
-			unlocksOnOffset:    &daysn35,
-			blockTime:          400 * math.Day,
-			weightedAverageAge: 400 * math.Day,
-		},
-		//  Case 2: What happens if an account is:
-		//
-		// - created at day 240
-		// - immediately locked for 90 days
-		// - notified immediately
-		// - block time is 345
-		// - 125 days since last EAI update (update was on day 220)
-		// - current actual weighted average age is 105 days
-		//
-		// In other words, can we correctly handle the case that an account
-		// is created, locked, notified, and unlocked all in the interval
-		// between creditEAI txs?
-		//
-		// The span of effective average age we care about for the unlocked
-		// portion runs from day 0 to day 400. Using the example table:
-		//
-		//   5%       x─────────────────┐
-		//   4%                         └─────x--
-		//          _____________________________
-		//  actual   240               330   345
-		//  effect.   90                90   105
-		//  month    (3)               (3)
-		//
-		// Because the account was locked for 90 days, and 90 days has a bonus
-		// rate of 1%, the actual rate used for that period should increase by
-		// a constant rate of 1%. At the end of the lock period, the bonus expires,
-		// returning the account to the basic unlocked rate for its age: 4%.
-		//
-		// Because the account was notified immediately, its effective WAA doesn't
-		// change through the duration of the notification period.
-		//
-		// We thus get the following calculation to
-		// compute the EAI multiplier:
-		//
-		//    e^(5% * 90 days)
-		//  * e^(4% * 15 days)
-		customDateCase{
-			expectCalc: []ec{
-				{5, 90},
-				{4, 15},
-			},
-			lastEAIOffset:      125 * math.Day,
-			lockPeriod:         &days90,
-			unlocksOnOffset:    &daysn15,
-			blockTime:          345 * math.Day,
-			weightedAverageAge: 105 * math.Day,
-		},
-		//  Case 3: What happens if an account is:
-		//
-		// - created at day 240
-		// - immediately locked for 90 days
-		// - notified immediately
-		// - block time is 345
-		// - 100 days since last EAI update (update was on day 245)
-		// - current actual weighted average age is 105 days
-		//
-		// In other words, can we correctly handle the case that an account
-		// is created, locked, notified, and unlocked all in the interval
-		// between creditEAI txs?
-		//
-		// The span of effective average age we care about for the unlocked
-		// portion runs from day 0 to day 400. Using the example table:
-		//
-		//   5%       ├─────x───────────┐
-		//   4%                         └─────x--
-		//          _____________________________
-		//  actual   240   245         330   345
-		//  effect.   90    5           90   105
-		//  month    (3)               (3)
-		//
-		// Because the account was locked for 90 days, and 90 days has a bonus
-		// rate of 1%, the actual rate used for that period should increase by
-		// a constant rate of 1%. At the end of the lock period, the bonus expires,
-		// returning the account to the basic unlocked rate for its age: 4%.
-		//
-		// Because the account was notified immediately, its effective WAA doesn't
-		// change through the duration of the notification period.
-		//
-		// We thus get the following calculation to
-		// compute the EAI multiplier:
-		//
-		//    e^(5% * 85 days)
-		//  * e^(4% * 15 days)
-		customDateCase{
-			expectCalc: []ec{
-				{5, 85},
-				{4, 15},
-			},
-			lastEAIOffset:      100 * math.Day,
-			lockPeriod:         &days90,
-			unlocksOnOffset:    &daysn15,
-			blockTime:          345 * math.Day,
-			weightedAverageAge: 105 * math.Day,
-		},
-	}
+// 	// note: all cases below have a fixed block time of 1 year and must be
+// 	// constructed such that things make sense given that constraint.
+// 	cases := []customDateCase{
+// 		//  Case 1: What happens if an account is:
+// 		//
+// 		// - locked for 365 days
+// 		// - notified immediately
+// 		// - 400 days since last EAI update
+// 		// - current actual weighted average age is 400 days
+// 		//
+// 		// In other words, can we correctly handle the case that a genesis
+// 		// account is first processed after it has already unlocked?
+// 		//
+// 		// The span of effective average age we care about for the unlocked
+// 		// portion runs from day 0 to day 400. Using the example table:
+// 		//
+// 		//  13%       x────────────────┐
+// 		//  10%                        x───────x--
+// 		//          _______________________________
+// 		//  actual    0               365     400
+// 		//  effect.  365              365     400
+// 		//
+// 		// Because the account was locked for 365 days, and 365 days has a bonus
+// 		// rate of 3%, the actual rate used for that period should increase by
+// 		// a constant rate of 3%. At the end of the lock period, the bonus expires,
+// 		// returning the account to the basic unlocked rate for its age: 10%.
+// 		// We thus get the following calculation to
+// 		// compute the EAI multiplier:
+// 		//
+// 		//    e^(13% * 365 days)
+// 		//  * e^(10% *  35 days)
+// 		customDateCase{
+// 			expectCalc: []ec{
+// 				{13, 365},
+// 				{10, 35},
+// 			},
+// 			lastEAIOffset:      400 * math.Day,
+// 			lockPeriod:         &days365,
+// 			unlocksOnOffset:    &daysn35,
+// 			blockTime:          400 * math.Day,
+// 			weightedAverageAge: 400 * math.Day,
+// 		},
+// 		//  Case 2: What happens if an account is:
+// 		//
+// 		// - created at day 240
+// 		// - immediately locked for 90 days
+// 		// - notified immediately
+// 		// - block time is 345
+// 		// - 125 days since last EAI update (update was on day 220)
+// 		// - current actual weighted average age is 105 days
+// 		//
+// 		// In other words, can we correctly handle the case that an account
+// 		// is created, locked, notified, and unlocked all in the interval
+// 		// between creditEAI txs?
+// 		//
+// 		// The span of effective average age we care about for the unlocked
+// 		// portion runs from day 0 to day 400. Using the example table:
+// 		//
+// 		//   5%       x─────────────────┐
+// 		//   4%                         └─────x--
+// 		//          _____________________________
+// 		//  actual   240               330   345
+// 		//  effect.   90                90   105
+// 		//  month    (3)               (3)
+// 		//
+// 		// Because the account was locked for 90 days, and 90 days has a bonus
+// 		// rate of 1%, the actual rate used for that period should increase by
+// 		// a constant rate of 1%. At the end of the lock period, the bonus expires,
+// 		// returning the account to the basic unlocked rate for its age: 4%.
+// 		//
+// 		// Because the account was notified immediately, its effective WAA doesn't
+// 		// change through the duration of the notification period.
+// 		//
+// 		// We thus get the following calculation to
+// 		// compute the EAI multiplier:
+// 		//
+// 		//    e^(5% * 90 days)
+// 		//  * e^(4% * 15 days)
+// 		customDateCase{
+// 			expectCalc: []ec{
+// 				{5, 90},
+// 				{4, 15},
+// 			},
+// 			lastEAIOffset:      125 * math.Day,
+// 			lockPeriod:         &days90,
+// 			unlocksOnOffset:    &daysn15,
+// 			blockTime:          345 * math.Day,
+// 			weightedAverageAge: 105 * math.Day,
+// 		},
+// 		//  Case 3: What happens if an account is:
+// 		//
+// 		// - created at day 240
+// 		// - immediately locked for 90 days
+// 		// - notified immediately
+// 		// - block time is 345
+// 		// - 100 days since last EAI update (update was on day 245)
+// 		// - current actual weighted average age is 105 days
+// 		//
+// 		// In other words, can we correctly handle the case that an account
+// 		// is created, locked, notified, and unlocked all in the interval
+// 		// between creditEAI txs?
+// 		//
+// 		// The span of effective average age we care about for the unlocked
+// 		// portion runs from day 0 to day 400. Using the example table:
+// 		//
+// 		//   5%       ├─────x───────────┐
+// 		//   4%                         └─────x--
+// 		//          _____________________________
+// 		//  actual   240   245         330   345
+// 		//  effect.   90    5           90   105
+// 		//  month    (3)               (3)
+// 		//
+// 		// Because the account was locked for 90 days, and 90 days has a bonus
+// 		// rate of 1%, the actual rate used for that period should increase by
+// 		// a constant rate of 1%. At the end of the lock period, the bonus expires,
+// 		// returning the account to the basic unlocked rate for its age: 4%.
+// 		//
+// 		// Because the account was notified immediately, its effective WAA doesn't
+// 		// change through the duration of the notification period.
+// 		//
+// 		// We thus get the following calculation to
+// 		// compute the EAI multiplier:
+// 		//
+// 		//    e^(5% * 85 days)
+// 		//  * e^(4% * 15 days)
+// 		customDateCase{
+// 			expectCalc: []ec{
+// 				{5, 85},
+// 				{4, 15},
+// 			},
+// 			lastEAIOffset:      100 * math.Day,
+// 			lockPeriod:         &days90,
+// 			unlocksOnOffset:    &daysn15,
+// 			blockTime:          345 * math.Day,
+// 			weightedAverageAge: 105 * math.Day,
+// 		},
+// 	}
 
-	for i, scase := range cases {
-		name := fmt.Sprintf("case %d", i+1)
-		t.Run(name, func(t *testing.T) {
-			expected := decimal.WithContext(decimal.Context128)
-			percent := decimal.WithContext(decimal.Context128)
-			time := decimal.WithContext(decimal.Context128)
+// 	for i, scase := range cases {
+// 		name := fmt.Sprintf("case %d", i+1)
+// 		t.Run(name, func(t *testing.T) {
+// 			expected := decimal.WithContext(decimal.Context128)
+// 			percent := decimal.WithContext(decimal.Context128)
+// 			time := decimal.WithContext(decimal.Context128)
 
-			expected.SetUint64(1)
+// 			expected.SetUint64(1)
 
-			var period int
-			calc := func(rate uint64, days uint64) {
-				t.Logf("Period %d:", period)
-				period++
-				time.SetUint64(days * math.Day)
-				time.Quo(time, decimal.New(1*math.Year, 0))
-				t.Logf(" Duration: %s (%d days)", time, days)
-				percent.SetUint64(rate)
-				percent.Quo(
-					percent,
-					decimal.WithContext(decimal.Context128).SetUint64(100),
-				)
-				t.Logf(" Rate: %s", percent)
-				percent.Mul(percent, time)
-				dmath.Exp(percent, percent)
-				expected.Mul(expected, percent)
-				t.Logf(" Factor: %s", percent)
-			}
+// 			var period int
+// 			calc := func(rate uint64, days uint64) {
+// 				t.Logf("Period %d:", period)
+// 				period++
+// 				time.SetUint64(days * math.Day)
+// 				time.Quo(time, decimal.New(1*math.Year, 0))
+// 				t.Logf(" Duration: %s (%d days)", time, days)
+// 				percent.SetUint64(rate)
+// 				percent.Quo(
+// 					percent,
+// 					decimal.WithContext(decimal.Context128).SetUint64(100),
+// 				)
+// 				t.Logf(" Rate: %s", percent)
+// 				percent.Mul(percent, time)
+// 				dmath.Exp(percent, percent)
+// 				expected.Mul(expected, percent)
+// 				t.Logf(" Factor: %s", percent)
+// 			}
 
-			for _, ec := range scase.expectCalc {
-				calc(ec.rate, ec.days)
-			}
-			t.Logf("Total factor:  %s", expected)
+// 			for _, ec := range scase.expectCalc {
+// 				calc(ec.rate, ec.days)
+// 			}
+// 			t.Logf("Total factor:  %s", expected)
 
-			// calculate the actual value
-			lastEAICalc := scase.blockTime.Sub(scase.lastEAIOffset)
-			var lock *testLock
-			if scase.lockPeriod != nil {
-				lock = newTestLock(*scase.lockPeriod, DefaultLockBonusEAI)
-				if scase.unlocksOnOffset != nil {
-					uo := scase.blockTime.Add(*scase.unlocksOnOffset)
-					if uo < scase.blockTime.Sub(scase.weightedAverageAge).Add(lock.NoticePeriod) {
-						t.Fatal("malformed test case: lock older than waa")
-					}
-					lock.UnlocksOn = &uo
-				}
-			}
-			actual, err := calculateEAIFactor(
-				scase.blockTime,
-				lastEAICalc, scase.weightedAverageAge,
-				lock,
-				DefaultUnlockedEAI, true,
-			)
-			require.NoError(t, err)
+// 			// calculate the actual value
+// 			lastEAICalc := scase.blockTime.Sub(scase.lastEAIOffset)
+// 			var lock *testLock
+// 			if scase.lockPeriod != nil {
+// 				lock = newTestLock(*scase.lockPeriod, DefaultLockBonusEAI)
+// 				if scase.unlocksOnOffset != nil {
+// 					uo := scase.blockTime.Add(*scase.unlocksOnOffset)
+// 					if uo < scase.blockTime.Sub(scase.weightedAverageAge).Add(lock.NoticePeriod) {
+// 						t.Fatal("malformed test case: lock older than waa")
+// 					}
+// 					lock.UnlocksOn = &uo
+// 				}
+// 			}
+// 			actual, err := calculateEAIFactor(
+// 				scase.blockTime,
+// 				lastEAICalc, scase.weightedAverageAge,
+// 				lock,
+// 				DefaultUnlockedEAI, true,
+// 			)
+// 			require.NoError(t, err)
 
-			// log the actual factor
-			actualF := decimal.WithContext(decimal.Context128)
-			actualF.SetUint64(actual)
-			actualF.Quo(actualF, decimal.New(constants.RateDenominator, 0))
-			t.Logf("Actual factor: %s", actualF)
+// 			// log the actual factor
+// 			actualF := decimal.WithContext(decimal.Context128)
+// 			actualF.SetUint64(actual)
+// 			actualF.Quo(actualF, decimal.New(constants.RateDenominator, 0))
+// 			t.Logf("Actual factor: %s", actualF)
 
-			// convert to same format as actual
-			expected.Mul(expected, decimal.New(constants.RateDenominator, 0))
-			expectedValue, ok := expected.Uint64()
-			require.True(t, ok)
+// 			// convert to same format as actual
+// 			expected.Mul(expected, decimal.New(constants.RateDenominator, 0))
+// 			expectedValue, ok := expected.Uint64()
+// 			require.True(t, ok)
 
-			require.InEpsilon(t, expectedValue, actual, epsilon)
-		})
-	}
-}
+// 			require.InEpsilon(t, expectedValue, actual, epsilon)
+// 		})
+// 	}
+// }
 
 func TestCalculate(t *testing.T) {
 	// the meat of the math happens in the calculation of the EAI factor,
@@ -1102,55 +1107,55 @@ func TestCalculateSequence(t *testing.T) {
 	})
 }
 
-func TestUnlockTimeIgnoredWhenEAICalcWasMoreRecent(t *testing.T) {
-	// If the last EAI calculation is newer than the unlock time, it is
-	// never correct to base the lower bound of the rate slice on the lock;
-	// it should date from the last EAI calculation in that case.
-	//
-	// Scenario:
-	// - block time: 14 months
-	// - Account created at time 0
-	// - Account was locked at time 0 for 1 year
-	// - Lock was notified at time 0
-	// - Lock is not yet cleared
-	// - EAI was previously calculated at 13 months
-	//
-	// Given this setup, we expect that the account earns the max unlocked rate
-	// (10%) for 1 month; the factor must be `e^(10%*30d)`
-	lock := newTestLock(math.Year, DefaultLockBonusEAI)
-	uo := math.Timestamp(math.Year)
-	lock.UnlocksOn = &uo
+// func TestUnlockTimeIgnoredWhenEAICalcWasMoreRecent(t *testing.T) {
+// 	// If the last EAI calculation is newer than the unlock time, it is
+// 	// never correct to base the lower bound of the rate slice on the lock;
+// 	// it should date from the last EAI calculation in that case.
+// 	//
+// 	// Scenario:
+// 	// - block time: 14 months
+// 	// - Account created at time 0
+// 	// - Account was locked at time 0 for 1 year
+// 	// - Lock was notified at time 0
+// 	// - Lock is not yet cleared
+// 	// - EAI was previously calculated at 13 months
+// 	//
+// 	// Given this setup, we expect that the account earns the max unlocked rate
+// 	// (10%) for 1 month; the factor must be `e^(10%*30d)`
+// 	lock := newTestLock(math.Year, DefaultLockBonusEAI)
+// 	uo := math.Timestamp(math.Year)
+// 	lock.UnlocksOn = &uo
 
-	factor, err := calculateEAIFactor(
-		14*math.Month,
-		13*math.Month,
-		14*math.Month,
-		lock,
-		DefaultUnlockedEAI, true,
-	)
-	require.NoError(t, err)
+// 	factor, err := calculateEAIFactor(
+// 		14*math.Month,
+// 		13*math.Month,
+// 		14*math.Month,
+// 		lock,
+// 		DefaultUnlockedEAI, true,
+// 	)
+// 	require.NoError(t, err)
 
-	// compute the expected factor
-	expected := decimal.WithContext(decimal.Context128)
-	percent := decimal.WithContext(decimal.Context128)
-	time := decimal.WithContext(decimal.Context128)
+// 	// compute the expected factor
+// 	expected := decimal.WithContext(decimal.Context128)
+// 	percent := decimal.WithContext(decimal.Context128)
+// 	time := decimal.WithContext(decimal.Context128)
 
-	expected.SetUint64(1)
+// 	expected.SetUint64(1)
 
-	percent.SetUint64(10)
-	percent.Quo(percent, decimal.New(100, 0))
+// 	percent.SetUint64(10)
+// 	percent.Quo(percent, decimal.New(100, 0))
 
-	time.SetUint64(math.Month)
-	time.Quo(time, decimal.New(math.Year, 0))
+// 	time.SetUint64(math.Month)
+// 	time.Quo(time, decimal.New(math.Year, 0))
 
-	percent.Mul(percent, time)
-	dmath.Exp(percent, percent)
-	expected.Mul(expected, percent)
+// 	percent.Mul(percent, time)
+// 	dmath.Exp(percent, percent)
+// 	expected.Mul(expected, percent)
 
-	// compare expected and actual results
-	expected.Mul(expected, decimal.New(constants.RateDenominator, 0))
-	expectedValue, ok := expected.Uint64()
-	require.True(t, ok)
+// 	// compare expected and actual results
+// 	expected.Mul(expected, decimal.New(constants.RateDenominator, 0))
+// 	expectedValue, ok := expected.Uint64()
+// 	require.True(t, ok)
 
-	require.InEpsilon(t, expectedValue, factor, epsilon)
-}
+// 	require.InEpsilon(t, expectedValue, factor, epsilon)
+// }
