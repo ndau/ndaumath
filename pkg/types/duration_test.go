@@ -214,3 +214,32 @@ func TestDuration_UpdateWeightedAverageAge_Fuzz(t *testing.T) {
 		t.Errorf("UpdateWeightedAverageAge had a different number of failures than expected -- got %d, should have been 1-%d", failureCount, ntests/2)
 	}
 }
+
+func TestWAAUpdateCalculation(t *testing.T) {
+	priorWAA, err := ParseDuration("t1h52m57s466551us")
+	require.NoError(t, err)
+	blockTime, err := ParseTimestamp("2019-12-10T20:26:53.194866Z")
+	require.NoError(t, err)
+	lastWAAUpdate, err := ParseTimestamp("2019-12-10T17:29:15.629235Z")
+	require.NoError(t, err)
+	balance := Ndau(9305537700000)
+
+	newWAA := priorWAA // copy
+	newWAA.UpdateWeightedAverageAge(
+		blockTime.Since(lastWAAUpdate),
+		0,
+		balance,
+	)
+	// the WAA calculation has to do something
+	require.NotEqual(t, priorWAA, newWAA)
+
+	// we can't have a WAA which increases faster than the flow of time, i.e.
+	// it must always be true that
+	//   (newWAA-priorWAA) <= (blockTime-lastWAAUpdate)
+	require.LessOrEqual(t, int64(newWAA-priorWAA), int64(blockTime-lastWAAUpdate))
+
+	// for the transaction which caused this investigation, the new WAA was
+	// t4h50m35s32182us. That seems like a lot... but maybe it's accurate?
+	expect, err := ParseDuration("t4h50m35s32182us")
+	require.Equal(t, expect, newWAA)
+}
