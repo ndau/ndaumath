@@ -242,4 +242,22 @@ func TestWAAUpdateCalculation(t *testing.T) {
 	// t4h50m35s32182us. That seems like a lot... but maybe it's accurate?
 	expect, err := ParseDuration("t4h50m35s32182us")
 	require.Equal(t, expect, newWAA)
+
+	// however, we know that that _can't_ be right, because the account in
+	// question was only some 3.5 hours old. Looking at the data, it turns out
+	// that there was a bug causing the lastWAAUpdate field to not be updated.
+	// If we perform the calculation properly, what comes out?
+	realLastWAAUpdate, err := ParseTimestamp("2019-12-10T18:49:51.462752Z")
+	require.NoError(t, err)
+	acctCreation, err := ParseTimestamp("2019-12-10T16:56:48.877369Z")
+	require.NoError(t, err)
+
+	newWAA = priorWAA
+	newWAA.UpdateWeightedAverageAge(
+		blockTime.Since(realLastWAAUpdate),
+		0,
+		balance,
+	)
+	t.Log("real WAA", newWAA)
+	require.LessOrEqual(t, int64(acctCreation.Add(newWAA)), int64(blockTime))
 }
