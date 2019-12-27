@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"syscall/js"
 
+	"github.com/oneiro-ndev/ndaumath/pkg/address"
 	"github.com/oneiro-ndev/ndaumath/pkg/keyaddr"
 )
 
@@ -418,6 +419,35 @@ func hardenedChild(this js.Value, args []js.Value) interface{} {
 		}
 		// return result
 		callback.Invoke(nil, key.Key)
+
+		return
+	}(args)
+	return nil
+}
+
+// JS Usage: validateAddress(privateKey, cb)
+func validateAddress(this js.Value, args []js.Value) interface{} {
+	go func(args []js.Value) {
+		logDebug("validateAddress")
+		// clean args
+		callback, remainder, err := handleArgs(args, 1, "validateAddress")
+		if err != nil {
+			return
+		}
+
+		addr := remainder[0].String()
+
+		// do work
+		_, err = address.Validate(addr)
+
+		// return result
+		if err == nil {
+			callback.Invoke(nil, true)
+		} else {
+			msg := fmt.Sprintf("Not a valid address: %s", err)
+			jsErr := js.Global().Get("Error").Invoke(msg)
+			callback.Invoke(jsErr, false)
+		}
 
 		return
 	}(args)

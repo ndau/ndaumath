@@ -52,6 +52,7 @@ func main() {
 		"isPrivate":       js.FuncOf(isPrivate),
 		"wordsFromBytes":  js.FuncOf(wordsFromBytes),
 		"fromString":      js.FuncOf(fromString),
+		"validateAddress": js.FuncOf(validateAddress),
 		"exit":            js.FuncOf(exit),
 	}
 

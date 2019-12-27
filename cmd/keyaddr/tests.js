@@ -49,6 +49,7 @@ before(() => {
         isPrivate: promisify(KeyaddrNS.isPrivate),
         fromString: promisify(KeyaddrNS.fromString),
         wordsFromBytes: promisify(KeyaddrNS.wordsFromBytes),
+        validateAddress: promisify(KeyaddrNS.validateAddress),
         exit: promisify(KeyaddrNS.exit)
       }
     })
@@ -246,6 +247,27 @@ describe('Keyaddr', () => {
   })
   it('errors for bad bytes', () => {
     expect(Keyaddr.wordsFromBytes('en', 'foobar')).to.eventually.be.rejected
+  })
+})
+
+describe('validateAddress', () => {
+  it('should return true for a valid address', async () => {
+    const isValid = await Keyaddr.validateAddress(firstChildAddress)
+    expect(isValid).to.be.true
+  })
+  it('should throw error for an address that is too long', async () => {
+    return expect(Keyaddr.validateAddress(firstChildAddress + 'd')).to
+      .eventually.be.rejected
+  })
+  it('should throw error for an address that is too short', async () => {
+    return expect(Keyaddr.validateAddress(firstChildAddress.substr(0, 20))).to
+      .eventually.be.rejected
+  })
+  it('should throw error for a corrupted address', async () => {
+    let addr = firstChildAddress.split('')
+    addr[4] = 'a' // corrupt address
+    addr = addr.join('')
+    return expect(Keyaddr.validateAddress(addr)).to.eventually.be.rejected
   })
 })
 
