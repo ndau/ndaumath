@@ -1,5 +1,14 @@
 package unsigned
 
+// ----- ---- --- -- -
+// Copyright 2019 Oneiro NA, Inc. All Rights Reserved.
+//
+// Licensed under the Apache License 2.0 (the "License").  You may not use
+// this file except in compliance with the License.  You can obtain a copy
+// in the file LICENSE in the source distribution or at
+// https://www.apache.org/licenses/LICENSE-2.0.txt
+// - -- --- ---- -----
+
 import (
 	"fmt"
 	"math"
@@ -8,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ericlagergren/decimal"
 	"github.com/stretchr/testify/require"
 )
 
@@ -283,6 +293,20 @@ func TestMulDivFuzz(t *testing.T) {
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 	for i := 0; i < 10000; i++ {
 		compareOne(r, t)
+	}
+}
+
+func TestConversion(t *testing.T) {
+	x := decimal.WithContext(decimal.Context128).SetUint64(math.MaxUint64)
+	y, ok := x.Uint64()
+	if !ok {
+		t.Error("failed to convert back")
+	}
+
+	if y == math.MaxUint64 {
+		t.Logf("the bug in the decimal library (https://github.com/ericlagergren/decimal/issues/104) has been fixed")
+	} else {
+		t.Error("bug in decimal library (https://github.com/ericlagergren/decimal/issues/104) remains but makeDecimal has already been nerfed")
 	}
 }
 
