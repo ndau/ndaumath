@@ -18,8 +18,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/constants"
-	"github.com/oneiro-ndev/ndaumath/pkg/types"
+	"github.com/ndau/ndaumath/pkg/constants"
+	"github.com/ndau/ndaumath/pkg/types"
 	"github.com/stretchr/testify/require"
 )
 

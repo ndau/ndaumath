@@ -14,7 +14,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/constants"
+	"github.com/ndau/ndaumath/pkg/constants"
 )
 
 func TestNdau_Add(t *testing.T) {

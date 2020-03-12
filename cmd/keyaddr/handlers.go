@@ -16,7 +16,7 @@ import (
 	"regexp"
 	"syscall/js"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/keyaddr"
+	"github.com/ndau/ndaumath/pkg/keyaddr"
 )
 
 // exit will quit the go program, causing the application to no longer respond to function calls.

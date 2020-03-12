@@ -14,9 +14,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/signature/algorithms/ed25519"
-	"github.com/oneiro-ndev/ndaumath/pkg/signature/algorithms/null"
-	"github.com/oneiro-ndev/ndaumath/pkg/signature/algorithms/secp256k1"
+	"github.com/ndau/ndaumath/pkg/signature/algorithms/ed25519"
+	"github.com/ndau/ndaumath/pkg/signature/algorithms/null"
+	"github.com/ndau/ndaumath/pkg/signature/algorithms/secp256k1"
 	"github.com/pkg/errors"
 )
 

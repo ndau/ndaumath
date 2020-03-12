@@ -15,14 +15,14 @@ import (
 	"io"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/oneiro-ndev/ndaumath/pkg/bip32"
+	"github.com/ndau/ndaumath/pkg/bip32"
 )
 
 // Secp256k1 is the algorithm of the HD Key type defined in [ek].
 //
 // Never edit this; it would be a const if go were smarter
 //
-// [ek]: https://github.com/oneiro-ndev/ndaumath/blob/master/pkg/key/extendedkey.go
+// [ek]: https://github.com/ndau/ndaumath/blob/master/pkg/key/extendedkey.go
 var Secp256k1 = secp256k1{}
 
 type secp256k1 struct{}

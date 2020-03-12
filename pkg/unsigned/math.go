@@ -12,7 +12,7 @@ package unsigned
 
 import (
 	"github.com/ericlagergren/decimal"
-	"github.com/oneiro-ndev/ndaumath/pkg/ndauerr"
+	"github.com/ndau/ndaumath/pkg/ndauerr"
 )
 
 // makeDecimal constructs a decimal object from a uint64

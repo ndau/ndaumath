@@ -12,7 +12,7 @@ package signed
 
 import (
 	"github.com/ericlagergren/decimal"
-	"github.com/oneiro-ndev/ndaumath/pkg/ndauerr"
+	"github.com/ndau/ndaumath/pkg/ndauerr"
 )
 
 // Add adds two int64s and errors if there is an overflow

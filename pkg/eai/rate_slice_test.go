@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"testing"
 
-	math "github.com/oneiro-ndev/ndaumath/pkg/types"
+	math "github.com/ndau/ndaumath/pkg/types"
 	"github.com/stretchr/testify/require"
 )
 

@@ -10,7 +10,7 @@ package keyaddr
 // - -- --- ---- -----
 
 
-import "github.com/oneiro-ndev/ndaumath/pkg/signature"
+import "github.com/ndau/ndaumath/pkg/signature"
 
 // Signature is the result of signing a block of data with a key.
 type Signature struct {

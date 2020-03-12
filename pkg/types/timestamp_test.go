@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/constants"
+	"github.com/ndau/ndaumath/pkg/constants"
 	"github.com/stretchr/testify/require"
 )
 

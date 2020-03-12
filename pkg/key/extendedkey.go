@@ -37,9 +37,9 @@ import (
 	"unicode/utf8"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/oneiro-ndev/ndaumath/pkg/b32"
-	"github.com/oneiro-ndev/ndaumath/pkg/bip32"
-	"github.com/oneiro-ndev/ndaumath/pkg/signature"
+	"github.com/ndau/ndaumath/pkg/b32"
+	"github.com/ndau/ndaumath/pkg/bip32"
+	"github.com/ndau/ndaumath/pkg/signature"
 	"github.com/pkg/errors"
 )
 

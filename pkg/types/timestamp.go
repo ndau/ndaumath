@@ -15,7 +15,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/constants"
+	"github.com/ndau/ndaumath/pkg/constants"
 )
 
 //go:generate msgp -tests=0

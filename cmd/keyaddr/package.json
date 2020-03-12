@@ -9,16 +9,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oneiro-ndev/ndaumath.git"
+    "url": "git+https://github.com/ndau/ndaumath.git"
   },
   "keywords": [
     "ndau"
   ],
   "author": "Josh Anderson <josh.anderson@oneiro.io>",
   "bugs": {
-    "url": "https://github.com/oneiro-ndev/ndaumath/issues"
+    "url": "https://github.com/ndau/ndaumath/issues"
   },
-  "homepage": "https://github.com/oneiro-ndev/ndaumath#readme",
+  "homepage": "https://github.com/ndau/ndaumath#readme",
   "dependencies": {
     "@babel/core": "^7.6.2",
     "@babel/node": "^7.6.2",

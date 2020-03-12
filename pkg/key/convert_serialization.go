@@ -16,7 +16,7 @@ import (
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/oneiro-ndev/ndaumath/pkg/b32"
+	"github.com/ndau/ndaumath/pkg/b32"
 )
 
 // FromOldSerialization attempts to produce an ExtendedKey from the old

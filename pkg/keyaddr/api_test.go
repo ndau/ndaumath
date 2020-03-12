@@ -16,7 +16,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/key"
+	"github.com/ndau/ndaumath/pkg/key"
 	"github.com/stretchr/testify/require"
 )
 

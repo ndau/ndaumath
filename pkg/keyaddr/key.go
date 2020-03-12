@@ -32,8 +32,8 @@ package keyaddr
 import (
 	"encoding/base64"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/address"
-	"github.com/oneiro-ndev/ndaumath/pkg/key"
+	"github.com/ndau/ndaumath/pkg/address"
+	"github.com/ndau/ndaumath/pkg/key"
 	"github.com/pkg/errors"
 )
 

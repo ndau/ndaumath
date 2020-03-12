@@ -11,7 +11,7 @@
 
 [[projects]]
   digest = "1:338e16cd24a624a326d9a69299e0c59a2bb717bec61666df4eda053f4a6f0486"
-  name = "github.com/oneiro-ndev/ndaumath"
+  name = "github.com/ndau/ndaumath"
   packages = [
     "pkg/address",
     "pkg/b32",
@@ -82,6 +82,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  input-imports = ["github.com/oneiro-ndev/ndaumath/pkg/keyaddr"]
+  input-imports = ["github.com/ndau/ndaumath/pkg/keyaddr"]
   solver-name = "gps-cdcl"
   solver-version = 1

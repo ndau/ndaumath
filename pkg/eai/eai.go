@@ -11,9 +11,9 @@ package eai
 
 
 import (
-	"github.com/oneiro-ndev/ndaumath/pkg/constants"
-	math "github.com/oneiro-ndev/ndaumath/pkg/types"
-	"github.com/oneiro-ndev/ndaumath/pkg/unsigned"
+	"github.com/ndau/ndaumath/pkg/constants"
+	math "github.com/ndau/ndaumath/pkg/types"
+	"github.com/ndau/ndaumath/pkg/unsigned"
 	"github.com/pkg/errors"
 )
 

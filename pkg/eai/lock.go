@@ -10,7 +10,7 @@ package eai
 // - -- --- ---- -----
 
 
-import math "github.com/oneiro-ndev/ndaumath/pkg/types"
+import math "github.com/ndau/ndaumath/pkg/types"
 
 // Lock is anything which acts like a lock struct.
 //

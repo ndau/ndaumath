@@ -17,8 +17,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/constants"
-	"github.com/oneiro-ndev/ndaumath/pkg/signed"
+	"github.com/ndau/ndaumath/pkg/constants"
+	"github.com/ndau/ndaumath/pkg/signed"
 )
 
 //go:generate msgp -tests=0

@@ -19,8 +19,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/constants"
-	math "github.com/oneiro-ndev/ndaumath/pkg/types"
+	"github.com/ndau/ndaumath/pkg/constants"
+	math "github.com/ndau/ndaumath/pkg/types"
 	"github.com/pkg/errors"
 )
 

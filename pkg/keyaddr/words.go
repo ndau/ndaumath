@@ -14,7 +14,7 @@ import (
 	"encoding/base64"
 	"strings"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/words"
+	"github.com/ndau/ndaumath/pkg/words"
 )
 
 // WordsFromBytes takes an array of bytes and converts it to a space-separated list of

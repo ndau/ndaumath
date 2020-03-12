@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/b32"
+	"github.com/ndau/ndaumath/pkg/b32"
 )
 
 // An ndau address is the result of a mathematical process over a public key. It

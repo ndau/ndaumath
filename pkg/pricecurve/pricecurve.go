@@ -13,9 +13,9 @@ package pricecurve
 import (
 	"math"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/constants"
-	"github.com/oneiro-ndev/ndaumath/pkg/signed"
-	"github.com/oneiro-ndev/ndaumath/pkg/types"
+	"github.com/ndau/ndaumath/pkg/constants"
+	"github.com/ndau/ndaumath/pkg/signed"
+	"github.com/ndau/ndaumath/pkg/types"
 	"github.com/pkg/errors"
 )
 

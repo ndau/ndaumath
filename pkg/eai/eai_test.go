@@ -20,8 +20,8 @@ import (
 
 	"github.com/ericlagergren/decimal"
 	dmath "github.com/ericlagergren/decimal/math"
-	"github.com/oneiro-ndev/ndaumath/pkg/constants"
-	math "github.com/oneiro-ndev/ndaumath/pkg/types"
+	"github.com/ndau/ndaumath/pkg/constants"
+	math "github.com/ndau/ndaumath/pkg/types"
 	"github.com/stretchr/testify/require"
 )
 

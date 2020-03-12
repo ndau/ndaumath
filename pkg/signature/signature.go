@@ -13,7 +13,7 @@ package signature
 import (
 	"fmt"
 
-	"github.com/oneiro-ndev/ndaumath/pkg/b32"
+	"github.com/ndau/ndaumath/pkg/b32"
 	"github.com/pkg/errors"
 	"github.com/tinylib/msgp/msgp"
 )
