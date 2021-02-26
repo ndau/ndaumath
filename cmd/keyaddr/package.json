@@ -4,7 +4,7 @@
   "description": "A set of key related utilities",
   "scripts": {
     "build": "GOOS=js GOARCH=wasm go build -o keyaddr.wasm",
-    "test": "mocha --require @babel/register ./tests.js",
+    "test": "mocha --require @babel/register --timeout 0 ./tests.js",
     "start": "python3 serve.py"
   },
   "repository": {
@@ -28,6 +28,6 @@
     "@babel/runtime": "^7.6.2",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "mocha": "^6.2.0"
+    "mocha": "^6.2.3"
   }
 }
