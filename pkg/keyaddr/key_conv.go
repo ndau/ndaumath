@@ -9,7 +9,6 @@ package keyaddr
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 import (
 	"github.com/ndau/ndaumath/pkg/key"
 	"github.com/ndau/ndaumath/pkg/signature"
@@ -95,4 +94,15 @@ func (k *Key) ToPrivateKey() (signature.PrivateKey, error) {
 	}
 	err = out.UnmarshalText(text)
 	return out, err
+}
+
+// UnivToPrivateKey constructs a `signature.PrivateKey` from a `*Key`
+func (k *Key) UnivToPrivateKey() (signature.PrivateKey, error) {
+	out := signature.PrivateKey{}
+	key, err := signature.ParseKey(k.Key)
+	if err != nil {
+		return out, errors.Wrap(err, "parsing key")
+	}
+	pkey := key.(*signature.PrivateKey)
+	return *pkey, nil
 }
