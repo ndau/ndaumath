@@ -9,7 +9,6 @@ package main
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 /*
 
 Notes:
@@ -35,25 +34,28 @@ import (
 var waitChannel chan struct{}
 
 func main() {
-	js.Global().Get("console").Call("log", "WASM Keyaddr starting")
-
 	waitChannel = make(chan struct{})
 
 	// put go functions in a javascript object
 	obj := map[string]interface{}{
-		"newKey":          js.FuncOf(newKey),
-		"wordsToBytes":    js.FuncOf(wordsToBytes),
-		"deriveFrom":      js.FuncOf(deriveFrom),
-		"ndauAddress":     js.FuncOf(ndauAddress),
-		"toPublic":        js.FuncOf(toPublic),
-		"child":           js.FuncOf(child),
-		"sign":            js.FuncOf(sign),
-		"hardenedChild":   js.FuncOf(hardenedChild),
-		"wordsFromPrefix": js.FuncOf(wordsFromPrefix),
-		"isPrivate":       js.FuncOf(isPrivate),
-		"wordsFromBytes":  js.FuncOf(wordsFromBytes),
-		"fromString":      js.FuncOf(fromString),
-		"exit":            js.FuncOf(exit),
+		"newKey":            js.FuncOf(newKey),
+		"wordsToBytes":      js.FuncOf(wordsToBytes),
+		"deriveFrom":        js.FuncOf(deriveFrom),
+		"ndauAddress":       js.FuncOf(ndauAddress),
+		"toPublic":          js.FuncOf(toPublic),
+		"child":             js.FuncOf(child),
+		"sign":              js.FuncOf(sign),
+		"signEdB64":         js.FuncOf(signEdB64),
+		"signEdText":        js.FuncOf(signEdText),
+		"hardenedChild":     js.FuncOf(hardenedChild),
+		"wordsFromPrefix":   js.FuncOf(wordsFromPrefix),
+		"isPrivate":         js.FuncOf(isPrivate),
+		"wordsFromBytes":    js.FuncOf(wordsFromBytes),
+		"fromString":        js.FuncOf(fromString),
+		"newEdKey":          js.FuncOf(newEdKey),
+		"newEdKeyFromSeed":  js.FuncOf(newEdKeyFromSeed),
+		"addrFromPublicKey": js.FuncOf(addrFromPublicKey),
+		"exit":              js.FuncOf(exit),
 	}
 
 	// Register all functions globally under KeyaddrNS. Either `window` in browsers, or

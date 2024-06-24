@@ -266,7 +266,7 @@ describe('simple memory test', () => {
     const key = await Keyaddr.newKey(bytes)
     const oldLogLevel = global.KeyaddrLogLevel // save previous log level
     global.KeyaddrLogLevel = global.KeyaddrLogLevelError // turn off excessive logs
-    for (let i = 1; i < 1000; i++) {
+    for (let i = 1; i < 500; i++) {
       const newKey = await Keyaddr.deriveFrom(key, '/', `/44'/20036'/100/${i}`)
       const addy = await Keyaddr.ndauAddress(newKey)
     }

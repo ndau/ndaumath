@@ -9,7 +9,6 @@ package null
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 import (
 	"errors"
 	"io"
@@ -41,6 +40,11 @@ func (null) SignatureSize() int {
 
 // Generate implements Algorithm
 func (null) Generate(rand io.Reader) (public, private []byte, err error) {
+	return []byte{}, []byte{}, errors.New("generating null keys is not permitted")
+}
+
+// GenerateFromSeed implements Algorithm
+func (null) GenerateFromSeed(seed []byte) (public, private []byte, err error) {
 	return []byte{}, []byte{}, errors.New("generating null keys is not permitted")
 }
 

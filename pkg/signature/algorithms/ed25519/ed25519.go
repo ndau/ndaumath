@@ -9,8 +9,8 @@ package ed25519
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 import (
+	"errors"
 	"io"
 
 	impl "golang.org/x/crypto/ed25519"
@@ -41,6 +41,17 @@ func (ed25519) SignatureSize() int {
 // Generate implements Algorithm
 func (e ed25519) Generate(rand io.Reader) (public, private []byte, err error) {
 	return impl.GenerateKey(rand)
+}
+
+// GenerateFromSeed implements Algorithm
+func (e ed25519) GenerateFromSeed(seed []byte) (public, private []byte, err error) {
+	if len(seed) != 32 {
+		return nil, nil, errors.New("seed must be length 32")
+	}
+	privKey := impl.NewKeyFromSeed(seed)
+	pubKey := (privKey.Public()).(impl.PublicKey)
+
+	return pubKey, privKey, nil
 }
 
 // Sign implements Algorithm

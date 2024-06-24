@@ -9,7 +9,6 @@ package signature
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 import (
 	"io"
 	"reflect"
@@ -36,6 +35,9 @@ type Algorithm interface {
 
 	// Generate creates a new keypair
 	Generate(rand io.Reader) (public, private []byte, err error)
+	// Generate creates a new keypair
+	GenerateFromSeed(seed []byte) (public, private []byte, err error)
+
 	// Sign signs the message with privateKey and returns a signature
 	Sign(private, message []byte) []byte
 	// Verify verifies a message's signature
@@ -110,6 +112,16 @@ func unmarshalWithLeftovers(serialized []byte) (al Algorithm, data, leftovers []
 // Generate a high-level keypair
 func Generate(al Algorithm, rdr io.Reader) (public PublicKey, private PrivateKey, err error) {
 	pubBytes, privBytes, err := al.Generate(rdr)
+	if err == nil {
+		public = PublicKey{keyBase{algorithm: al, key: pubBytes, extra: []byte{}}}
+		private = PrivateKey{keyBase{algorithm: al, key: privBytes, extra: []byte{}}}
+	}
+	return
+}
+
+// Generate a high-level keypair from a given seed
+func GenerateFromSeed(al Algorithm, seed []byte) (public PublicKey, private PrivateKey, err error) {
+	pubBytes, privBytes, err := al.GenerateFromSeed(seed)
 	if err == nil {
 		public = PublicKey{keyBase{algorithm: al, key: pubBytes, extra: []byte{}}}
 		private = PrivateKey{keyBase{algorithm: al, key: privBytes, extra: []byte{}}}

@@ -10,7 +10,6 @@ package keyaddr
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 // It is built using the gomobile tool, so the API is constrained to particular types of parameters:
 //
 // * string
@@ -163,11 +162,11 @@ func (k *Key) HardenedChild(n int32) (*Key, error) {
 	return KeyFromExtended(nk)
 }
 
-// Sign uses the given key to sign a message; the message must be the
+// SignSecP uses the given SecP key to sign a message; the message must be the
 // standard base64 encoding of the bytes of the message.
 // It returns a signature object.
 // The key must be a private key.
-func (k *Key) Sign(msgstr string) (*Signature, error) {
+func (k *Key) SignSecP(msgstr string) (*Signature, error) {
 	msg, err := base64.StdEncoding.DecodeString(msgstr)
 	if err != nil {
 		return nil, errors.Wrap(err, "error decoding string")
@@ -177,6 +176,37 @@ func (k *Key) Sign(msgstr string) (*Signature, error) {
 		return nil, errors.Wrap(err, "error converting to extended")
 	}
 	pk, err := ekey.SPrivKey()
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting private key")
+	}
+	sig := pk.Sign(msg)
+	return SignatureFrom(sig)
+}
+
+// SignEdB64 uses the given ED key to sign a message; the message must be the
+// standard base64 encoding of the bytes of the message.
+// It returns a signature object.
+// The key must be a private key.
+func (k *Key) SignEdB64(msgstr string) (*Signature, error) {
+	msg, err := base64.StdEncoding.DecodeString(msgstr)
+	if err != nil {
+		return nil, errors.Wrap(err, "error decoding b64 bstring")
+	}
+	pk, err := k.UnivToPrivateKey()
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting private key")
+	}
+	sig := pk.Sign(msg)
+	return SignatureFrom(sig)
+}
+
+// SignEdText uses the given ED key to sign a message; the message must be the
+// text encoding of the bytes of the message.
+// It returns a signature object.
+// The key must be a private key.
+func (k *Key) SignEdText(msgstr string) (*Signature, error) {
+	msg := []byte(msgstr)
+	pk, err := k.UnivToPrivateKey()
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting private key")
 	}

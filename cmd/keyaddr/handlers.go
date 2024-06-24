@@ -9,14 +9,16 @@ package main
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 import (
+	"encoding/hex"
 	"fmt"
 	"math"
 	"regexp"
 	"syscall/js"
 
+	"github.com/ndau/ndaumath/pkg/address"
 	"github.com/ndau/ndaumath/pkg/keyaddr"
+	"github.com/ndau/ndaumath/pkg/signature"
 )
 
 // exit will quit the go program, causing the application to no longer respond to function calls.
@@ -67,6 +69,136 @@ func newKey(this js.Value, args []js.Value) interface{} {
 
 		// return result
 		callback.Invoke(nil, key.Key)
+		return
+	}(args)
+	return nil
+}
+
+// JS Usage: newEdKey(cb) --> no args
+func newEdKey(this js.Value, args []js.Value) interface{} {
+	go func(args []js.Value) {
+		logDebug("newEdKey")
+
+		// clean args
+		callback, _, err := handleArgs(args, 0, "newEdKey")
+		if err != nil {
+			return
+		}
+
+		// do work
+		public, private, err := signature.Generate(signature.Ed25519, nil)
+		if err != nil {
+			jsLogReject(callback, "error creating new ed key: %s", err)
+			return
+		}
+
+		pubkeyText, err := public.MarshalText()
+		if err != nil {
+			jsLogReject(callback, "error marshalling new public ed key: %s", err)
+			return
+		}
+
+		privkeyText, err := private.MarshalText()
+		if err != nil {
+			jsLogReject(callback, "error marshalling new private ed key: %s", err)
+			return
+		}
+
+		// Make an map[string]interface{} so syscall will turn it into a js object.
+		obj := make(map[string]interface{})
+		obj["pubkey"] = string(pubkeyText)
+		obj["privkey"] = string(privkeyText)
+
+		// return result
+		callback.Invoke(nil, js.ValueOf(obj))
+		return
+	}(args)
+	return nil
+}
+
+// JS Usage: newEdKey(seed, cb)
+func newEdKeyFromSeed(this js.Value, args []js.Value) interface{} {
+	go func(args []js.Value) {
+		logDebug("newEdKeyFromSeed")
+
+		// clean args
+		callback, remainder, err := handleArgs(args, 1, "newEdKeyFromSeed")
+		if err != nil {
+			return
+		}
+
+		seedString := remainder[0].String()
+		seed, err := hex.DecodeString(seedString)
+		if err != nil {
+			jsLogReject(callback, "error decoding data from hex: %s", err)
+			return
+		}
+
+		// do work
+		public, private, err := signature.GenerateFromSeed(signature.Ed25519, seed)
+		if err != nil {
+			jsLogReject(callback, "error creating new ed key: %s", err)
+			return
+		}
+
+		pubkeyText, err := public.MarshalText()
+		if err != nil {
+			jsLogReject(callback, "error marshalling new public ed key: %s", err)
+			return
+		}
+
+		privkeyText, err := private.MarshalText()
+		if err != nil {
+			jsLogReject(callback, "error marshalling new private ed key: %s", err)
+			return
+		}
+
+		// Make an map[string]interface{} so syscall will turn it into a js object.
+		obj := make(map[string]interface{})
+		obj["pubkey"] = string(pubkeyText)
+		obj["privkey"] = string(privkeyText)
+
+		// return result
+		callback.Invoke(nil, js.ValueOf(obj))
+		return
+	}(args)
+	return nil
+}
+
+// JS Usage: addrFromPublicKey(pubKey, cb)
+func addrFromPublicKey(this js.Value, args []js.Value) interface{} {
+	go func(args []js.Value) {
+		logDebug("addrFromPublicKey")
+
+		// clean args
+		callback, remainder, err := handleArgs(args, 1, "addrFromPublicKey")
+		if err != nil {
+			return
+		}
+
+		pubKeyString := remainder[0].String()
+
+		// do work
+		key, err := signature.ParseKey(pubKeyString)
+		if err != nil {
+			jsLogReject(callback, "error parsing public key: %s", err)
+			return
+		}
+
+		_, ok := key.(*signature.PublicKey)
+		if !ok {
+			jsLogReject(callback, "addresses can only be generated from public keys")
+			return
+		}
+
+		addr, err := address.Generate(address.KindExchange, key.KeyBytes())
+		if err != nil {
+			jsLogReject(callback, "error generating address from key: %s", err)
+			return
+		}
+
+		// return result
+		callback.Invoke(nil, addr.String())
 		return
 	}(args)
 	return nil
@@ -370,7 +502,71 @@ func sign(this js.Value, args []js.Value) interface{} {
 		msg := remainder[1].String()
 
 		// do work
-		sig, err := k.Sign(msg)
+		sig, err := k.SignSecP(msg)
+		if err != nil {
+			logError(fmt.Sprintf("error creating signature: key length: %s, msg: %s, err: %s", len(k.Key), msg, err.Error()))
+			jsLogReject(callback, "error creating signature: %s", err)
+			return
+		}
+
+		// return result
+		callback.Invoke(nil, sig.Signature)
+		return
+	}(args)
+	return nil
+}
+
+// JS Usage: signEdB64(privateKey, base64Message, cb)
+func signEdB64(this js.Value, args []js.Value) interface{} {
+	js.Global().Get("console").Call("log", "sign starting")
+	go func(args []js.Value) {
+		logDebug("signEdB64")
+		// clean args
+		callback, remainder, err := handleArgs(args, 2, "signEdB64")
+		if err != nil {
+			return
+		}
+
+		k := keyaddr.Key{
+			Key: remainder[0].String(),
+		}
+
+		msg := remainder[1].String()
+
+		// do work
+		sig, err := k.SignEdB64(msg)
+		if err != nil {
+			logError(fmt.Sprintf("error creating signature: key length: %s, msg: %s, err: %s", len(k.Key), msg, err.Error()))
+			jsLogReject(callback, "error creating signature: %s", err)
+			return
+		}
+
+		// return result
+		callback.Invoke(nil, sig.Signature)
+		return
+	}(args)
+	return nil
+}
+
+// JS Usage: signEdText(privateKey, textMessage, cb)
+func signEdText(this js.Value, args []js.Value) interface{} {
+	js.Global().Get("console").Call("log", "sign starting")
+	go func(args []js.Value) {
+		logDebug("signEdText")
+		// clean args
+		callback, remainder, err := handleArgs(args, 2, "signEdText")
+		if err != nil {
+			return
+		}
+
+		k := keyaddr.Key{
+			Key: remainder[0].String(),
+		}
+
+		msg := remainder[1].String()
+
+		// do work
+		sig, err := k.SignEdText(msg)
 		if err != nil {
 			logError(fmt.Sprintf("error creating signature: key length: %s, msg: %s, err: %s", len(k.Key), msg, err.Error()))
 			jsLogReject(callback, "error creating signature: %s", err)

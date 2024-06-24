@@ -9,9 +9,9 @@ package secp256k1
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 import (
 	"crypto/sha256"
+	"errors"
 	"io"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -57,6 +57,19 @@ func (secp256k1) Generate(rand io.Reader) (public, private []byte, err error) {
 	seed, err := bip32.GenerateSeed(bip32.RecommendedSeedLen, rand)
 	if err != nil {
 		return
+	}
+
+	prv, _, err := bip32.NewMaster(seed)
+	private = prv[:]
+	public = bip32.PrivateToPublic(private)
+
+	return
+}
+
+// GenerateFromSeed creates a new keypair from a given seed
+func (secp256k1) GenerateFromSeed(seed []byte) (public, private []byte, err error) {
+	if len(seed) != 32 {
+		return nil, nil, errors.New("seed must be length 32")
 	}
 
 	prv, _, err := bip32.NewMaster(seed)
